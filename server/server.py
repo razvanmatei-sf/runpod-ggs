@@ -747,10 +747,10 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
-        const admins = {{ admins | tojson | default('[]', true) }};
-        let currentArtist = '{{ current_artist or "" }}';
-        let adminMode = {% if admin_mode %}true{% else %}false{% endif %};
-        let sessionTimers = {};
+        var admins = {{ admins | tojson | safe }};
+        var currentArtist = "{{ current_artist | default('', true) | e }}";
+        var adminMode = {% if admin_mode %}true{% else %}false{% endif %};
+        var sessionTimers = {};
 
         // Initialize on load
         document.addEventListener('DOMContentLoaded', function() {
