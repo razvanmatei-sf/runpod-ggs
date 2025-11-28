@@ -17,6 +17,11 @@ ARTISTS=(
     "Serhii Yashyn"
 )
 
+# Admins - users who can access admin mode
+ADMINS=(
+    "Razvan Matei"
+)
+
 OUTPUT_DIR="/workspace/ComfyUI/output"
 
 echo "Creating artist folders in $OUTPUT_DIR..."

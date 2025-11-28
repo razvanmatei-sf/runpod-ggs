@@ -14,10 +14,37 @@ app = Flask(__name__)
 # Repository path (set by start_server.sh)
 REPO_DIR = os.environ.get('REPO_DIR', '/workspace/runpod-ggs')
 
-# Admins - these users get the admin toggle
-ADMINS = [
-    "Razvan Matei",
-]
+def parse_admins_from_script():
+    """Parse admin names from artist_names.sh"""
+    script_paths = [
+        os.path.join(REPO_DIR, "server", "artist_names.sh"),  # Repo path (preferred)
+        "/usr/local/bin/artist_names.sh",  # Docker container path
+        "/workspace/artist_names.sh",       # Workspace path
+        os.path.join(os.path.dirname(__file__), "artist_names.sh"),  # Same directory
+    ]
+
+    admins = []
+    for script_path in script_paths:
+        if os.path.exists(script_path):
+            try:
+                with open(script_path, 'r') as f:
+                    content = f.read()
+                    # Extract names from ADMINS=( ... ) block
+                    import re
+                    match = re.search(r'ADMINS=\((.*?)\)', content, re.DOTALL)
+                    if match:
+                        block = match.group(1)
+                        # Extract quoted strings
+                        names = re.findall(r'"([^"]+)"', block)
+                        admins = names
+                        break
+            except:
+                pass
+
+    return admins
+
+# Load admins from script
+ADMINS = parse_admins_from_script()
 
 def is_admin(artist_name):
     """Check if artist is an admin (case-insensitive)"""
