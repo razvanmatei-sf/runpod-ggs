@@ -66,5 +66,6 @@ echo ""
 # Export repo path for the server to use
 export REPO_DIR="$REPO_DIR"
 
-# Start the server (runs in foreground)
-exec python3 /usr/local/bin/server.py
+# Start the server from git repo (runs in foreground)
+# Using repo version allows updates without rebuilding Docker image
+exec python3 "$REPO_DIR/server/server.py"
