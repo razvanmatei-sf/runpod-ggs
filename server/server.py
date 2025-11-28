@@ -14,8 +14,12 @@ app = Flask(__name__)
 # Repository path (set by start_server.sh)
 REPO_DIR = os.environ.get('REPO_DIR', '/workspace/runpod-ggs')
 
-def parse_admins_from_script():
-    """Parse admin names from artist_names.sh"""
+def parse_users_from_script():
+    """
+    Parse users from artist_names.sh USERS array.
+    Returns tuple: (all_users, admins)
+    Users with ':admin' suffix are added to admins list.
+    """
     script_paths = [
         os.path.join(REPO_DIR, "server", "artist_names.sh"),  # Repo path (preferred)
         "/usr/local/bin/artist_names.sh",  # Docker container path
@@ -23,64 +27,42 @@ def parse_admins_from_script():
         os.path.join(os.path.dirname(__file__), "artist_names.sh"),  # Same directory
     ]
 
+    users = []
     admins = []
+
     for script_path in script_paths:
         if os.path.exists(script_path):
             try:
                 with open(script_path, 'r') as f:
                     content = f.read()
-                    # Extract names from ADMINS=( ... ) block
                     import re
-                    match = re.search(r'ADMINS=\((.*?)\)', content, re.DOTALL)
+                    match = re.search(r'USERS=\((.*?)\)', content, re.DOTALL)
                     if match:
                         block = match.group(1)
                         # Extract quoted strings
-                        names = re.findall(r'"([^"]+)"', block)
-                        admins = names
+                        entries = re.findall(r'"([^"]+)"', block)
+                        for entry in entries:
+                            if entry.endswith(':admin'):
+                                name = entry[:-6]  # Remove ':admin' suffix
+                                users.append(name)
+                                admins.append(name)
+                            else:
+                                users.append(entry)
                         break
             except:
                 pass
 
-    return admins
+    return users, admins
 
-# Load admins from script
-ADMINS = parse_admins_from_script()
+# Load users and admins from script (single source of truth)
+USERS, ADMINS = parse_users_from_script()
 
-def is_admin(artist_name):
-    """Check if artist is an admin (case-insensitive)"""
-    if not artist_name:
+def is_admin(user_name):
+    """Check if user is an admin (case-insensitive)"""
+    if not user_name:
         return False
-    artist_lower = artist_name.strip().lower()
-    return any(admin.strip().lower() == artist_lower for admin in ADMINS)
-
-def parse_artists_from_script():
-    """Parse artist names from artist_names.sh"""
-    script_paths = [
-        os.path.join(REPO_DIR, "server", "artist_names.sh"),  # Repo path (preferred)
-        "/usr/local/bin/artist_names.sh",  # Docker container path
-        "/workspace/artist_names.sh",       # Workspace path
-        os.path.join(os.path.dirname(__file__), "artist_names.sh"),  # Same directory
-    ]
-
-    artists = []
-    for script_path in script_paths:
-        if os.path.exists(script_path):
-            try:
-                with open(script_path, 'r') as f:
-                    content = f.read()
-                    # Extract names from ARTISTS=( ... ) block
-                    import re
-                    match = re.search(r'ARTISTS=\((.*?)\)', content, re.DOTALL)
-                    if match:
-                        block = match.group(1)
-                        # Extract quoted strings
-                        names = re.findall(r'"([^"]+)"', block)
-                        artists = names
-                        break
-            except:
-                pass
-
-    return artists
+    user_lower = user_name.strip().lower()
+    return any(admin.strip().lower() == user_lower for admin in ADMINS)
 
 def get_setup_script(tool_id, script_type):
     """Get path to setup script for a tool. script_type is 'install' or 'start'"""
@@ -1115,11 +1097,11 @@ def is_installed(path):
     return os.path.isdir(path)
 
 def get_all_users():
-    """Get combined list of artists and admins for dropdown"""
+    """Get list of users for dropdown"""
     output_dir = "/workspace/ComfyUI/output"
     users = set()
 
-    # Try to get artists from output directory first
+    # Try to get users from output directory first
     try:
         if os.path.exists(output_dir):
             for item in os.listdir(output_dir):
@@ -1129,14 +1111,10 @@ def get_all_users():
     except:
         pass
 
-    # If no artists found from directory, parse from artist_names.sh
+    # If no users found from directory, use USERS from artist_names.sh
     if not users:
-        for artist in parse_artists_from_script():
-            users.add(artist)
-
-    # Always add admins to the list (they may not be in ARTISTS)
-    for admin in ADMINS:
-        users.add(admin)
+        for user in USERS:
+            users.add(user)
 
     return sorted(list(users))
 

@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Artist names - add or remove names here
-ARTISTS=(
+# Users list - add ":admin" suffix for admin privileges
+# Example: "John Doe:admin" or just "John Doe" for regular user
+USERS=(
     "Rosa Macak Cizmesija"
     "Karlo Vukovic"
     "Marko Kahlina"
@@ -14,20 +15,18 @@ ARTISTS=(
     "Josipa Filipcic Mazar"
     "Viktorija Samardzic"
     "Serhii Yashyn"
-)
-
-# Admins - users who can access admin mode (these names also appear in the dropdown)
-ADMINS=(
-    "Razvan Matei"
+    "Razvan Matei:admin"
 )
 
 OUTPUT_DIR="/workspace/ComfyUI/output"
 
-echo "Creating artist folders in $OUTPUT_DIR..."
+echo "Creating user folders in $OUTPUT_DIR..."
 
-for artist in "${ARTISTS[@]}"; do
-    mkdir -p "$OUTPUT_DIR/$artist"
-    echo "Created: $OUTPUT_DIR/$artist"
+for user in "${USERS[@]}"; do
+    # Remove :admin suffix if present to get clean name
+    name="${user%:admin}"
+    mkdir -p "$OUTPUT_DIR/$name"
+    echo "Created: $OUTPUT_DIR/$name"
 done
 
 echo "Done"
