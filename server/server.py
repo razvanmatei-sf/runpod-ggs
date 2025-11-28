@@ -19,6 +19,13 @@ ADMINS = [
     "Razvan Matei",
 ]
 
+def is_admin(artist_name):
+    """Check if artist is an admin (case-insensitive)"""
+    if not artist_name:
+        return False
+    artist_lower = artist_name.strip().lower()
+    return any(admin.strip().lower() == artist_lower for admin in ADMINS)
+
 def parse_artists_from_script():
     """Parse artist names from artist_names.sh"""
     script_paths = [
@@ -770,8 +777,16 @@ HTML_TEMPLATE = """
             const userTools = document.getElementById('userTools');
             const adminTools = document.getElementById('adminTools');
 
-            // Show admin toggle only for admins
-            if (currentArtist && admins.includes(currentArtist)) {
+            // Debug: log current state
+            console.log('updateUI called:', { currentArtist, admins, adminMode });
+
+            // Show admin toggle only for admins (case-insensitive, trim whitespace)
+            const isAdmin = currentArtist && admins.some(admin =>
+                admin.trim().toLowerCase() === currentArtist.trim().toLowerCase()
+            );
+            console.log('isAdmin:', isAdmin);
+
+            if (isAdmin) {
                 adminToggle.classList.add('visible');
             } else {
                 adminToggle.classList.remove('visible');
@@ -1114,7 +1129,7 @@ def set_artist():
     current_artist = data.get('artist', '')
 
     # Reset admin mode if not an admin
-    if current_artist not in ADMINS:
+    if not is_admin(current_artist):
         admin_mode = False
 
     return jsonify({'success': True})
@@ -1125,7 +1140,7 @@ def set_admin_mode():
     data = request.get_json()
 
     # Only allow admin mode for admins
-    if current_artist in ADMINS:
+    if is_admin(current_artist):
         admin_mode = data.get('admin_mode', False)
 
     return jsonify({'success': True})
@@ -1293,7 +1308,7 @@ def admin_action():
     global current_artist
 
     # Check if user is admin
-    if current_artist not in ADMINS:
+    if not is_admin(current_artist):
         return jsonify({'success': False, 'message': 'Unauthorized'})
 
     data = request.get_json()
@@ -1365,7 +1380,7 @@ def download_models():
     global current_artist
 
     # Check if user is admin
-    if current_artist not in ADMINS:
+    if not is_admin(current_artist):
         return jsonify({'success': False, 'message': 'Unauthorized'})
 
     data = request.get_json()
