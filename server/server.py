@@ -195,6 +195,8 @@ HTML_TEMPLATE = """
 
         .profile-select {
             flex: 1;
+            min-width: 0;
+            max-width: calc(100% - 60px);
             padding: 12px 16px;
             border: 2px solid #e0e0e0;
             border-radius: 10px;
@@ -210,13 +212,15 @@ HTML_TEMPLATE = """
         }
 
         .admin-toggle {
-            display: none;
+            display: flex;
             align-items: center;
             gap: 8px;
+            visibility: hidden;
+            flex-shrink: 0;
         }
 
         .admin-toggle.visible {
-            display: flex;
+            visibility: visible;
         }
 
         .toggle-switch {
