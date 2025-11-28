@@ -50,8 +50,6 @@ def parse_artists_from_script():
 
 def get_setup_script(tool_id, script_type):
     """Get path to setup script for a tool. script_type is 'install' or 'start'"""
-    script_name = f"{script_type}.sh"
-
     # Map tool IDs to setup folder names
     folder_map = {
         "ai-toolkit": "ai-toolkit",
@@ -64,6 +62,8 @@ def get_setup_script(tool_id, script_type):
     if not folder:
         return None
 
+    # Script naming: install_comfy.sh, start_comfy.sh, etc.
+    script_name = f"{script_type}_{folder}.sh"
     script_path = os.path.join(REPO_DIR, "setup", folder, script_name)
     if os.path.exists(script_path):
         return script_path
