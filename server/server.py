@@ -11,6 +11,9 @@ import sys
 
 app = Flask(__name__)
 
+# Repository path (set by start_server.sh)
+REPO_DIR = os.environ.get('REPO_DIR', '/workspace/runpod-ggs')
+
 # Admins - these users get the admin toggle
 ADMINS = [
     "Razvan Matei",
@@ -19,6 +22,7 @@ ADMINS = [
 def parse_artists_from_script():
     """Parse artist names from artist_names.sh"""
     script_paths = [
+        os.path.join(REPO_DIR, "server", "artist_names.sh"),  # Repo path (preferred)
         "/usr/local/bin/artist_names.sh",  # Docker container path
         "/workspace/artist_names.sh",       # Workspace path
         os.path.join(os.path.dirname(__file__), "artist_names.sh"),  # Same directory
@@ -44,18 +48,39 @@ def parse_artists_from_script():
 
     return artists
 
+def get_setup_script(tool_id, script_type):
+    """Get path to setup script for a tool. script_type is 'install' or 'start'"""
+    script_name = f"{script_type}.sh"
+
+    # Map tool IDs to setup folder names
+    folder_map = {
+        "ai-toolkit": "ai-toolkit",
+        "lora-tool": "lora-tool",
+        "swarm-ui": "swarm-ui",
+        "comfy-ui": "comfy",
+    }
+
+    folder = folder_map.get(tool_id)
+    if not folder:
+        return None
+
+    script_path = os.path.join(REPO_DIR, "setup", folder, script_name)
+    if os.path.exists(script_path):
+        return script_path
+    return None
+
 # Tool configuration
 TOOLS = {
     "ai-toolkit": {
         "name": "AI-Toolkit",
         "port": 7860,
-        "install_path": "/workspace/AI-Toolkit",
+        "install_path": "/workspace/ai-toolkit",
         "admin_only": False,
     },
     "lora-tool": {
         "name": "LoRA-Tool",
         "port": 7861,
-        "install_path": "/workspace/LoRA-Tool",
+        "install_path": "/workspace/lora-tool",
         "admin_only": False,
     },
     "swarm-ui": {
@@ -708,8 +733,23 @@ HTML_TEMPLATE = """
         }
 
         function handleAdminToolClick(toolId) {
-            // Placeholder for install/update functionality
-            showStatus(`Install/Update for ${toolId} - Coming soon`, 'success');
+            const btn = document.querySelector(`.admin-tool-btn[data-tool="${toolId}"]`);
+            const isUpdate = btn.classList.contains('update');
+            const action = isUpdate ? 'update' : 'install';
+
+            fetch('/admin_action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tool_id: toolId, action: action })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                } else {
+                    showStatus(data.message, 'error');
+                }
+            });
         }
 
         function showModelsPage() {
@@ -736,8 +776,23 @@ HTML_TEMPLATE = """
                 return;
             }
 
-            // Placeholder for download functionality
-            showModelsStatus(`Download started for: ${selectedModels.join(', ')}`, 'success');
+            fetch('/download_models', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    models: selectedModels,
+                    hf_token: hfToken,
+                    civit_token: civitToken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showModelsStatus(data.message, 'success');
+                } else {
+                    showModelsStatus(data.message, 'error');
+                }
+            });
         }
 
         function showStatus(message, type) {
@@ -960,6 +1015,119 @@ def tool_status(tool_id):
         'running': is_running,
         'installed': is_installed(tool.get('install_path'))
     })
+
+@app.route('/admin_action', methods=['POST'])
+def admin_action():
+    """Handle admin install/update actions"""
+    global current_artist
+
+    # Check if user is admin
+    if current_artist not in ADMINS:
+        return jsonify({'success': False, 'message': 'Unauthorized'})
+
+    data = request.get_json()
+    tool_id = data.get('tool_id')
+    action = data.get('action')  # 'install' or 'update'
+
+    if not tool_id or tool_id not in TOOLS:
+        return jsonify({'success': False, 'message': 'Invalid tool'})
+
+    if action not in ['install', 'update']:
+        return jsonify({'success': False, 'message': 'Invalid action'})
+
+    tool = TOOLS[tool_id]
+
+    # Get the install script path
+    script_path = get_setup_script(tool_id, 'install')
+
+    if not script_path:
+        return jsonify({
+            'success': False,
+            'message': f'No install script found for {tool["name"]}. Create setup/{tool_id}/install.sh'
+        })
+
+    try:
+        # Run the install script
+        process = subprocess.Popen(
+            ['bash', script_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd='/workspace'
+        )
+
+        # Return immediately - script runs in background
+        return jsonify({
+            'success': True,
+            'tool_name': tool['name'],
+            'message': f'{action.capitalize()} started for {tool["name"]}. Check logs for progress.',
+            'script': script_path
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Failed to run script: {str(e)}'})
+
+@app.route('/download_models', methods=['POST'])
+def download_models():
+    """Handle model download requests"""
+    global current_artist
+
+    # Check if user is admin
+    if current_artist not in ADMINS:
+        return jsonify({'success': False, 'message': 'Unauthorized'})
+
+    data = request.get_json()
+    models = data.get('models', [])
+    hf_token = data.get('hf_token', '')
+    civit_token = data.get('civit_token', '')
+
+    if not models:
+        return jsonify({'success': False, 'message': 'No models selected'})
+
+    # Map model names to script names
+    script_map = {
+        'qwen': 'download_qwen_all.sh',
+        'flux': 'download_flux_models.sh',
+        'krita': 'krita_ai_diffusion_installer.sh',
+        'wan': 'download_wan_video.sh',
+    }
+
+    scripts_to_run = []
+    for model in models:
+        if model in script_map:
+            script_path = os.path.join(REPO_DIR, 'setup', 'download-models', script_map[model])
+            if os.path.exists(script_path):
+                scripts_to_run.append(script_path)
+
+    if not scripts_to_run:
+        return jsonify({'success': False, 'message': 'No valid model scripts found'})
+
+    try:
+        # Set environment variables
+        env = os.environ.copy()
+        if hf_token:
+            env['HUGGING_FACE_HUB_TOKEN'] = hf_token
+        if civit_token:
+            env['CIVITAI_API_TOKEN'] = civit_token
+        env['HF_HUB_ENABLE_HF_TRANSFER'] = '1'
+
+        # Run scripts sequentially in background
+        for script_path in scripts_to_run:
+            subprocess.Popen(
+                ['bash', script_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                cwd='/workspace',
+                env=env
+            )
+
+        return jsonify({
+            'success': True,
+            'message': f'Download started for: {", ".join(models)}',
+            'scripts': scripts_to_run
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Failed to start downloads: {str(e)}'})
 
 def cleanup_sessions():
     """Cleanup all active sessions"""

@@ -8,10 +8,33 @@ echo "=========================================="
 echo "Starting ComfyStudio"
 echo "=========================================="
 
-# Network volume paths (these should be mounted)
+# Configuration
 WORKSPACE_DIR="/workspace"
+REPO_URL="https://github.com/razvanmatei-sf/runpod-ggs.git"
+REPO_DIR="$WORKSPACE_DIR/runpod-ggs"
 COMFYUI_DIR="$WORKSPACE_DIR/ComfyUI"
-VENV_DIR="$COMFYUI_DIR/venv"
+
+# Clone or update the repository
+echo "Syncing repository..."
+if [ -d "$REPO_DIR/.git" ]; then
+    echo "Repository exists, pulling latest changes..."
+    cd "$REPO_DIR"
+    git fetch --all
+    git reset --hard origin/main
+    git pull
+    echo "Repository updated."
+else
+    echo "Cloning repository..."
+    rm -rf "$REPO_DIR"
+    git clone "$REPO_URL" "$REPO_DIR"
+    echo "Repository cloned."
+fi
+
+# Make all scripts executable
+echo "Setting script permissions..."
+find "$REPO_DIR/setup" -name "*.sh" -exec chmod +x {} \;
+chmod +x "$REPO_DIR/server/start_server.sh" 2>/dev/null || true
+chmod +x "$REPO_DIR/server/build_server.sh" 2>/dev/null || true
 
 # Verify network volume is mounted and ComfyUI is installed
 if [ ! -d "$COMFYUI_DIR" ]; then
@@ -29,13 +52,19 @@ sleep 2
 # Set working directory
 cd "$WORKSPACE_DIR"
 
-echo "Starting ComfyStudio server on port 8080..."
+echo ""
+echo "=========================================="
+echo "Repository synced to: $REPO_DIR"
+echo "=========================================="
 echo ""
 echo "Available services:"
 echo "  ComfyStudio: http://localhost:8080"
 echo "  ComfyUI:     http://localhost:8188"
 echo "  JupyterLab:  http://localhost:8888"
 echo ""
+
+# Export repo path for the server to use
+export REPO_DIR="$REPO_DIR"
 
 # Start the server (runs in foreground)
 exec python3 /usr/local/bin/server.py
