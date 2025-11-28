@@ -747,9 +747,9 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
-        const admins = {{ admins | tojson }};
+        const admins = {{ admins | tojson | default('[]', true) }};
         let currentArtist = '{{ current_artist or "" }}';
-        let adminMode = {{ 'true' if admin_mode else 'false' }};
+        let adminMode = {% if admin_mode %}true{% else %}false{% endif %};
         let sessionTimers = {};
 
         // Initialize on load
