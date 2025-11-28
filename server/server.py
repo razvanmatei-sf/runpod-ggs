@@ -1114,29 +1114,35 @@ def is_installed(path):
         return True
     return os.path.isdir(path)
 
-def get_existing_artists():
-    """Get list of existing artist folders, fallback to artist_names.sh"""
+def get_all_users():
+    """Get combined list of artists and admins for dropdown"""
     output_dir = "/workspace/ComfyUI/output"
-    artists = []
+    users = set()
+
+    # Try to get artists from output directory first
     try:
         if os.path.exists(output_dir):
             for item in os.listdir(output_dir):
                 item_path = os.path.join(output_dir, item)
                 if os.path.isdir(item_path) and not item.startswith('.'):
-                    artists.append(item)
-            artists.sort()
+                    users.add(item)
     except:
         pass
 
-    # If no artists found, parse from artist_names.sh
-    if not artists:
-        artists = parse_artists_from_script()
+    # If no artists found from directory, parse from artist_names.sh
+    if not users:
+        for artist in parse_artists_from_script():
+            users.add(artist)
 
-    return artists
+    # Always add admins to the list (they may not be in ARTISTS)
+    for admin in ADMINS:
+        users.add(admin)
+
+    return sorted(list(users))
 
 @app.route('/')
 def index():
-    artists = get_existing_artists()
+    artists = get_all_users()
     return render_template_string(
         HTML_TEMPLATE,
         artists=artists,

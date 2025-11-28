@@ -13,11 +13,10 @@ ARTISTS=(
     "Ivan Prlic"
     "Josipa Filipcic Mazar"
     "Viktorija Samardzic"
-    "Razvan Matei"
     "Serhii Yashyn"
 )
 
-# Admins - users who can access admin mode
+# Admins - users who can access admin mode (these names also appear in the dropdown)
 ADMINS=(
     "Razvan Matei"
 )
