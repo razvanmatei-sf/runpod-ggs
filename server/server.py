@@ -108,6 +108,8 @@ TOOLS = {
 active_sessions = {}  # {tool_id: {"process": proc, "start_time": datetime, "artist": name}}
 current_artist = None
 admin_mode = False
+LOG_FILE = "/tmp/comfystudio.log"
+running_process = None  # Track the currently running admin process
 
 # HTML Template
 HTML_TEMPLATE = """
@@ -484,6 +486,90 @@ HTML_TEMPLATE = """
             background: #fef2f2;
             color: #991b1b;
         }
+
+        /* Terminal styles */
+        .terminal-container {
+            display: none;
+            margin-top: 15px;
+        }
+
+        .terminal-container.visible {
+            display: block;
+        }
+
+        .terminal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e1e1e;
+            padding: 8px 12px;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .terminal-title {
+            color: #4ade80;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .terminal-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .terminal-btn {
+            background: #333;
+            border: none;
+            color: #888;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .terminal-btn:hover {
+            background: #444;
+            color: #fff;
+        }
+
+        .terminal {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 12px;
+            border-radius: 0 0 8px 8px;
+            height: 250px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .terminal::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        .terminal::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+
+        .terminal .error {
+            color: #f87171;
+        }
+
+        .terminal .success {
+            color: #4ade80;
+        }
+
+        .terminal .info {
+            color: #60a5fa;
+        }
     </style>
 </head>
 <body>
@@ -558,6 +644,18 @@ HTML_TEMPLATE = """
                 <button class="models-btn" onclick="showModelsPage()">
                     Models Download
                 </button>
+
+                <!-- Terminal output -->
+                <div class="terminal-container" id="terminalContainer">
+                    <div class="terminal-header">
+                        <span class="terminal-title">Terminal Output</span>
+                        <div class="terminal-controls">
+                            <button class="terminal-btn" onclick="clearTerminal()">Clear</button>
+                            <button class="terminal-btn" onclick="hideTerminal()">Hide</button>
+                        </div>
+                    </div>
+                    <div class="terminal" id="terminal"></div>
+                </div>
             </div>
 
             <div id="statusMessage" class="status-message hidden"></div>
@@ -613,6 +711,18 @@ HTML_TEMPLATE = """
             </button>
 
             <div id="modelsStatusMessage" class="status-message hidden"></div>
+
+            <!-- Terminal output for models page -->
+            <div class="terminal-container" id="modelsTerminalContainer">
+                <div class="terminal-header">
+                    <span class="terminal-title">Download Progress</span>
+                    <div class="terminal-controls">
+                        <button class="terminal-btn" onclick="clearModelsTerminal()">Clear</button>
+                        <button class="terminal-btn" onclick="hideModelsTerminal()">Hide</button>
+                    </div>
+                </div>
+                <div class="terminal" id="modelsTerminal"></div>
+            </div>
         </div>
     </div>
 
@@ -737,6 +847,11 @@ HTML_TEMPLATE = """
             const isUpdate = btn.classList.contains('update');
             const action = isUpdate ? 'update' : 'install';
 
+            // Clear and show terminal
+            clearTerminal();
+            showTerminal();
+            appendToTerminal(`Starting ${action} for ${toolId}...\n`, 'info');
+
             fetch('/admin_action', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -746,8 +861,11 @@ HTML_TEMPLATE = """
             .then(data => {
                 if (data.success) {
                     showStatus(data.message, 'success');
+                    // Start polling for logs
+                    startPollingLogs();
                 } else {
                     showStatus(data.message, 'error');
+                    appendToTerminal(`Error: ${data.message}\n`, 'error');
                 }
             });
         }
@@ -776,6 +894,11 @@ HTML_TEMPLATE = """
                 return;
             }
 
+            // Clear and show terminal
+            clearTerminal();
+            showModelsTerminal();
+            appendToModelsTerminal(`Starting download for: ${selectedModels.join(', ')}...\n`, 'info');
+
             fetch('/download_models', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -789,10 +912,62 @@ HTML_TEMPLATE = """
             .then(data => {
                 if (data.success) {
                     showModelsStatus(data.message, 'success');
+                    // Start polling for logs
+                    startPollingModelsLogs();
                 } else {
                     showModelsStatus(data.message, 'error');
+                    appendToModelsTerminal(`Error: ${data.message}\n`, 'error');
                 }
             });
+        }
+
+        // Models page terminal functions
+        function showModelsTerminal() {
+            document.getElementById('modelsTerminalContainer').classList.add('visible');
+        }
+
+        function hideModelsTerminal() {
+            document.getElementById('modelsTerminalContainer').classList.remove('visible');
+            stopPollingLogs();
+        }
+
+        function clearModelsTerminal() {
+            document.getElementById('modelsTerminal').innerHTML = '';
+            lastLogLength = 0;
+            fetch('/clear_logs', { method: 'POST' });
+        }
+
+        function appendToModelsTerminal(text, className) {
+            const terminal = document.getElementById('modelsTerminal');
+            const span = document.createElement('span');
+            if (className) span.className = className;
+            span.textContent = text;
+            terminal.appendChild(span);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function pollModelsLogs() {
+            fetch('/logs')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.content && data.content.length > lastLogLength) {
+                        const newContent = data.content.substring(lastLogLength);
+                        appendToModelsTerminal(newContent);
+                        lastLogLength = data.content.length;
+                    }
+                    if (data.running === false && logPollingInterval) {
+                        appendToModelsTerminal('\n--- Download completed ---\n', 'success');
+                        stopPollingLogs();
+                    }
+                })
+                .catch(err => console.error('Error polling logs:', err));
+        }
+
+        function startPollingModelsLogs() {
+            lastLogLength = 0;
+            if (logPollingInterval) clearInterval(logPollingInterval);
+            logPollingInterval = setInterval(pollModelsLogs, 1000);
+            pollModelsLogs(); // Initial poll
         }
 
         function showStatus(message, type) {
@@ -821,6 +996,66 @@ HTML_TEMPLATE = """
                     timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 }, 1000);
             });
+        }
+
+        // Terminal functions
+        let logPollingInterval = null;
+        let lastLogLength = 0;
+
+        function showTerminal() {
+            document.getElementById('terminalContainer').classList.add('visible');
+        }
+
+        function hideTerminal() {
+            document.getElementById('terminalContainer').classList.remove('visible');
+            stopPollingLogs();
+        }
+
+        function clearTerminal() {
+            document.getElementById('terminal').innerHTML = '';
+            lastLogLength = 0;
+            // Also clear server-side log
+            fetch('/clear_logs', { method: 'POST' });
+        }
+
+        function appendToTerminal(text, className) {
+            const terminal = document.getElementById('terminal');
+            const span = document.createElement('span');
+            if (className) span.className = className;
+            span.textContent = text;
+            terminal.appendChild(span);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function pollLogs() {
+            fetch('/logs')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.content && data.content.length > lastLogLength) {
+                        const newContent = data.content.substring(lastLogLength);
+                        appendToTerminal(newContent);
+                        lastLogLength = data.content.length;
+                    }
+                    if (data.running === false && logPollingInterval) {
+                        appendToTerminal('\n--- Process completed ---\n', 'success');
+                        stopPollingLogs();
+                    }
+                })
+                .catch(err => console.error('Error polling logs:', err));
+        }
+
+        function startPollingLogs() {
+            lastLogLength = 0;
+            if (logPollingInterval) clearInterval(logPollingInterval);
+            logPollingInterval = setInterval(pollLogs, 1000);
+            pollLogs(); // Initial poll
+        }
+
+        function stopPollingLogs() {
+            if (logPollingInterval) {
+                clearInterval(logPollingInterval);
+                logPollingInterval = null;
+            }
         }
     </script>
 </body>
@@ -1016,6 +1251,42 @@ def tool_status(tool_id):
         'installed': is_installed(tool.get('install_path'))
     })
 
+@app.route('/logs')
+def get_logs():
+    """Get current log file contents"""
+    global running_process
+
+    content = ""
+    if os.path.exists(LOG_FILE):
+        try:
+            with open(LOG_FILE, 'r') as f:
+                content = f.read()
+        except:
+            pass
+
+    # Check if process is still running
+    process_running = False
+    if running_process is not None:
+        poll_result = running_process.poll()
+        process_running = poll_result is None
+        if not process_running:
+            running_process = None
+
+    return jsonify({
+        'content': content,
+        'running': process_running
+    })
+
+@app.route('/clear_logs', methods=['POST'])
+def clear_logs():
+    """Clear the log file"""
+    try:
+        with open(LOG_FILE, 'w') as f:
+            f.write('')
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 @app.route('/admin_action', methods=['POST'])
 def admin_action():
     """Handle admin install/update actions"""
@@ -1047,19 +1318,41 @@ def admin_action():
         })
 
     try:
-        # Run the install script
-        process = subprocess.Popen(
+        global running_process
+
+        # Clear log file first
+        with open(LOG_FILE, 'w') as f:
+            f.write(f"=== {action.capitalize()} {tool['name']} ===\n")
+            f.write(f"Script: {script_path}\n")
+            f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
+            f.write("=" * 40 + "\n\n")
+
+        # Open log file for appending
+        log_file = open(LOG_FILE, 'a')
+
+        # Run the install script with output to log file
+        running_process = subprocess.Popen(
             ['bash', script_path],
-            stdout=subprocess.PIPE,
+            stdout=log_file,
             stderr=subprocess.STDOUT,
-            cwd='/workspace'
+            cwd='/workspace',
+            bufsize=1  # Line buffered
         )
+
+        # Start a thread to close the log file when process completes
+        def wait_and_close():
+            running_process.wait()
+            log_file.write(f"\n=== Process completed with exit code: {running_process.returncode} ===\n")
+            log_file.close()
+
+        thread = threading.Thread(target=wait_and_close, daemon=True)
+        thread.start()
 
         # Return immediately - script runs in background
         return jsonify({
             'success': True,
             'tool_name': tool['name'],
-            'message': f'{action.capitalize()} started for {tool["name"]}. Check logs for progress.',
+            'message': f'{action.capitalize()} started for {tool["name"]}. Check terminal for progress.',
             'script': script_path
         })
 
@@ -1102,6 +1395,8 @@ def download_models():
         return jsonify({'success': False, 'message': 'No valid model scripts found'})
 
     try:
+        global running_process
+
         # Set environment variables
         env = os.environ.copy()
         if hf_token:
@@ -1110,19 +1405,44 @@ def download_models():
             env['CIVITAI_API_TOKEN'] = civit_token
         env['HF_HUB_ENABLE_HF_TRANSFER'] = '1'
 
-        # Run scripts sequentially in background
+        # Clear log file first
+        with open(LOG_FILE, 'w') as f:
+            f.write(f"=== Downloading Models: {', '.join(models)} ===\n")
+            f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
+            f.write("=" * 40 + "\n\n")
+
+        # Create a combined script to run all downloads sequentially
+        combined_script = "#!/bin/bash\nset -e\n"
         for script_path in scripts_to_run:
-            subprocess.Popen(
-                ['bash', script_path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                cwd='/workspace',
-                env=env
-            )
+            combined_script += f'\necho "\\n=== Running {os.path.basename(script_path)} ===\\n"\n'
+            combined_script += f'bash "{script_path}"\n'
+        combined_script += '\necho "\\n=== All downloads completed ===\\n"\n'
+
+        # Open log file for appending
+        log_file = open(LOG_FILE, 'a')
+
+        # Run the combined script
+        running_process = subprocess.Popen(
+            ['bash', '-c', combined_script],
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            cwd='/workspace',
+            env=env,
+            bufsize=1
+        )
+
+        # Start a thread to close the log file when process completes
+        def wait_and_close():
+            running_process.wait()
+            log_file.write(f"\n=== Process completed with exit code: {running_process.returncode} ===\n")
+            log_file.close()
+
+        thread = threading.Thread(target=wait_and_close, daemon=True)
+        thread.start()
 
         return jsonify({
             'success': True,
-            'message': f'Download started for: {", ".join(models)}',
+            'message': f'Download started for: {", ".join(models)}. Check terminal for progress.',
             'scripts': scripts_to_run
         })
 
