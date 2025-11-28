@@ -823,12 +823,12 @@ HTML_TEMPLATE = """
                 return;
             }
 
-            const btn = document.querySelector(`[data-tool="${toolId}"]`);
+            var btn = document.querySelector('[data-tool="' + toolId + '"]');
             if (btn.classList.contains('active')) {
                 // Tool is running - open it in new tab
-                const runpodId = '{{ runpod_id }}';
-                const tool = {{ tools | tojson }}[toolId];
-                const url = `https://${runpodId}-${tool.port}.proxy.runpod.net`;
+                var runpodId = '{{ runpod_id }}';
+                var tool = {{ tools | tojson }}[toolId];
+                var url = 'https://' + runpodId + '-' + tool.port + '.proxy.runpod.net';
                 window.open(url, '_blank');
             } else {
                 // Start the tool
@@ -845,7 +845,7 @@ HTML_TEMPLATE = """
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showStatus(`${data.tool_name} started`, 'success');
+                    showStatus(data.tool_name + ' started', 'success');
                     setTimeout(() => location.reload(), 1000);
                 } else {
                     showStatus(data.message, 'error');
@@ -862,7 +862,7 @@ HTML_TEMPLATE = """
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showStatus(`${data.tool_name} stopped`, 'success');
+                    showStatus(data.tool_name + ' stopped', 'success');
                     setTimeout(() => location.reload(), 1000);
                 } else {
                     showStatus(data.message, 'error');
@@ -871,14 +871,14 @@ HTML_TEMPLATE = """
         }
 
         function handleAdminToolClick(toolId) {
-            const btn = document.querySelector(`.admin-tool-btn[data-tool="${toolId}"]`);
+            var btn = document.querySelector('.admin-tool-btn[data-tool="' + toolId + '"]');
             const isUpdate = btn.classList.contains('update');
             const action = isUpdate ? 'update' : 'install';
 
             // Clear and show terminal
             clearTerminal();
             showTerminal();
-            appendToTerminal(`Starting ${action} for ${toolId}...\n`, 'info');
+            appendToTerminal('Starting ' + action + ' for ' + toolId + '...\\n', 'info');
 
             fetch('/admin_action', {
                 method: 'POST',
@@ -893,7 +893,7 @@ HTML_TEMPLATE = """
                     startPollingLogs();
                 } else {
                     showStatus(data.message, 'error');
-                    appendToTerminal(`Error: ${data.message}\n`, 'error');
+                    appendToTerminal('Error: ' + data.message + '\\n', 'error');
                 }
             });
         }
@@ -925,7 +925,7 @@ HTML_TEMPLATE = """
             // Clear and show terminal
             clearTerminal();
             showModelsTerminal();
-            appendToModelsTerminal(`Starting download for: ${selectedModels.join(', ')}...\n`, 'info');
+            appendToModelsTerminal('Starting download for: ' + selectedModels.join(', ') + '...\\n', 'info');
 
             fetch('/download_models', {
                 method: 'POST',
@@ -944,7 +944,7 @@ HTML_TEMPLATE = """
                     startPollingModelsLogs();
                 } else {
                     showModelsStatus(data.message, 'error');
-                    appendToModelsTerminal(`Error: ${data.message}\n`, 'error');
+                    appendToModelsTerminal('Error: ' + data.message + '\\n', 'error');
                 }
             });
         }
@@ -984,7 +984,7 @@ HTML_TEMPLATE = """
                         lastLogLength = data.content.length;
                     }
                     if (data.running === false && logPollingInterval) {
-                        appendToModelsTerminal('\n--- Download completed ---\n', 'success');
+                        appendToModelsTerminal('\\n--- Download completed ---\\n', 'success');
                         stopPollingLogs();
                     }
                 })
@@ -1001,7 +1001,7 @@ HTML_TEMPLATE = """
         function showStatus(message, type) {
             const el = document.getElementById('statusMessage');
             el.textContent = message;
-            el.className = `status-message ${type}`;
+            el.className = 'status-message ' + type;
             el.classList.remove('hidden');
             setTimeout(() => el.classList.add('hidden'), 3000);
         }
@@ -1009,7 +1009,7 @@ HTML_TEMPLATE = """
         function showModelsStatus(message, type) {
             const el = document.getElementById('modelsStatusMessage');
             el.textContent = message;
-            el.className = `status-message ${type}`;
+            el.className = 'status-message ' + type;
             el.classList.remove('hidden');
             setTimeout(() => el.classList.add('hidden'), 3000);
         }
@@ -1021,7 +1021,7 @@ HTML_TEMPLATE = """
                     const elapsed = Math.floor((new Date() - startTime) / 1000);
                     const minutes = Math.floor(elapsed / 60);
                     const seconds = elapsed % 60;
-                    timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    timer.textContent = minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
                 }, 1000);
             });
         }
@@ -1065,7 +1065,7 @@ HTML_TEMPLATE = """
                         lastLogLength = data.content.length;
                     }
                     if (data.running === false && logPollingInterval) {
-                        appendToTerminal('\n--- Process completed ---\n', 'success');
+                        appendToTerminal('\\n--- Process completed ---\\n', 'success');
                         stopPollingLogs();
                     }
                 })
