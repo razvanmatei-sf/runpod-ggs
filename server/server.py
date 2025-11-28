@@ -527,6 +527,7 @@ HTML_TEMPLATE = """
                     </button>
                     <input type="checkbox" class="admin-checkbox" data-tool="{{ tool_id }}">
                 </div>
+                {% endif %}
                 {% endfor %}
 
                 <button class="models-btn" onclick="showModelsPage()">
