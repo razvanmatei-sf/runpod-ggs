@@ -62,7 +62,7 @@ cd ..
 
 echo "Installing shared requirements..."
 
-pip install -r requirements.txt
+pip install -r /workspace/runpod-ggs/setup/comfy/requirements.txt
 
 apt update
 apt install -y psmisc
