@@ -57,10 +57,6 @@ def parse_users_from_script():
 # Load users and admins from script (single source of truth)
 USERS, ADMINS = parse_users_from_script()
 
-# Debug: print what was parsed
-print(f"[DEBUG] Parsed USERS: {USERS}")
-print(f"[DEBUG] Parsed ADMINS: {ADMINS}")
-
 def is_admin(user_name):
     """Check if user is an admin (case-insensitive)"""
     if not user_name:
@@ -794,14 +790,14 @@ HTML_TEMPLATE = """
             const userTools = document.getElementById('userTools');
             const adminTools = document.getElementById('adminTools');
 
-            // Debug: log current state
-            console.log('updateUI called:', { currentArtist, admins, adminMode });
-
-            // Show admin toggle only for admins (case-insensitive, trim whitespace)
-            const isAdmin = currentArtist && admins.some(admin =>
-                admin.trim().toLowerCase() === currentArtist.trim().toLowerCase()
-            );
-            console.log('isAdmin:', isAdmin);
+            // Check if current user is admin (with safety checks)
+            let isAdmin = false;
+            if (currentArtist && Array.isArray(admins) && admins.length > 0) {
+                const currentLower = currentArtist.trim().toLowerCase();
+                isAdmin = admins.some(function(admin) {
+                    return admin && admin.trim().toLowerCase() === currentLower;
+                });
+            }
 
             if (isAdmin) {
                 adminToggle.classList.add('visible');
