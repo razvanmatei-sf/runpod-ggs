@@ -812,7 +812,7 @@ def index():
         tools=TOOLS,
         current_artist=current_artist,
         admin_mode=admin_mode,
-        active_sessions={k: {"start_time": v["start_time"].isoformat()} for k, v in active_sessions.items()},
+        active_sessions={k: {"start_time": v["start_time"].isoformat() + "Z"} for k, v in active_sessions.items()},
         runpod_id=get_runpod_id(),
         is_installed=is_installed
     )
@@ -855,17 +855,58 @@ def start_session():
         return jsonify({'success': False, 'message': 'No artist selected'})
 
     tool = TOOLS[tool_id]
+    process = None
 
     # Create artist output directory if ComfyUI
     if tool_id == 'comfy-ui':
         output_dir = f"/workspace/ComfyUI/output/{artist}"
         os.makedirs(output_dir, exist_ok=True)
 
-    # Placeholder: In the future, this will actually start the tool
-    # For now, just track the session
+    # Start the actual service
+    try:
+        if tool_id == 'jupyter-lab':
+            # Kill any existing jupyter on the port
+            subprocess.run(['fuser', '-k', '8888/tcp'], capture_output=True)
+            time.sleep(1)
+            # Start JupyterLab
+            process = subprocess.Popen([
+                'jupyter', 'lab',
+                '--ip=0.0.0.0',
+                '--port=8888',
+                '--no-browser',
+                '--allow-root',
+                '--NotebookApp.token=',
+                '--NotebookApp.password='
+            ], cwd='/workspace')
+
+        elif tool_id == 'comfy-ui':
+            # Kill any existing comfyui on the port
+            subprocess.run(['fuser', '-k', '8188/tcp'], capture_output=True)
+            time.sleep(1)
+            # Start ComfyUI
+            env = os.environ.copy()
+            env['HF_HOME'] = '/workspace'
+            env['HF_HUB_ENABLE_HF_TRANSFER'] = '1'
+            artist_output_dir = f"/workspace/ComfyUI/output/{artist}"
+            process = subprocess.Popen([
+                '/workspace/ComfyUI/venv/bin/python',
+                'main.py',
+                '--listen', '0.0.0.0',
+                '--port', '8188',
+                '--output-directory', artist_output_dir
+            ], cwd='/workspace/ComfyUI', env=env)
+
+        # Other tools are placeholders for now
+        # elif tool_id == 'ai-toolkit':
+        # elif tool_id == 'lora-tool':
+        # elif tool_id == 'swarm-ui':
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Failed to start: {str(e)}'})
+
     active_sessions[tool_id] = {
-        "process": None,
-        "start_time": datetime.now(),
+        "process": process,
+        "start_time": datetime.utcnow(),
         "artist": artist
     }
 
