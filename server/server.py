@@ -57,6 +57,10 @@ def parse_users_from_script():
 # Load users and admins from script (single source of truth)
 USERS, ADMINS = parse_users_from_script()
 
+# Debug: print what was parsed
+print(f"[DEBUG] Parsed USERS: {USERS}")
+print(f"[DEBUG] Parsed ADMINS: {ADMINS}")
+
 def is_admin(user_name):
     """Check if user is an admin (case-insensitive)"""
     if not user_name:
@@ -1117,6 +1121,17 @@ def get_all_users():
             users.add(user)
 
     return sorted(list(users))
+
+@app.route('/debug')
+def debug():
+    """Debug endpoint to check parsed users and admins"""
+    return jsonify({
+        'USERS': USERS,
+        'ADMINS': ADMINS,
+        'REPO_DIR': REPO_DIR,
+        'current_artist': current_artist,
+        'is_current_admin': is_admin(current_artist) if current_artist else None
+    })
 
 @app.route('/')
 def index():
