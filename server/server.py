@@ -669,6 +669,18 @@ HTML_TEMPLATE = """
                 </button>
                 {% endif %}
                 {% endfor %}
+
+                <!-- Terminal output for user mode -->
+                <div class="terminal-container" id="userTerminalContainer">
+                    <div class="terminal-header">
+                        <span class="terminal-title">Starting...</span>
+                        <div class="terminal-controls">
+                            <button class="terminal-btn" onclick="clearUserTerminal()">Clear</button>
+                            <button class="terminal-btn" onclick="hideUserTerminal()">Hide</button>
+                        </div>
+                    </div>
+                    <div class="terminal" id="userTerminal"></div>
+                </div>
             </div>
 
             <!-- Admin Mode Tools -->
@@ -860,6 +872,14 @@ HTML_TEMPLATE = """
         }
 
         function startSession(toolId) {
+            var tools = {{ tools | tojson }};
+            var toolName = tools[toolId] ? tools[toolId].name : toolId;
+
+            // Show terminal with starting message
+            clearUserTerminal();
+            showUserTerminal(toolName);
+            appendToUserTerminal('Starting ' + toolName + '...\\n', 'info');
+
             fetch('/start_session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -868,9 +888,12 @@ HTML_TEMPLATE = """
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showStatus(data.tool_name + ' started', 'success');
-                    setTimeout(() => location.reload(), 1000);
+                    appendToUserTerminal(toolName + ' process started\\n', 'success');
+                    appendToUserTerminal('Waiting for service to be ready...\\n', 'info');
+                    // Start polling for ready status
+                    startPollingUserLogs(toolId, toolName);
                 } else {
+                    appendToUserTerminal('Error: ' + data.message + '\\n', 'error');
                     showStatus(data.message, 'error');
                 }
             });
@@ -1106,6 +1129,82 @@ HTML_TEMPLATE = """
             if (logPollingInterval) {
                 clearInterval(logPollingInterval);
                 logPollingInterval = null;
+            }
+        }
+
+        // User terminal functions
+        var userLogPollingInterval = null;
+
+        function showUserTerminal(toolName) {
+            var container = document.getElementById('userTerminalContainer');
+            var title = container.querySelector('.terminal-title');
+            title.textContent = 'Starting ' + (toolName || '...');
+            container.classList.add('visible');
+        }
+
+        function hideUserTerminal() {
+            document.getElementById('userTerminalContainer').classList.remove('visible');
+            stopPollingUserLogs();
+        }
+
+        function clearUserTerminal() {
+            document.getElementById('userTerminal').innerHTML = '';
+        }
+
+        function appendToUserTerminal(text, className) {
+            var terminal = document.getElementById('userTerminal');
+            var span = document.createElement('span');
+            if (className) span.className = className;
+            span.textContent = text;
+            terminal.appendChild(span);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function startPollingUserLogs(toolId, toolName) {
+            var tools = {{ tools | tojson }};
+            var tool = tools[toolId];
+            var port = tool ? tool.port : null;
+            var checkCount = 0;
+            var maxChecks = 60; // 60 seconds timeout
+
+            if (userLogPollingInterval) clearInterval(userLogPollingInterval);
+
+            userLogPollingInterval = setInterval(function() {
+                checkCount++;
+                appendToUserTerminal('.', 'info');
+
+                // Check if service is ready by polling tool_status
+                fetch('/tool_status/' + toolId)
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.running) {
+                            appendToUserTerminal('\\n' + toolName + ' is ready!\\n', 'success');
+                            stopPollingUserLogs();
+                            // Open the tool after a brief delay
+                            setTimeout(function() {
+                                var runpodId = '{{ runpod_id }}';
+                                var url = 'https://' + runpodId + '-' + port + '.proxy.runpod.net';
+                                appendToUserTerminal('Opening ' + url + '\\n', 'info');
+                                window.open(url, '_blank');
+                                // Reload page to update button states
+                                setTimeout(function() { location.reload(); }, 1000);
+                            }, 500);
+                        } else if (checkCount >= maxChecks) {
+                            appendToUserTerminal('\\nTimeout waiting for ' + toolName + ' to start.\\n', 'error');
+                            appendToUserTerminal('Try refreshing the page and clicking again.\\n', 'info');
+                            stopPollingUserLogs();
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('Error checking status:', err);
+                    });
+            }, 1000);
+        }
+
+        function stopPollingUserLogs() {
+            if (userLogPollingInterval) {
+                clearInterval(userLogPollingInterval);
+                userLogPollingInterval = null;
             }
         }
     </script>
