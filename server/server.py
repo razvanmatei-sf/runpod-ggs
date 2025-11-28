@@ -85,6 +85,39 @@ def get_setup_script(tool_id, script_type):
         return script_path
     return None
 
+def get_download_scripts():
+    """
+    Scan setup/download-models/ directory and return available download scripts.
+    Returns list of dicts with 'id', 'name', 'path' for each script.
+    """
+    scripts = []
+    download_dir = os.path.join(REPO_DIR, "setup", "download-models")
+
+    if not os.path.exists(download_dir):
+        return scripts
+
+    try:
+        for filename in sorted(os.listdir(download_dir)):
+            if filename.endswith('.sh'):
+                # Convert filename to display name
+                # e.g., "download_z_image_turbo.sh" -> "Z Image Turbo"
+                # e.g., "download_flux_models.sh" -> "Flux Models"
+                name = filename.replace('.sh', '')
+                name = name.replace('download_', '')
+                name = name.replace('_', ' ')
+                name = name.title()
+
+                scripts.append({
+                    'id': filename.replace('.sh', ''),
+                    'name': name,
+                    'filename': filename,
+                    'path': os.path.join(download_dir, filename)
+                })
+    except Exception as e:
+        print(f"Error scanning download scripts: {e}")
+
+    return scripts
+
 # Tool configuration
 TOOLS = {
     "ai-toolkit": {
@@ -708,22 +741,12 @@ HTML_TEMPLATE = """
             <input type="text" class="token-input" id="civitToken" placeholder="CivitAI Token">
 
             <div class="model-checkboxes">
+                {% for script in download_scripts %}
                 <div class="model-option">
-                    <input type="checkbox" class="model-checkbox" id="modelQwen" value="qwen">
-                    <label class="model-label" for="modelQwen">Qwen</label>
+                    <input type="checkbox" class="model-checkbox" id="model_{{ script.id }}" value="{{ script.filename }}">
+                    <label class="model-label" for="model_{{ script.id }}">{{ script.name }}</label>
                 </div>
-                <div class="model-option">
-                    <input type="checkbox" class="model-checkbox" id="modelFlux" value="flux">
-                    <label class="model-label" for="modelFlux">Flux</label>
-                </div>
-                <div class="model-option">
-                    <input type="checkbox" class="model-checkbox" id="modelKrita" value="krita">
-                    <label class="model-label" for="modelKrita">Krita Diffusion</label>
-                </div>
-                <div class="model-option">
-                    <input type="checkbox" class="model-checkbox" id="modelWan" value="wan">
-                    <label class="model-label" for="modelWan">Wan 2.2</label>
-                </div>
+                {% endfor %}
             </div>
 
             <button class="done-btn" onclick="downloadModels()">
@@ -1145,7 +1168,8 @@ def index():
         admin_mode=admin_mode,
         active_sessions={k: {"start_time": v["start_time"].isoformat() + "Z"} for k, v in active_sessions.items()},
         runpod_id=get_runpod_id(),
-        is_installed=is_installed
+        is_installed=is_installed,
+        download_scripts=get_download_scripts()
     )
 
 @app.route('/set_artist', methods=['POST'])
@@ -1410,27 +1434,27 @@ def download_models():
         return jsonify({'success': False, 'message': 'Unauthorized'})
 
     data = request.get_json()
-    models = data.get('models', [])
+    scripts = data.get('models', [])  # Now contains script filenames like "download_flux_models.sh"
     hf_token = data.get('hf_token', '')
     civit_token = data.get('civit_token', '')
 
-    if not models:
+    if not scripts:
         return jsonify({'success': False, 'message': 'No models selected'})
 
-    # Map model names to script names
-    script_map = {
-        'qwen': 'download_qwen_all.sh',
-        'flux': 'download_flux_models.sh',
-        'krita': 'krita_ai_diffusion_installer.sh',
-        'wan': 'download_wan_video.sh',
-    }
-
+    download_dir = os.path.join(REPO_DIR, 'setup', 'download-models')
     scripts_to_run = []
-    for model in models:
-        if model in script_map:
-            script_path = os.path.join(REPO_DIR, 'setup', 'download-models', script_map[model])
-            if os.path.exists(script_path):
-                scripts_to_run.append(script_path)
+    script_names = []
+
+    for script_filename in scripts:
+        # Security: ensure filename doesn't contain path traversal
+        if '/' in script_filename or '\\' in script_filename or '..' in script_filename:
+            continue
+        script_path = os.path.join(download_dir, script_filename)
+        if os.path.exists(script_path) and script_filename.endswith('.sh'):
+            scripts_to_run.append(script_path)
+            # Clean name for display
+            name = script_filename.replace('.sh', '').replace('download_', '').replace('_', ' ').title()
+            script_names.append(name)
 
     if not scripts_to_run:
         return jsonify({'success': False, 'message': 'No valid model scripts found'})
@@ -1442,13 +1466,14 @@ def download_models():
         env = os.environ.copy()
         if hf_token:
             env['HUGGING_FACE_HUB_TOKEN'] = hf_token
+            env['HF_TOKEN'] = hf_token
         if civit_token:
             env['CIVITAI_API_TOKEN'] = civit_token
         env['HF_HUB_ENABLE_HF_TRANSFER'] = '1'
 
         # Clear log file first
         with open(LOG_FILE, 'w') as f:
-            f.write(f"=== Downloading Models: {', '.join(models)} ===\n")
+            f.write(f"=== Downloading Models: {', '.join(script_names)} ===\n")
             f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
             f.write("=" * 40 + "\n\n")
 
@@ -1483,7 +1508,7 @@ def download_models():
 
         return jsonify({
             'success': True,
-            'message': f'Download started for: {", ".join(models)}. Check terminal for progress.',
+            'message': f'Download started for: {", ".join(script_names)}. Check terminal for progress.',
             'scripts': scripts_to_run
         })
 
