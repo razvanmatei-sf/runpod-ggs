@@ -1,4 +1,4 @@
-# Artist ComfyUI Docker Image
+# ComfyStudio Docker Image
 # Base image with PyTorch 2.2.0, Python 3.10, CUDA 12.1.1
 FROM runpod/pytorch:2.2.0-py3.10-cuda12.1.1-devel-ubuntu22.04
 
@@ -14,20 +14,22 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Flask for the artist name server (ignore existing packages to avoid conflicts)
+# Install Flask for the server (ignore existing packages to avoid conflicts)
 RUN pip install --ignore-installed --no-deps Flask blinker click itsdangerous werkzeug
 
 # Set environment variables
 ENV PYTHONPATH=/workspace
-ENV COMFYUI_PATH=/workspace/Comfy    UI
+ENV COMFYUI_PATH=/workspace/ComfyUI
 ENV HF_HOME=/workspace
 ENV HF_HUB_ENABLE_HF_TRANSFER=1
 
-# Copy startup scripts
-COPY start_artist_session.sh /usr/local/bin/start_artist_session.sh
-COPY artist_name_server.py /usr/local/bin/artist_name_server.py
-RUN chmod +x /usr/local/bin/start_artist_session.sh
-RUN chmod +x /usr/local/bin/artist_name_server.py
+# Copy startup scripts and config
+COPY start_server.sh /usr/local/bin/start_server.sh
+COPY server.py /usr/local/bin/server.py
+COPY artist_names.sh /usr/local/bin/artist_names.sh
+RUN chmod +x /usr/local/bin/start_server.sh
+RUN chmod +x /usr/local/bin/server.py
+RUN chmod +x /usr/local/bin/artist_names.sh
 
 # Create jupyter config directory
 RUN mkdir -p /root/.jupyter
@@ -44,19 +46,25 @@ RUN jupyter lab --generate-config && \
 
 # Expose ports
 EXPOSE 8080
-EXPOSE 8888
+EXPOSE 7860
+EXPOSE 7861
+EXPOSE 7801
 EXPOSE 8188
+EXPOSE 8888
 
 # Labels for RunPod - using multiple formats for compatibility
-LABEL runpod.port.8080="Artist Login"
-LABEL runpod.port.8888="Jupyter Lab"
+LABEL runpod.port.8080="ComfyStudio"
+LABEL runpod.port.7860="AI-Toolkit"
+LABEL runpod.port.7861="LoRA-Tool"
+LABEL runpod.port.7801="SwarmUI"
 LABEL runpod.port.8188="ComfyUI"
+LABEL runpod.port.8888="JupyterLab"
 
 # Alternative label formats for RunPod
-LABEL runpod.ports="8080/http:Artist Login,8888/http:Jupyter Lab,8188/http:ComfyUI"
+LABEL runpod.ports="8080/http:ComfyStudio,7860/http:AI-Toolkit,7861/http:LoRA-Tool,7801/http:SwarmUI,8188/http:ComfyUI,8888/http:JupyterLab"
 
 # Standard Docker labels
-LABEL org.opencontainers.image.ports="8080,8888,8188"
+LABEL org.opencontainers.image.ports="8080,7860,7861,7801,8188,8888"
 
-# Default command - can be overridden with artist name
-CMD ["/usr/local/bin/start_artist_session.sh"]
+# Default command
+CMD ["/usr/local/bin/start_server.sh"]
