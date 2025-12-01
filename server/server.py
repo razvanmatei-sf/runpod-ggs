@@ -15,6 +15,10 @@ app = Flask(__name__)
 # Repository path (set by start_server.sh)
 REPO_DIR = os.environ.get("REPO_DIR", "/workspace/runpod-ggs")
 
+# User process log file for streaming tool startup logs
+USER_LOG_FILE = "/tmp/comfystudio_user_log.txt"
+user_process_running = False
+
 
 def parse_users_from_script():
     """
@@ -1090,8 +1094,8 @@ HTML_TEMPLATE = r"""
             .then(data => {
                 if (data.success) {
                     appendToUserTerminal(toolName + ' process started\\n', 'success');
-                    appendToUserTerminal('Waiting for service to be ready...\\n', 'info');
-                    // Start polling for ready status
+                    appendToUserTerminal('Waiting for service to be ready...\\n\\n', 'info');
+                    // Start polling for ready status and logs
                     startPollingUserLogs(toolId, toolName);
                 } else {
                     appendToUserTerminal('Error: ' + data.message + '\\n', 'error');
@@ -1659,13 +1663,35 @@ HTML_TEMPLATE = r"""
             var tool = tools[toolId];
             var port = tool ? tool.port : null;
             var checkCount = 0;
-            var maxChecks = 60; // 60 seconds timeout
+            var maxChecks = 120; // 120 seconds timeout (2 minutes)
+            var lastLogLength = 0;
+            var processExited = false;
 
             if (userLogPollingInterval) clearInterval(userLogPollingInterval);
 
             userLogPollingInterval = setInterval(function() {
                 checkCount++;
-                appendToUserTerminal('.', 'info');
+
+                // Fetch actual logs from the process
+                fetch('/user_logs')
+                    .then(function(response) { return response.json(); })
+                    .then(function(logData) {
+                        // Show new log content
+                        if (logData.content && logData.content.length > lastLogLength) {
+                            var newContent = logData.content.substring(lastLogLength);
+                            appendToUserTerminal(newContent);
+                            lastLogLength = logData.content.length;
+
+                            // Auto-scroll
+                            var terminal = document.getElementById('userTerminal');
+                            terminal.scrollTop = terminal.scrollHeight;
+                        }
+
+                        // Check if process exited (look for exit message in logs)
+                        if (logData.content && logData.content.includes('=== Process exited with code:')) {
+                            processExited = true;
+                        }
+                    });
 
                 // Check if service is ready by polling tool_status
                 fetch('/tool_status/' + toolId)
@@ -1683,9 +1709,13 @@ HTML_TEMPLATE = r"""
                                 // Reload page to update button states
                                 setTimeout(function() { location.reload(); }, 1000);
                             }, 500);
+                        } else if (processExited) {
+                            appendToUserTerminal('\\n' + toolName + ' process exited unexpectedly.\\n', 'error');
+                            appendToUserTerminal('Check the logs above for errors.\\n', 'info');
+                            stopPollingUserLogs();
                         } else if (checkCount >= maxChecks) {
                             appendToUserTerminal('\\nTimeout waiting for ' + toolName + ' to start.\\n', 'error');
-                            appendToUserTerminal('Try refreshing the page and clicking again.\\n', 'info');
+                            appendToUserTerminal('Check the logs above for errors.\\n', 'info');
                             stopPollingUserLogs();
                         }
                     })
@@ -1873,13 +1903,37 @@ def start_session():
             # Kill any existing ai-toolkit on the port
             subprocess.run(["fuser", "-k", "8675/tcp"], capture_output=True)
             time.sleep(1)
-            # Start AI-Toolkit using start script
+            # Start AI-Toolkit using start script with log capture
             start_script = get_setup_script("ai-toolkit", "start")
             if start_script:
+                # Clear and open log file
+                global user_process_running
+                user_process_running = True
+                with open(USER_LOG_FILE, "w") as f:
+                    f.write(f"=== Starting AI-Toolkit ===\n")
+                    f.write(f"Script: {start_script}\n")
+                    f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
+                    f.write("=" * 40 + "\n\n")
+
+                log_file = open(USER_LOG_FILE, "a")
                 process = subprocess.Popen(
                     ["bash", start_script],
                     cwd="/workspace/ai-toolkit",
+                    stdout=log_file,
+                    stderr=log_file,
                 )
+
+                # Monitor process in background thread
+                def monitor_process():
+                    global user_process_running
+                    process.wait()
+                    with open(USER_LOG_FILE, "a") as f:
+                        f.write(
+                            f"\n=== Process exited with code: {process.returncode} ===\n"
+                        )
+                    user_process_running = False
+
+                threading.Thread(target=monitor_process, daemon=True).start()
             else:
                 raise Exception("AI-Toolkit start script not found")
 
@@ -1887,13 +1941,37 @@ def start_session():
             # Kill any existing swarm-ui on the port
             subprocess.run(["fuser", "-k", "7861/tcp"], capture_output=True)
             time.sleep(1)
-            # Start SwarmUI using start script
+            # Start SwarmUI using start script with log capture
             start_script = get_setup_script("swarm-ui", "start")
             if start_script:
+                # Clear and open log file
+                global user_process_running
+                user_process_running = True
+                with open(USER_LOG_FILE, "w") as f:
+                    f.write(f"=== Starting SwarmUI ===\n")
+                    f.write(f"Script: {start_script}\n")
+                    f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
+                    f.write("=" * 40 + "\n\n")
+
+                log_file = open(USER_LOG_FILE, "a")
                 process = subprocess.Popen(
                     ["bash", start_script],
                     cwd="/workspace/SwarmUI",
+                    stdout=log_file,
+                    stderr=log_file,
                 )
+
+                # Monitor process in background thread
+                def monitor_process():
+                    global user_process_running
+                    process.wait()
+                    with open(USER_LOG_FILE, "a") as f:
+                        f.write(
+                            f"\n=== Process exited with code: {process.returncode} ===\n"
+                        )
+                    user_process_running = False
+
+                threading.Thread(target=monitor_process, daemon=True).start()
             else:
                 raise Exception("SwarmUI start script not found")
 
@@ -1960,6 +2038,20 @@ def stop_session():
             "message": f"{tool['name']} stopped",
         }
     )
+
+
+@app.route("/user_logs")
+def user_logs():
+    """Get user process logs for streaming to terminal"""
+    try:
+        if os.path.exists(USER_LOG_FILE):
+            with open(USER_LOG_FILE, "r") as f:
+                content = f.read()
+        else:
+            content = ""
+        return jsonify({"content": content, "running": user_process_running})
+    except Exception as e:
+        return jsonify({"content": f"Error reading logs: {str(e)}", "running": False})
 
 
 @app.route("/tool_status/<tool_id>")
