@@ -1707,9 +1707,10 @@ HTML_TEMPLATE = r"""
                                 var runpodId = '{{ runpod_id | e }}';
                                 var url = 'https://' + runpodId + '-' + port + '.proxy.runpod.net';
                                 appendToUserTerminal('Opening ' + url + '\\n', 'info');
-                                appendToUserTerminal('\\nRefresh the page to update button states.\\n', 'info');
                                 window.open(url, '_blank');
-                                // Don't auto-reload - let user see logs
+                                // Auto-reload after 5 seconds to update button states
+                                appendToUserTerminal('\\nPage will refresh in 5 seconds...\\n', 'info');
+                                setTimeout(function() { location.reload(); }, 5000);
                             }, 3000);
                         } else if (processExited) {
                             appendToUserTerminal('\\n' + toolName + ' process exited unexpectedly.\\n', 'error');
