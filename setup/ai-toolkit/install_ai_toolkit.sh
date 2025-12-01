@@ -13,8 +13,18 @@ apt-get update
 apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
+    wget \
+    python3-dev \
+    python3-setuptools \
+    python3-wheel \
+    python3-venv \
+    ffmpeg \
+    tmux \
+    htop \
+    nvtop \
     python3-opencv \
     openssh-client \
+    openssh-server \
     openssl \
     rsync \
     unzip \
