@@ -37,8 +37,9 @@ pip install --upgrade pip
 echo "Using PyTorch from base image:"
 python -c "import torch; print(f'PyTorch {torch.__version__}, CUDA {torch.version.cuda}')"
 
-echo "Installing ComfyUI requirements..."
-pip install -r requirements.txt
+echo "Installing ComfyUI requirements (excluding torch to keep base image version)..."
+# Filter out torch packages from requirements.txt to prevent reinstalling/upgrading
+grep -v "^torch" requirements.txt | pip install -r /dev/stdin
 
 # Remove default xformers if installed (we'll install the correct version)
 pip uninstall xformers --yes || true
