@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Installing AI-Toolkit (following official installation method)..."
+echo "Installing AI-Toolkit with CUDA 12.8 support for RTX 50-series..."
 
 cd /workspace
 
@@ -21,13 +21,21 @@ python3 -m venv venv
 # Activate virtual environment
 source venv/bin/activate
 
-# Install PyTorch first (official method - CUDA 12.6 stable, has all wheels)
-echo "Installing PyTorch 2.7.0 with CUDA 12.6..."
-pip3 install --no-cache-dir torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu126
+# Install PyTorch nightly with CUDA 12.8 support (required for RTX 50-series)
+echo "Installing PyTorch nightly with CUDA 12.8 (for RTX 50-series support)..."
+pip3 install --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
 
-# Install requirements (uses pre-built wheels, much faster)
+# Install requirements
 echo "Installing AI-Toolkit requirements..."
 pip3 install --no-cache-dir -r requirements.txt
+
+# Reinstall PyTorch nightly to ensure correct version
+echo "Ensuring PyTorch nightly with CUDA 12.8..."
+pip3 install --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force-reinstall
+
+# Install specific setuptools version for compatibility
+echo "Installing setuptools 69.5.1..."
+pip3 install --no-cache-dir setuptools==69.5.1
 
 # Build UI
 echo "Building AI-Toolkit UI..."
@@ -52,5 +60,5 @@ npm run update_db
 cd /workspace/ai-toolkit
 
 echo "AI-Toolkit installation complete!"
-echo "PyTorch 2.7.0 with CUDA 12.6 installed"
+echo "PyTorch nightly with CUDA 12.8 installed (RTX 50-series compatible)"
 echo "UI built and ready to use"
