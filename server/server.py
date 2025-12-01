@@ -761,8 +761,7 @@ HTML_TEMPLATE = r"""
                 <div class="tool-row">
                     <button class="tool-btn {% if tool_id in active_sessions %}active{% endif %}"
                             data-tool="{{ tool_id }}"
-                            onclick="handleToolClick('{{ tool_id }}')"
-                            {% if tool_id in active_sessions %}disabled{% endif %}>
+                            onclick="handleToolClick('{{ tool_id }}')">
                         <span class="tool-info">
                             <span class="tool-name">{{ tool.name }}</span>
                             {% if tool_id in active_sessions %}
