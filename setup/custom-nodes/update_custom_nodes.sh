@@ -3,42 +3,9 @@
 # ComfyUI Custom Nodes Update Script
 set -e
 
-# Start timer
-START_TIME=$(date +%s)
-
-# Ensure PATH includes UV and other tools
-export PATH="/root/.cargo/bin:$PATH"
-export PATH="/root/.local/bin:$PATH"
-export PATH="/usr/local/bin:$PATH"
-
-# Suppress UV hardlink warning (can't use hardlinks across filesystems)
-export UV_LINK_MODE=copy
-
 echo "========================================================"
 echo "Updating ComfyUI Custom Nodes"
 echo "========================================================"
-
-# Check if UV is installed, install if not
-if ! command -v uv &> /dev/null && [ ! -f "/root/.cargo/bin/uv" ] && [ ! -f "/root/.local/bin/uv" ]; then
-    echo "UV not found, installing..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    export PATH="/root/.local/bin:$PATH"
-    export PATH="/root/.cargo/bin:$PATH"
-fi
-
-# Determine UV path
-if [ -f "/root/.cargo/bin/uv" ]; then
-    UV_CMD="/root/.cargo/bin/uv"
-elif [ -f "/root/.local/bin/uv" ]; then
-    UV_CMD="/root/.local/bin/uv"
-elif command -v uv &> /dev/null; then
-    UV_CMD="uv"
-else
-    echo "ERROR: UV installation failed"
-    exit 1
-fi
-
-echo "Using UV at: $UV_CMD"
 
 # Get the repo directory from environment or use default
 REPO_DIR="${REPO_DIR:-/workspace/runpod-ggs}"
@@ -57,8 +24,8 @@ if [ ! -d "$CUSTOM_NODES_DIR" ]; then
     exit 1
 fi
 
-# Use ComfyUI virtual environment with UV (no activation needed)
-PYTHON_BIN="/workspace/ComfyUI/venv/bin/python"
+# Activate ComfyUI virtual environment
+source /workspace/ComfyUI/venv/bin/activate
 
 # Read nodes from config and update them
 echo "Reading custom nodes from: $NODES_CONFIG"
@@ -98,8 +65,8 @@ while IFS='|' read -r display_name repo_url || [ -n "$display_name" ]; do
 
     # Check for and update dependencies
     if [ -f "requirements.txt" ]; then
-        echo "Updating Python requirements for $display_name with UV..."
-        $UV_CMD pip install --python "$PYTHON_BIN" -r requirements.txt
+        echo "Updating Python requirements for $display_name..."
+        pip install -r requirements.txt
         echo "Requirements updated for $display_name"
     elif [ -f "install.py" ]; then
         echo "Running install.py for $display_name..."
@@ -118,15 +85,7 @@ while IFS='|' read -r display_name repo_url || [ -n "$display_name" ]; do
 
 done < "$NODES_CONFIG"
 
-# Calculate elapsed time
-END_TIME=$(date +%s)
-ELAPSED=$((END_TIME - START_TIME))
-MINUTES=$((ELAPSED / 60))
-SECONDS=$((ELAPSED % 60))
-
 echo ""
 echo "========================================================"
 echo "Custom nodes update complete!"
-echo "========================================================"
-echo "⏱️  Total update time: ${MINUTES}m ${SECONDS}s"
 echo "========================================================"

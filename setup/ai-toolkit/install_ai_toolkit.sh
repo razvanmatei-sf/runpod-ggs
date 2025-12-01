@@ -1,105 +1,65 @@
 #!/bin/bash
+
+# AI-Toolkit Installation Script
 set -e
 
-# Start timer
-START_TIME=$(date +%s)
-
-# Ensure PATH includes UV and other tools
-export PATH="/root/.cargo/bin:$PATH"
-export PATH="/root/.local/bin:$PATH"
-export PATH="/usr/local/bin:$PATH"
-
-# Suppress UV hardlink warning (can't use hardlinks across filesystems)
-export UV_LINK_MODE=copy
-
-echo "Installing AI-Toolkit with CUDA 12.8 support for RTX 50-series..."
-
-# Check if UV is installed, install if not
-if ! command -v uv &> /dev/null && [ ! -f "/root/.cargo/bin/uv" ] && [ ! -f "/root/.local/bin/uv" ]; then
-    echo "UV not found, installing..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    export PATH="/root/.local/bin:$PATH"
-    export PATH="/root/.cargo/bin:$PATH"
-fi
-
-# Determine UV path
-if [ -f "/root/.cargo/bin/uv" ]; then
-    UV_CMD="/root/.cargo/bin/uv"
-elif [ -f "/root/.local/bin/uv" ]; then
-    UV_CMD="/root/.local/bin/uv"
-elif command -v uv &> /dev/null; then
-    UV_CMD="uv"
-else
-    echo "ERROR: UV installation failed"
-    exit 1
-fi
-
-echo "Using UV at: $UV_CMD"
+echo "========================================================"
+echo "AI-Toolkit Installation (CUDA 12.8 for RTX 50-series)"
+echo "========================================================"
 
 cd /workspace
 
-# Clone the repository
+# Remove existing installation if present
 if [ -d "ai-toolkit" ]; then
-    echo "AI-Toolkit directory already exists, removing..."
+    echo "Removing existing AI-Toolkit installation..."
     rm -rf ai-toolkit
 fi
 
+echo "Cloning AI-Toolkit..."
 git clone https://github.com/ostris/ai-toolkit.git
-cd ai-toolkit
 
-# Create virtual environment with UV
-echo "Creating virtual environment with UV..."
-$UV_CMD venv venv
+cd /workspace/ai-toolkit
 
-# Install PyTorch nightly with CUDA 12.8 support using UV (required for RTX 50-series)
-echo "Installing PyTorch nightly with CUDA 12.8 using UV (10-100x faster)..."
-$UV_CMD pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+echo "Creating virtual environment..."
+python3 -m venv venv
 
-# Install requirements with UV
-echo "Installing AI-Toolkit requirements with UV..."
-$UV_CMD pip install --python venv/bin/python --no-cache-dir -r requirements.txt
+# Activate venv
+source venv/bin/activate
 
-# Reinstall PyTorch to ensure correct version (force)
-echo "Ensuring PyTorch nightly with CUDA 12.8..."
-$UV_CMD pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force-reinstall
+echo "Upgrading pip..."
+pip install --upgrade pip
 
-# Install specific setuptools version for compatibility
-echo "Installing setuptools 69.5.1..."
-$UV_CMD pip install --python venv/bin/python --no-cache-dir setuptools==69.5.1
+echo "Installing PyTorch nightly with CUDA 12.8..."
+pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+
+echo "Installing AI-Toolkit requirements..."
+pip install -r requirements.txt
+
+echo "Reinstalling PyTorch nightly (ensuring correct version)..."
+pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force-reinstall
+
+echo "Installing setuptools..."
+pip install setuptools==69.5.1
 
 # Build UI
 echo "Building AI-Toolkit UI..."
 cd ui
 
-# Install Node.js dependencies
 echo "Installing Node.js dependencies..."
 npm install
 
-# Generate Prisma client
 echo "Generating Prisma client..."
 npx prisma generate
 
-# Build the UI
 echo "Building UI assets..."
 npm run build
 
-# Update database
 echo "Updating database..."
 npm run update_db
 
 cd /workspace/ai-toolkit
 
-# Calculate elapsed time
-END_TIME=$(date +%s)
-ELAPSED=$((END_TIME - START_TIME))
-MINUTES=$((ELAPSED / 60))
-SECONDS=$((ELAPSED % 60))
-
 echo ""
 echo "========================================================"
-echo "AI-Toolkit installation complete!"
-echo "PyTorch nightly with CUDA 12.8 installed (RTX 50-series compatible)"
-echo "UI built and ready to use"
-echo "========================================================"
-echo "⏱️  Total installation time: ${MINUTES}m ${SECONDS}s"
+echo "AI-Toolkit Installation complete!"
 echo "========================================================"
