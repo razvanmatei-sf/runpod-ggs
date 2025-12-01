@@ -20,7 +20,7 @@ cd ai-toolkit
 
 # Create virtual environment with UV
 echo "Creating virtual environment with UV..."
-uv venv venv
+/root/.cargo/bin/uv venv venv
 
 # Install PyTorch nightly with CUDA 12.8 support using UV (required for RTX 50-series)
 echo "Installing PyTorch nightly with CUDA 12.8 using UV (10-100x faster)..."
@@ -32,7 +32,7 @@ echo "Installing AI-Toolkit requirements with UV..."
 
 # Reinstall PyTorch to ensure correct version (force)
 echo "Ensuring PyTorch nightly with CUDA 12.8..."
-/root/.cargo/bin/uv pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force
+/root/.cargo/bin/uv pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force-reinstall
 
 # Install specific setuptools version for compatibility
 echo "Installing setuptools 69.5.1..."
