@@ -2,6 +2,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Verbosity Control
+
+- Start with maximum conciseness by default
+- Keep verbosity to absolute minimum, especially when coding
+- Only expand if explicitly asked for more detail
+- Give the shortest possible accurate answer
+- No preambles, introductions, or conclusions
+- No phrases like "Here's the answer:", "To solve this:", "In summary:"
+- No repeating information from previous responses
+- Answer only what was directly asked
+- Use single words or short phrases when sufficient
+- For code: provide only the code without explanations unless asked
+- Never apologize or explain brevity
+
 ## Project Overview
 
 ComfyStudio is a containerized web application for running ComfyUI on RunPod cloud infrastructure. It provides a multi-user collaborative environment with per-user isolated output directories, admin mode for installations, session management via Flask, and Jupyter Lab integration.
