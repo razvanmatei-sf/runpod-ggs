@@ -1877,7 +1877,16 @@ def start_session():
             # Kill any existing jupyter on the port
             subprocess.run(["fuser", "-k", "8888/tcp"], capture_output=True)
             time.sleep(1)
-            # Start JupyterLab
+
+            # Setup log capture
+            global user_process_running
+            user_process_running = True
+            with open(USER_LOG_FILE, "w") as f:
+                f.write(f"=== Starting JupyterLab ===\n")
+                f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
+                f.write("=" * 40 + "\n\n")
+
+            log_file = open(USER_LOG_FILE, "a")
             process = subprocess.Popen(
                 [
                     "jupyter",
@@ -1890,13 +1899,35 @@ def start_session():
                     "--NotebookApp.password=",
                 ],
                 cwd="/workspace",
+                stdout=log_file,
+                stderr=log_file,
             )
+
+            def monitor_process():
+                global user_process_running
+                process.wait()
+                with open(USER_LOG_FILE, "a") as f:
+                    f.write(
+                        f"\n=== Process exited with code: {process.returncode} ===\n"
+                    )
+                user_process_running = False
+
+            threading.Thread(target=monitor_process, daemon=True).start()
 
         elif tool_id == "comfy-ui":
             # Kill any existing comfyui on the port
             subprocess.run(["fuser", "-k", "8188/tcp"], capture_output=True)
             time.sleep(1)
-            # Start ComfyUI
+
+            # Setup log capture
+            global user_process_running
+            user_process_running = True
+            with open(USER_LOG_FILE, "w") as f:
+                f.write(f"=== Starting ComfyUI ===\n")
+                f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
+                f.write("=" * 40 + "\n\n")
+
+            log_file = open(USER_LOG_FILE, "a")
             env = os.environ.copy()
             env["HF_HOME"] = "/workspace"
             env["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
@@ -1914,7 +1945,20 @@ def start_session():
                 ],
                 cwd="/workspace/ComfyUI",
                 env=env,
+                stdout=log_file,
+                stderr=log_file,
             )
+
+            def monitor_process():
+                global user_process_running
+                process.wait()
+                with open(USER_LOG_FILE, "a") as f:
+                    f.write(
+                        f"\n=== Process exited with code: {process.returncode} ===\n"
+                    )
+                user_process_running = False
+
+            threading.Thread(target=monitor_process, daemon=True).start()
 
         elif tool_id == "ai-toolkit":
             # Kill any existing ai-toolkit on the port
