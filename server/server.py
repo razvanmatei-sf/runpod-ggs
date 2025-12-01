@@ -1115,6 +1115,17 @@ HTML_TEMPLATE = """
                 btn.textContent = action.charAt(0).toUpperCase() + action.slice(1) + 'ing...';
             }
 
+            // Get tool name from tools object
+            var tools = {{ tools | tojson | safe }};
+            var toolName = tools[toolId] ? tools[toolId].name : toolId;
+
+            // Update terminal title based on action
+            var terminalTitle = document.querySelector('#terminalContainer .terminal-title');
+            if (terminalTitle) {
+                var actionText = action.charAt(0).toUpperCase() + action.slice(1) + 'ing';
+                terminalTitle.textContent = actionText + ' ' + toolName;
+            }
+
             // Clear and show terminal
             clearTerminal();
             showTerminal();
@@ -1176,6 +1187,12 @@ HTML_TEMPLATE = """
         function showCustomNodesPage() {
             document.getElementById('mainPage').classList.add('hidden');
             document.getElementById('customNodesPage').classList.add('visible');
+
+            // Reset custom nodes terminal title
+            var terminalTitle = document.querySelector('#customNodesTerminalContainer .terminal-title');
+            if (terminalTitle) {
+                terminalTitle.textContent = 'Installation Progress';
+            }
         }
 
         function hideCustomNodesPage() {
@@ -1184,6 +1201,12 @@ HTML_TEMPLATE = """
         }
 
         function installCustomNodes() {
+            // Update terminal title
+            var terminalTitle = document.querySelector('#customNodesTerminalContainer .terminal-title');
+            if (terminalTitle) {
+                terminalTitle.textContent = 'Installing Custom Nodes';
+            }
+
             clearCustomNodesTerminal();
             showCustomNodesTerminal();
             appendToCustomNodesTerminal('Starting custom nodes installation...\\n', 'info');
@@ -1206,6 +1229,12 @@ HTML_TEMPLATE = """
         }
 
         function updateCustomNodes() {
+            // Update terminal title
+            var terminalTitle = document.querySelector('#customNodesTerminalContainer .terminal-title');
+            if (terminalTitle) {
+                terminalTitle.textContent = 'Updating Custom Nodes';
+            }
+
             clearCustomNodesTerminal();
             showCustomNodesTerminal();
             appendToCustomNodesTerminal('Starting custom nodes update...\\n', 'info');
@@ -1310,8 +1339,14 @@ HTML_TEMPLATE = """
                 return;
             }
 
+            // Update terminal title
+            var terminalTitle = document.querySelector('#modelsTerminalContainer .terminal-title');
+            if (terminalTitle) {
+                terminalTitle.textContent = 'Downloading Models';
+            }
+
             // Clear and show terminal
-            clearTerminal();
+            clearModelsTerminal();
             showModelsTerminal();
             appendToModelsTerminal('Starting download for: ' + selectedModels.join(', ') + '...\\n', 'info');
 
