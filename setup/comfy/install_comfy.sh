@@ -40,64 +40,74 @@ fi
 
 echo "Using UV at: $UV_CMD"
 
+# Define absolute paths
+COMFY_DIR="/workspace/ComfyUI"
+VENV_PYTHON="$COMFY_DIR/venv/bin/python"
+CUSTOM_NODES_DIR="$COMFY_DIR/custom_nodes"
+
 cd /workspace
 
+# Remove existing ComfyUI if present (fresh install)
+if [ -d "$COMFY_DIR" ]; then
+    echo "Removing existing ComfyUI installation..."
+    rm -rf "$COMFY_DIR"
+fi
+
+echo "Cloning ComfyUI..."
 git clone --depth 1 https://github.com/comfyanonymous/ComfyUI
 
-cd /workspace/ComfyUI
-
-git reset --hard
-git stash
-git pull --force
+cd "$COMFY_DIR"
 
 echo "Creating virtual environment with UV..."
 $UV_CMD venv venv
 
 echo "Installing PyTorch with UV (10-100x faster than pip)..."
-$UV_CMD pip install --python venv/bin/python torch==2.8.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu129
+$UV_CMD pip install --python "$VENV_PYTHON" torch==2.8.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu129
 
-cd custom_nodes
+# Create custom_nodes directory
+mkdir -p "$CUSTOM_NODES_DIR"
+cd "$CUSTOM_NODES_DIR"
 
 # ComfyUI-Manager
+echo "Installing ComfyUI-Manager..."
+if [ -d "ComfyUI-Manager" ]; then
+    rm -rf ComfyUI-Manager
+fi
 git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Manager
-cd ComfyUI-Manager
-git stash
-git reset --hard
-git pull --force
-$UV_CMD pip install --python ../venv/bin/python -r requirements.txt
-cd ..
+if [ -f "ComfyUI-Manager/requirements.txt" ]; then
+    $UV_CMD pip install --python "$VENV_PYTHON" -r ComfyUI-Manager/requirements.txt
+fi
 
 # RES4LYF
+echo "Installing RES4LYF..."
+if [ -d "RES4LYF" ]; then
+    rm -rf RES4LYF
+fi
 git clone --depth 1 https://github.com/ClownsharkBatwing/RES4LYF
-cd RES4LYF
-git stash
-git reset --hard
-git pull --force
-$UV_CMD pip install --python ../venv/bin/python -r requirements.txt
-cd ..
+if [ -f "RES4LYF/requirements.txt" ]; then
+    $UV_CMD pip install --python "$VENV_PYTHON" -r RES4LYF/requirements.txt
+fi
 
-cd ..
+cd "$COMFY_DIR"
 
 echo "Installing ComfyUI requirements..."
+$UV_CMD pip install --python "$VENV_PYTHON" -r requirements.txt
 
-$UV_CMD pip install --python venv/bin/python -r requirements.txt
-
-$UV_CMD pip uninstall --python venv/bin/python xformers --yes
+# Remove default xformers if installed
+$UV_CMD pip uninstall --python "$VENV_PYTHON" xformers --yes || true
 
 echo "Installing optimized wheels with UV..."
-$UV_CMD pip install --python venv/bin/python https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/flash_attn-2.8.2-cp310-cp310-linux_x86_64.whl
-$UV_CMD pip install --python venv/bin/python https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/xformers-0.0.33+c159edc0.d20250906-cp39-abi3-linux_x86_64.whl
-$UV_CMD pip install --python venv/bin/python https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/sageattention-2.2.0.post4-cp39-abi3-linux_x86_64.whl
-$UV_CMD pip install --python venv/bin/python https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/insightface-0.7.3-cp310-cp310-linux_x86_64.whl
-
-cd ..
+$UV_CMD pip install --python "$VENV_PYTHON" https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/flash_attn-2.8.2-cp310-cp310-linux_x86_64.whl
+$UV_CMD pip install --python "$VENV_PYTHON" https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/xformers-0.0.33+c159edc0.d20250906-cp39-abi3-linux_x86_64.whl
+$UV_CMD pip install --python "$VENV_PYTHON" https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/sageattention-2.2.0.post4-cp39-abi3-linux_x86_64.whl
+$UV_CMD pip install --python "$VENV_PYTHON" https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/insightface-0.7.3-cp310-cp310-linux_x86_64.whl
 
 echo "Installing shared requirements..."
+$UV_CMD pip install --python "$VENV_PYTHON" -r /workspace/runpod-ggs/setup/comfy/requirements.txt
 
-$UV_CMD pip install --python venv/bin/python -r /workspace/runpod-ggs/setup/comfy/requirements.txt
-
-apt update
-apt install -y psmisc
+# Install psmisc for fuser command
+apt-get update
+apt-get install -y psmisc
 
 # Calculate elapsed time
 END_TIME=$(date +%s)
@@ -107,7 +117,7 @@ SECONDS=$((ELAPSED % 60))
 
 echo ""
 echo "========================================================"
-echo "Installation complete!"
+echo "ComfyUI Installation complete!"
 echo "========================================================"
 echo "⏱️  Total installation time: ${MINUTES}m ${SECONDS}s"
 echo "========================================================"
