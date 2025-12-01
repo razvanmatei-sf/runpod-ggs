@@ -67,8 +67,8 @@ while IFS='|' read -r display_name repo_url || [ -n "$display_name" ]; do
     cd "$node_path"
 
     if [ -f "requirements.txt" ]; then
-        echo "Installing Python requirements for $display_name..."
-        pip install -r requirements.txt
+        echo "Installing Python requirements for $display_name with UV..."
+        uv pip install -r requirements.txt
         echo "Requirements installed for $display_name"
     elif [ -f "install.py" ]; then
         echo "Running install.py for $display_name..."

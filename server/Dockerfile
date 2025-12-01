@@ -14,6 +14,10 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
+# Install UV package installer (blazingly fast pip replacement)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:$PATH"
+
 # Install Flask for the server (ignore existing packages to avoid conflicts)
 RUN pip install --ignore-installed --no-deps Flask blinker click itsdangerous werkzeug
 

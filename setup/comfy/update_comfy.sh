@@ -16,8 +16,8 @@ git pull --force
 echo "Activating virtual environment..."
 source venv/bin/activate
 
-echo "Updating Python dependencies..."
-pip install -r requirements.txt
+echo "Updating Python dependencies with UV..."
+uv pip install -r requirements.txt
 
 echo "========================================================"
 echo "Update complete!"
