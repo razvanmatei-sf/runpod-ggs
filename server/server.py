@@ -669,6 +669,17 @@ HTML_TEMPLATE = r"""
             margin-left: 10px;
         }
 
+        .tool-status {
+            color: #888;
+            font-size: 11px;
+            font-style: italic;
+        }
+
+        .tool-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .terminal-controls {
             display: flex;
             gap: 8px;
@@ -759,12 +770,16 @@ HTML_TEMPLATE = r"""
                 {% for tool_id, tool in tools.items() %}
                 {% if not tool.get('user_only', False) or not admin_mode %}
                 <div class="tool-row">
-                    <button class="tool-btn {% if tool_id in active_sessions %}active{% endif %}"
+                    {% set installed = is_installed(tool.get('install_path')) %}
+                    <button class="tool-btn {% if tool_id in active_sessions %}active{% endif %}{% if not installed %} disabled{% endif %}"
                             data-tool="{{ tool_id }}"
-                            onclick="handleToolClick('{{ tool_id }}')">
+                            onclick="handleToolClick('{{ tool_id }}')"
+                            {% if not installed %}disabled{% endif %}>
                         <span class="tool-info">
                             <span class="tool-name">{{ tool.name }}</span>
-                            {% if tool_id in active_sessions %}
+                            {% if not installed %}
+                            <span class="tool-status">Not Installed</span>
+                            {% elif tool_id in active_sessions %}
                             <span class="tool-timer" data-start="{{ active_sessions[tool_id].start_time }}">00:00</span>
                             {% endif %}
                         </span>
