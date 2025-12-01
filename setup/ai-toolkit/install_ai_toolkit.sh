@@ -3,20 +3,24 @@ set -e
 
 # Ensure PATH includes UV and other tools
 export PATH="/root/.cargo/bin:$PATH"
+export PATH="/root/.local/bin:$PATH"
 export PATH="/usr/local/bin:$PATH"
 
 echo "Installing AI-Toolkit with CUDA 12.8 support for RTX 50-series..."
 
 # Check if UV is installed, install if not
-if ! command -v uv &> /dev/null && [ ! -f "/root/.cargo/bin/uv" ]; then
+if ! command -v uv &> /dev/null && [ ! -f "/root/.cargo/bin/uv" ] && [ ! -f "/root/.local/bin/uv" ]; then
     echo "UV not found, installing..."
     curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="/root/.local/bin:$PATH"
     export PATH="/root/.cargo/bin:$PATH"
 fi
 
 # Determine UV path
 if [ -f "/root/.cargo/bin/uv" ]; then
     UV_CMD="/root/.cargo/bin/uv"
+elif [ -f "/root/.local/bin/uv" ]; then
+    UV_CMD="/root/.local/bin/uv"
 elif command -v uv &> /dev/null; then
     UV_CMD="uv"
 else
