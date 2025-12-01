@@ -36,7 +36,7 @@ if [ -d "SwarmUI" ]; then
     git pull
     cd ..
 else
-    git clone --depth 1 https://github.com/mcmonkeyprojects/SwarmUI
+    git clone https://github.com/mcmonkeyprojects/SwarmUI
 fi
 
 # Clone ComfyUI extensions into SwarmUI
@@ -46,13 +46,13 @@ mkdir -p SwarmUI/src/BuiltinExtensions/ComfyUIBackend/DLNodes
 if [ -d "SwarmUI/src/BuiltinExtensions/ComfyUIBackend/DLNodes/ComfyUI-Frame-Interpolation" ]; then
     echo "ComfyUI-Frame-Interpolation already exists, skipping..."
 else
-    git clone --depth 1 https://github.com/Fannovel16/ComfyUI-Frame-Interpolation SwarmUI/src/BuiltinExtensions/ComfyUIBackend/DLNodes/ComfyUI-Frame-Interpolation
+    git clone https://github.com/Fannovel16/ComfyUI-Frame-Interpolation SwarmUI/src/BuiltinExtensions/ComfyUIBackend/DLNodes/ComfyUI-Frame-Interpolation
 fi
 
 if [ -d "SwarmUI/src/BuiltinExtensions/ComfyUIBackend/DLNodes/ComfyUI-TeaCache" ]; then
     echo "ComfyUI-TeaCache already exists, skipping..."
 else
-    git clone --depth 1 https://github.com/welltop-cn/ComfyUI-TeaCache SwarmUI/src/BuiltinExtensions/ComfyUIBackend/DLNodes/ComfyUI-TeaCache
+    git clone https://github.com/welltop-cn/ComfyUI-TeaCache SwarmUI/src/BuiltinExtensions/ComfyUIBackend/DLNodes/ComfyUI-TeaCache
 fi
 
 # Enter SwarmUI directory

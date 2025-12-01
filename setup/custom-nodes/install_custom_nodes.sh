@@ -59,7 +59,7 @@ while IFS='|' read -r display_name repo_url || [ -n "$display_name" ]; do
     else
         echo "Cloning $repo_name..."
         cd "$CUSTOM_NODES_DIR"
-        git clone --depth 1 "$repo_url"
+        git clone "$repo_url"
         echo "Clone completed: $repo_name"
     fi
 
