@@ -1705,9 +1705,9 @@ HTML_TEMPLATE = r"""
                                 var runpodId = '{{ runpod_id | e }}';
                                 var url = 'https://' + runpodId + '-' + port + '.proxy.runpod.net';
                                 appendToUserTerminal('Opening ' + url + '\\n', 'info');
+                                appendToUserTerminal('\\nRefresh the page to update button states.\\n', 'info');
                                 window.open(url, '_blank');
-                                // Reload page to update button states
-                                setTimeout(function() { location.reload(); }, 1000);
+                                // Don't auto-reload - let user see logs
                             }, 500);
                         } else if (processExited) {
                             appendToUserTerminal('\\n' + toolName + ' process exited unexpectedly.\\n', 'error');
