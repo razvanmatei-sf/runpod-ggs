@@ -1879,7 +1879,6 @@ def start_session():
             time.sleep(1)
 
             # Setup log capture
-            global user_process_running
             user_process_running = True
             with open(USER_LOG_FILE, "w") as f:
                 f.write(f"=== Starting JupyterLab ===\n")
@@ -1920,7 +1919,6 @@ def start_session():
             time.sleep(1)
 
             # Setup log capture
-            global user_process_running
             user_process_running = True
             with open(USER_LOG_FILE, "w") as f:
                 f.write(f"=== Starting ComfyUI ===\n")
