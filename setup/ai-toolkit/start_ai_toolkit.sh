@@ -9,6 +9,10 @@ cd /workspace/ai-toolkit/ui
 echo "Installing/updating Node.js dependencies..."
 npm install
 
+# Generate Prisma client
+echo "Generating Prisma client..."
+npx prisma generate
+
 # Ensure the build exists
 if [ ! -d ".next" ]; then
     echo "Building UI..."
