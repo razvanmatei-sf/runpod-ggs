@@ -124,18 +124,29 @@ Example: `setup/comfy/install_comfy.sh`, `setup/comfy/start_comfy.sh`
 
 ## JavaScript Template Gotchas
 
+**CRITICAL**: The HTML_TEMPLATE must be a RAW STRING to prevent Python from interpreting backslashes!
+
+```python
+# CORRECT - Use raw string
+HTML_TEMPLATE = r"""
+<!DOCTYPE html>
+...
+```
+
 **IMPORTANT**: When writing JavaScript in the Python template string (`HTML_TEMPLATE`):
 
-1. **Escape newlines**: Use `\\n` instead of `\n` in JavaScript strings
+1. **Use raw string (r""")**: This prevents Python from interpreting `\\n` as `\n` (which would become a literal newline in HTML, breaking JavaScript strings)
    ```python
-   # WRONG - will break JavaScript
-   appendToTerminal('Done\n', 'success');
-
-   # CORRECT
+   # With r""", you can use \\n which stays as \\n in the rendered HTML
    appendToTerminal('Done\\n', 'success');
    ```
 
-2. **Avoid template literals**: Use string concatenation instead of backticks
+2. **Escape Jinja variables**: Use `| e` filter for variables in JavaScript strings
+   ```python
+   var runpodId = '{{ runpod_id | e }}';
+   ```
+
+3. **Avoid template literals**: Use string concatenation instead of backticks
    ```python
    # WRONG - can cause issues
    const url = `https://${host}`;
@@ -144,17 +155,19 @@ Example: `setup/comfy/install_comfy.sh`, `setup/comfy/start_comfy.sh`
    var url = 'https://' + host;
    ```
 
-3. **Use Jinja safely**: For JSON data, use `{{ var | tojson | safe }}`
+4. **Use Jinja safely**: For JSON data, use `{{ var | tojson | safe }}`
 
-4. **CSS visibility for toggle**: Use `visibility: hidden/visible` instead of `display: none/flex` for elements that need layout space reserved
+5. **CSS visibility for toggle**: Use `visibility: hidden/visible` instead of `display: none/flex` for elements that need layout space reserved
 
 ## Tech Stack
 
 - Python 3.10
 - Flask 3.1.x (with blinker, click, itsdangerous, werkzeug)
-- PyTorch 2.2.0
-- CUDA 12.1.1
+- PyTorch 2.2.0 (base image), PyTorch nightly cu128 (AI-Toolkit venv)
+- CUDA 12.1.1 (base image) / CUDA 12.8 (for RTX 50-series in AI-Toolkit)
 - Ubuntu 22.04
+- UV package manager (10-100x faster than pip)
+- Node.js 23 (for AI-Toolkit UI)
 - HuggingFace Hub with transfer optimization
 - Jupyter Lab (no auth, root allowed)
 
@@ -205,3 +218,71 @@ Visit `/debug` endpoint to see:
 - Current artist/admin state
 
 Check browser console (F12) for JavaScript errors.
+
+## AI-Toolkit Installation
+
+### Requirements
+- RTX 50-series GPUs require PyTorch nightly with CUDA 12.8
+- Installation takes 10-20 minutes (PyTorch, dependencies, UI build)
+- Network volume at `/workspace` persists installations across pod restarts
+
+### Installation Method
+AI-Toolkit uses UV package manager for faster installation:
+- Creates venv at `/workspace/ai-toolkit/venv/`
+- Installs PyTorch nightly with CUDA 12.8 (RTX 50-series support)
+- Installs all requirements.txt dependencies
+- Builds UI with npm (includes Prisma client generation)
+
+### Common Issues
+
+**Install fails from admin panel but works in terminal:**
+- Cause: Flask subprocess doesn't inherit full PATH
+- Solution: Install script uses full paths (`/root/.cargo/bin/uv`)
+- Fix: Export PATH at start of script
+
+**Slow numpy/sympy installation:**
+- Some packages build from source with PyTorch nightly cu128
+- UV is still faster than pip even when building from source
+- Trade-off necessary for RTX 50-series support
+
+**Terminal closes before showing errors:**
+- Fixed: Removed auto-reload after installation
+- Terminal now stays open to show full error output
+- User can copy logs and manually refresh when ready
+
+### Starting AI-Toolkit
+AI-Toolkit start script:
+1. Checks for node_modules and installs if missing
+2. Generates Prisma client if needed
+3. Runs `npm run start` (starts worker + Next.js UI via concurrently)
+4. UI available on port 8675
+
+### Official AI-Toolkit Reference
+- GitHub: https://github.com/ostris/ai-toolkit
+- Their Docker uses similar approach but pre-builds everything
+- Our approach: Install on-demand, updates via git pull
+
+## Current Issues
+
+### AI-Toolkit Install from Admin Panel
+**Status**: Installation works in JupyterLab terminal but may fail from admin panel
+**Symptoms**: Process starts but fails silently or with errors
+**Debug**: Terminal now stays open to show errors (auto-reload removed)
+**Next Steps**: Check logs in admin terminal for specific error messages
+
+### Tools Status
+- ✅ ComfyUI: Working with UV installer
+- ✅ JupyterLab: Built-in, always available
+- ✅ LoRA-Tool: Bundled, runs from repo
+- 🔧 AI-Toolkit: Installation works in terminal, troubleshooting admin panel install
+- ❓ SwarmUI: Not yet tested
+
+## Latest Session Changes (Dec 2025)
+
+1. **Fixed JavaScript template escaping** - Changed `HTML_TEMPLATE = """` to `HTML_TEMPLATE = r"""` (raw string)
+2. **AI-Toolkit CUDA 12.8.1** - Upgraded to PyTorch nightly for RTX 50-series support
+3. **UV package manager** - All tool installations use UV for 10-100x speed improvement
+4. **UI improvements** - Always show tool name, timer indicates running status
+5. **Terminal persistence** - Removed auto-reload to keep errors visible
+6. **Path fixes** - Use full paths in install scripts for Flask subprocess compatibility
+7. **Consolidated README** - Single comprehensive README.md for repository page
