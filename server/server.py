@@ -1834,7 +1834,7 @@ def set_admin_mode():
 
 @app.route("/start_session", methods=["POST"])
 def start_session():
-    global active_sessions
+    global active_sessions, user_process_running
 
     data = request.get_json()
     tool_id = data.get("tool_id")
@@ -1907,7 +1907,6 @@ def start_session():
             start_script = get_setup_script("ai-toolkit", "start")
             if start_script:
                 # Clear and open log file
-                global user_process_running
                 user_process_running = True
                 with open(USER_LOG_FILE, "w") as f:
                     f.write(f"=== Starting AI-Toolkit ===\n")
@@ -1945,7 +1944,6 @@ def start_session():
             start_script = get_setup_script("swarm-ui", "start")
             if start_script:
                 # Clear and open log file
-                global user_process_running
                 user_process_running = True
                 with open(USER_LOG_FILE, "w") as f:
                     f.write(f"=== Starting SwarmUI ===\n")
