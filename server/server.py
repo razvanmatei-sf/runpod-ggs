@@ -359,7 +359,14 @@ HTML_TEMPLATE = """
             gap: 10px;
         }
 
+        .tool-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
         .tool-btn {
+            flex: 1;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -384,12 +391,17 @@ HTML_TEMPLATE = """
             background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
             border-color: #22c55e;
             color: white;
+            cursor: not-allowed;
         }
 
-        .tool-btn.disabled {
-            opacity: 0.5;
+        .tool-btn:disabled {
             cursor: not-allowed;
-            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .tool-btn.active:hover {
+            transform: none;
+            box-shadow: none;
         }
 
         .tool-info {
@@ -401,16 +413,27 @@ HTML_TEMPLATE = """
         .tool-timer {
             font-size: 13px;
             opacity: 0.9;
+            font-family: monospace;
         }
 
-        .tool-stop {
-            width: 24px;
-            height: 24px;
-            border-radius: 6px;
-            background: rgba(255,255,255,0.3);
-            border: none;
-            color: white;
+        .tool-stop-btn {
+            padding: 10px 20px;
+            border: 2px solid #ef4444;
+            border-radius: 10px;
+            background: white;
+            color: #ef4444;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tool-stop-btn:hover {
+            background: #ef4444;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -722,19 +745,22 @@ HTML_TEMPLATE = """
             <div class="tools-list" id="userTools">
                 {% for tool_id, tool in tools.items() %}
                 {% if not tool.get('user_only', False) or not admin_mode %}
-                <button class="tool-btn {% if tool_id in active_sessions %}active{% endif %}"
-                        data-tool="{{ tool_id }}"
-                        onclick="handleToolClick('{{ tool_id }}')">
-                    <span class="tool-info">
-                        <span class="tool-name">{{ tool.name }}</span>
-                        {% if tool_id in active_sessions %}
-                        <span class="tool-timer" data-start="{{ active_sessions[tool_id].start_time }}">00:00</span>
-                        {% endif %}
-                    </span>
+                <div class="tool-row">
+                    <button class="tool-btn {% if tool_id in active_sessions %}active{% endif %}"
+                            data-tool="{{ tool_id }}"
+                            onclick="handleToolClick('{{ tool_id }}')"
+                            {% if tool_id in active_sessions %}disabled{% endif %}>
+                        <span class="tool-info">
+                            <span class="tool-name">{{ tool.name }}</span>
+                            {% if tool_id in active_sessions %}
+                            <span class="tool-timer" data-start="{{ active_sessions[tool_id].start_time }}">00:00</span>
+                            {% endif %}
+                        </span>
+                    </button>
                     {% if tool_id in active_sessions %}
-                    <button class="tool-stop" onclick="event.stopPropagation(); stopSession('{{ tool_id }}')">✕</button>
+                    <button class="tool-stop-btn" onclick="stopToolSession('{{ tool_id }}')">Stop</button>
                     {% endif %}
-                </button>
+                </div>
                 {% endif %}
                 {% endfor %}
 
@@ -761,12 +787,14 @@ HTML_TEMPLATE = """
                         {% if is_installed(tool.install_path) %}
                         <!-- Tool is installed - show Reinstall and Update buttons -->
                         <button class="admin-tool-btn"
+                                id="reinstall-btn-{{ tool_id }}"
                                 data-tool="{{ tool_id }}"
                                 data-action="reinstall"
                                 onclick="handleAdminAction('{{ tool_id }}', 'reinstall')">
                             Reinstall {{ tool.name }}
                         </button>
                         <button class="admin-tool-btn update"
+                                id="update-btn-{{ tool_id }}"
                                 data-tool="{{ tool_id }}"
                                 data-action="update"
                                 onclick="handleAdminAction('{{ tool_id }}', 'update')">
@@ -775,6 +803,7 @@ HTML_TEMPLATE = """
                         {% else %}
                         <!-- Tool is not installed - show Install button -->
                         <button class="admin-tool-btn"
+                                id="install-btn-{{ tool_id }}"
                                 data-tool="{{ tool_id }}"
                                 data-action="install"
                                 onclick="handleAdminAction('{{ tool_id }}', 'install')">
@@ -1070,6 +1099,14 @@ HTML_TEMPLATE = """
         }
 
         function handleAdminAction(toolId, action) {
+            // Get the button and disable it
+            var btnId = action + '-btn-' + toolId;
+            var btn = document.getElementById(btnId);
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = action.charAt(0).toUpperCase() + action.slice(1) + 'ing...';
+            }
+
             // Clear and show terminal
             clearTerminal();
             showTerminal();
@@ -1089,6 +1126,31 @@ HTML_TEMPLATE = """
                 } else {
                     showStatus(data.message, 'error');
                     appendToTerminal('Error: ' + data.message + '\\n', 'error');
+                    // Re-enable button on error
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = action.charAt(0).toUpperCase() + action.slice(1) + ' ' + toolId;
+                    }
+                }
+            });
+        }
+
+        function stopToolSession(toolId) {
+            fetch('/stop_session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tool_id: toolId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                    // Reload page to update UI
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showStatus(data.message, 'error');
                 }
             });
         }
@@ -1423,8 +1485,12 @@ HTML_TEMPLATE = """
                         lastLogLength = data.content.length;
                     }
                     if (data.running === false && logPollingInterval) {
-                        appendToTerminal('\\n--- Process completed ---\\n', 'success');
+                        appendToTerminal('\n--- Process completed ---\n', 'success');
                         stopPollingLogs();
+                        // Reload page to update button states after installation
+                        setTimeout(function() {
+                            location.reload();
+                        }, 2000);
                     }
                 })
                 .catch(err => console.error('Error polling logs:', err));
