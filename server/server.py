@@ -1668,8 +1668,8 @@ HTML_TEMPLATE = r"""
             var terminal = document.getElementById('userTerminal');
             var span = document.createElement('span');
             if (className) span.className = className;
-            // Handle both actual newlines and literal backslash-n from raw Python strings
-            span.innerHTML = text.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+            // Handle literal backslash-n from raw Python strings (\\\\n becomes \\n in JS regex)
+            span.innerHTML = text.replace(/\\\\n/g, '<br>').replace(/\n/g, '<br>');
             terminal.appendChild(span);
             terminal.scrollTop = terminal.scrollHeight;
         }
