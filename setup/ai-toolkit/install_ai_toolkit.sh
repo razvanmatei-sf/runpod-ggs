@@ -14,28 +14,25 @@ fi
 git clone https://github.com/ostris/ai-toolkit.git
 cd ai-toolkit
 
-# Create virtual environment with standard Python venv
-echo "Creating virtual environment..."
-python3 -m venv venv
+# Create virtual environment with UV
+echo "Creating virtual environment with UV..."
+uv venv venv
 
-# Activate virtual environment
-source venv/bin/activate
+# Install PyTorch nightly with CUDA 12.8 support using UV (required for RTX 50-series)
+echo "Installing PyTorch nightly with CUDA 12.8 using UV (10-100x faster)..."
+uv pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
 
-# Install PyTorch nightly with CUDA 12.8 support (required for RTX 50-series)
-echo "Installing PyTorch nightly with CUDA 12.8 (for RTX 50-series support)..."
-pip3 install --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+# Install requirements with UV
+echo "Installing AI-Toolkit requirements with UV..."
+uv pip install --python venv/bin/python --no-cache-dir -r requirements.txt
 
-# Install requirements
-echo "Installing AI-Toolkit requirements..."
-pip3 install --no-cache-dir -r requirements.txt
-
-# Reinstall PyTorch nightly to ensure correct version
+# Reinstall PyTorch to ensure correct version (force)
 echo "Ensuring PyTorch nightly with CUDA 12.8..."
-pip3 install --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force-reinstall
+uv pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force
 
 # Install specific setuptools version for compatibility
 echo "Installing setuptools 69.5.1..."
-pip3 install --no-cache-dir setuptools==69.5.1
+uv pip install --python venv/bin/python --no-cache-dir setuptools==69.5.1
 
 # Build UI
 echo "Building AI-Toolkit UI..."
