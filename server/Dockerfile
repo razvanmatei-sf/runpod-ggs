@@ -12,7 +12,19 @@ RUN apt-get update && apt-get install -y \
     curl \
     psmisc \
     python3-pip \
+    ffmpeg \
+    htop \
+    nvtop \
+    tmux \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 23
+RUN curl -sL https://deb.nodesource.com/setup_23.x -o /tmp/nodesource_setup.sh && \
+    bash /tmp/nodesource_setup.sh && \
+    apt-get update && \
+    apt-get install -y nodejs && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install UV package installer (blazingly fast pip replacement)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -26,6 +38,7 @@ ENV PYTHONPATH=/workspace
 ENV COMFYUI_PATH=/workspace/ComfyUI
 ENV HF_HOME=/workspace
 ENV HF_HUB_ENABLE_HF_TRANSFER=1
+ENV TORCH_CUDA_ARCH_LIST="8.0 8.6 8.9 9.0 10.0 12.0"
 
 # Copy startup scripts and config
 COPY start_server.sh /usr/local/bin/start_server.sh
