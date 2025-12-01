@@ -1530,10 +1530,7 @@ HTML_TEMPLATE = r"""
                     if (data.running === false && logPollingInterval) {
                         appendToTerminal('\n--- Process completed ---\n', 'success');
                         stopPollingLogs();
-                        // Reload page to update button states after installation
-                        setTimeout(function() {
-                            location.reload();
-                        }, 2000);
+                        // Don't auto-reload - let user see any errors
                     }
                 })
                 .catch(err => console.error('Error polling logs:', err));
