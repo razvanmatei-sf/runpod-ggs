@@ -5,6 +5,9 @@
 # Python 3.12, PyTorch 2.8.0, CUDA 12.8.1
 set -e
 
+# Add CUDA library paths for cusparseLt and other nvidia libs
+export LD_LIBRARY_PATH=/usr/local/lib/python3.12/dist-packages/nvidia/cusparselt/lib:/usr/local/lib/python3.12/dist-packages/nvidia/nvjitlink/lib:${LD_LIBRARY_PATH}
+
 echo "========================================================"
 echo "ComfyUI Installation"
 echo "========================================================"
@@ -36,10 +39,20 @@ pip install --upgrade pip
 # PyTorch 2.8.0 cu128 is inherited from base image, no need to reinstall
 echo "Using PyTorch from base image:"
 python -c "import torch; print(f'PyTorch {torch.__version__}, CUDA {torch.version.cuda}')"
+echo "PyTorch location:"
+python -c "import torch; print(torch.__file__)"
 
 echo "Installing ComfyUI requirements (excluding torch to keep base image version)..."
 # Filter out torch packages from requirements.txt to prevent reinstalling/upgrading
-grep -v "^torch" requirements.txt | pip install -r /dev/stdin
+# Also filter torchsde as it can pull in torch dependencies
+grep -v "^torch" requirements.txt | pip install --no-deps -r /dev/stdin
+
+# Install torchsde separately without letting it reinstall torch
+pip install torchsde --no-deps
+pip install trampoline brownian_lib
+
+echo "Verifying PyTorch is still from base image:"
+python -c "import torch; print(f'PyTorch {torch.__version__} from {torch.__file__}')"
 
 # Remove default xformers if installed (we'll install the correct version)
 pip uninstall xformers --yes || true
