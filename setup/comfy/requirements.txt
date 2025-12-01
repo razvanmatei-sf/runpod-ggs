@@ -1,6 +1,5 @@
 pydantic_settings
 alembic
-torchsde
 spandrel
 kornia
 av

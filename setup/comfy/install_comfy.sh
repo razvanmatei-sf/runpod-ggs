@@ -44,12 +44,7 @@ python -c "import torch; print(torch.__file__)"
 
 echo "Installing ComfyUI requirements (excluding torch to keep base image version)..."
 # Filter out torch packages from requirements.txt to prevent reinstalling/upgrading
-# Also filter torchsde as it can pull in torch dependencies
-grep -v "^torch" requirements.txt | pip install --no-deps -r /dev/stdin
-
-# Install torchsde separately without letting it reinstall torch
-pip install torchsde --no-deps
-pip install trampoline brownian_lib
+grep -v "^torch" requirements.txt | pip install -r /dev/stdin
 
 echo "Verifying PyTorch is still from base image:"
 python -c "import torch; print(f'PyTorch {torch.__version__} from {torch.__file__}')"
@@ -73,6 +68,9 @@ pip install https://huggingface.co/Kijai/PrecompiledWheels/resolve/main/sageatte
 
 echo "Installing shared requirements..."
 pip install -r /workspace/runpod-ggs/setup/comfy/requirements.txt
+
+echo "Final PyTorch verification:"
+python -c "import torch; print(f'PyTorch {torch.__version__} from {torch.__file__}')"
 
 # Install custom nodes
 cd custom_nodes
