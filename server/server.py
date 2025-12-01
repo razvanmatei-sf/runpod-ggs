@@ -751,7 +751,7 @@ HTML_TEMPLATE = r"""
                             onclick="handleToolClick('{{ tool_id }}')"
                             {% if tool_id in active_sessions %}disabled{% endif %}>
                         <span class="tool-info">
-                            <span class="tool-name">{% if tool_id in active_sessions %}Running{% else %}{{ tool.name }}{% endif %}</span>
+                            <span class="tool-name">{{ tool.name }}</span>
                             {% if tool_id in active_sessions %}
                             <span class="tool-timer" data-start="{{ active_sessions[tool_id].start_time }}">00:00</span>
                             {% endif %}
