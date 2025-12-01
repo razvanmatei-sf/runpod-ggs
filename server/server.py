@@ -746,7 +746,6 @@ HTML_TEMPLATE = """
                         <div class="terminal-controls">
                             <button class="terminal-btn" onclick="copyUserTerminal()">Copy</button>
                             <button class="terminal-btn" onclick="clearUserTerminal()">Clear</button>
-                            <button class="terminal-btn" onclick="hideUserTerminal()">Hide</button>
                         </div>
                     </div>
                     <div class="terminal" id="userTerminal"></div>
@@ -808,7 +807,6 @@ HTML_TEMPLATE = """
                         <div class="terminal-controls">
                             <button class="terminal-btn" onclick="copyTerminal()">Copy</button>
                             <button class="terminal-btn" onclick="clearTerminal()">Clear</button>
-                            <button class="terminal-btn" onclick="hideTerminal()">Hide</button>
                         </div>
                     </div>
                     <div class="terminal" id="terminal"></div>
@@ -867,7 +865,6 @@ HTML_TEMPLATE = """
                     <div class="terminal-controls">
                         <button class="terminal-btn" onclick="copyModelsTerminal()">Copy</button>
                         <button class="terminal-btn" onclick="clearModelsTerminal()">Clear</button>
-                        <button class="terminal-btn" onclick="hideModelsTerminal()">Hide</button>
                     </div>
                 </div>
                 <div class="terminal" id="modelsTerminal"></div>
@@ -930,7 +927,6 @@ HTML_TEMPLATE = """
                     <div class="terminal-controls">
                         <button class="terminal-btn" onclick="copyCustomNodesTerminal()">Copy</button>
                         <button class="terminal-btn" onclick="clearCustomNodesTerminal()">Clear</button>
-                        <button class="terminal-btn" onclick="hideCustomNodesTerminal()">Hide</button>
                     </div>
                 </div>
                 <div class="terminal" id="customNodesTerminal"></div>
@@ -1175,10 +1171,6 @@ HTML_TEMPLATE = """
             document.getElementById('customNodesTerminalContainer').style.display = 'block';
         }
 
-        function hideCustomNodesTerminal() {
-            document.getElementById('customNodesTerminalContainer').style.display = 'none';
-        }
-
         function minimizeCustomNodesTerminal() {
             var terminal = document.getElementById('customNodesTerminal');
             if (terminal.style.display === 'none') {
@@ -1278,11 +1270,6 @@ HTML_TEMPLATE = """
         // Models page terminal functions
         function showModelsTerminal() {
             document.getElementById('modelsTerminalContainer').classList.add('visible');
-        }
-
-        function hideModelsTerminal() {
-            document.getElementById('modelsTerminalContainer').classList.remove('visible');
-            stopPollingLogs();
         }
 
         function minimizeModelsTerminal() {
@@ -1401,9 +1388,13 @@ HTML_TEMPLATE = """
             document.getElementById('terminalContainer').classList.add('visible');
         }
 
-        function hideTerminal() {
-            document.getElementById('terminalContainer').classList.remove('visible');
-            stopPollingLogs();
+        function minimizeTerminal() {
+            var terminal = document.getElementById('terminal');
+            if (terminal.style.display === 'none') {
+                terminal.style.display = 'block';
+            } else {
+                terminal.style.display = 'none';
+            }
         }
 
         function clearTerminal() {
@@ -1461,11 +1452,6 @@ HTML_TEMPLATE = """
             var title = container.querySelector('.terminal-title');
             title.textContent = 'Starting ' + (toolName || '...');
             container.classList.add('visible');
-        }
-
-        function hideUserTerminal() {
-            document.getElementById('userTerminalContainer').classList.remove('visible');
-            stopPollingUserLogs();
         }
 
         function minimizeUserTerminal() {
