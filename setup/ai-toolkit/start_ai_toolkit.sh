@@ -5,24 +5,18 @@ echo "Starting AI-Toolkit UI..."
 
 cd /workspace/ai-toolkit/ui
 
-# Force npm install to ensure all dependencies are present
-echo "Installing/updating Node.js dependencies..."
-npm install
-
-# Generate Prisma client
-echo "Generating Prisma client..."
-npx prisma generate
-
-# Ensure the build exists
-if [ ! -d ".next" ]; then
-    echo "Building UI..."
-    npm run build
+# Install dependencies if needed
+if [ ! -d "node_modules" ]; then
+    echo "Installing Node.js dependencies..."
+    npm install
 fi
 
-# Start the worker in the background
-echo "Starting background worker..."
-node dist/cron/worker.js &
+# Generate Prisma client if needed
+if [ ! -d "node_modules/.prisma" ]; then
+    echo "Generating Prisma client..."
+    npx prisma generate
+fi
 
-# Start the Next.js production server on port 8675
-echo "Starting Next.js UI on port 8675..."
-PORT=8675 npx next start --hostname 0.0.0.0
+# Start AI-Toolkit UI (runs worker and Next.js server via concurrently)
+echo "Starting AI-Toolkit on port 8675..."
+npm run start
