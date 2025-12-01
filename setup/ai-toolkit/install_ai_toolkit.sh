@@ -7,6 +7,25 @@ export PATH="/usr/local/bin:$PATH"
 
 echo "Installing AI-Toolkit with CUDA 12.8 support for RTX 50-series..."
 
+# Check if UV is installed, install if not
+if ! command -v uv &> /dev/null && [ ! -f "/root/.cargo/bin/uv" ]; then
+    echo "UV not found, installing..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="/root/.cargo/bin:$PATH"
+fi
+
+# Determine UV path
+if [ -f "/root/.cargo/bin/uv" ]; then
+    UV_CMD="/root/.cargo/bin/uv"
+elif command -v uv &> /dev/null; then
+    UV_CMD="uv"
+else
+    echo "ERROR: UV installation failed"
+    exit 1
+fi
+
+echo "Using UV at: $UV_CMD"
+
 cd /workspace
 
 # Clone the repository
@@ -20,23 +39,23 @@ cd ai-toolkit
 
 # Create virtual environment with UV
 echo "Creating virtual environment with UV..."
-/root/.cargo/bin/uv venv venv
+$UV_CMD venv venv
 
 # Install PyTorch nightly with CUDA 12.8 support using UV (required for RTX 50-series)
 echo "Installing PyTorch nightly with CUDA 12.8 using UV (10-100x faster)..."
-/root/.cargo/bin/uv pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+$UV_CMD pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
 
 # Install requirements with UV
 echo "Installing AI-Toolkit requirements with UV..."
-/root/.cargo/bin/uv pip install --python venv/bin/python --no-cache-dir -r requirements.txt
+$UV_CMD pip install --python venv/bin/python --no-cache-dir -r requirements.txt
 
 # Reinstall PyTorch to ensure correct version (force)
 echo "Ensuring PyTorch nightly with CUDA 12.8..."
-/root/.cargo/bin/uv pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force-reinstall
+$UV_CMD pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force-reinstall
 
 # Install specific setuptools version for compatibility
 echo "Installing setuptools 69.5.1..."
-/root/.cargo/bin/uv pip install --python venv/bin/python --no-cache-dir setuptools==69.5.1
+$UV_CMD pip install --python venv/bin/python --no-cache-dir setuptools==69.5.1
 
 # Build UI
 echo "Building AI-Toolkit UI..."
