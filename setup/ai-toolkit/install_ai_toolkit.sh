@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Installing AI-Toolkit..."
+echo "Installing AI-Toolkit with CUDA 12.8.1 support..."
 
 cd /workspace
 
@@ -18,12 +18,40 @@ cd ai-toolkit
 echo "Creating virtual environment with UV..."
 uv venv venv
 
-# Install PyTorch with CUDA 12.6 support using UV (no activation needed)
-echo "Installing PyTorch 2.7.0 with CUDA 12.6 using UV (10-100x faster)..."
-uv pip install --python venv/bin/python --no-cache-dir torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu126
+# Install PyTorch nightly with CUDA 12.8 support using UV (no activation needed)
+echo "Installing PyTorch nightly with CUDA 12.8 using UV (10-100x faster)..."
+uv pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
 
 # Install requirements with UV
 echo "Installing AI-Toolkit requirements with UV..."
-uv pip install --python venv/bin/python -r requirements.txt
+uv pip install --python venv/bin/python --no-cache-dir -r requirements.txt
+
+# Reinstall PyTorch to ensure correct version (force)
+echo "Ensuring PyTorch nightly with CUDA 12.8..."
+uv pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force
+
+# Install specific setuptools version for compatibility
+echo "Installing setuptools 69.5.1..."
+uv pip install --python venv/bin/python --no-cache-dir setuptools==69.5.1
+
+# Build UI
+echo "Building AI-Toolkit UI..."
+cd ui
+
+# Install Node.js dependencies
+echo "Installing Node.js dependencies..."
+npm install
+
+# Build the UI
+echo "Building UI assets..."
+npm run build
+
+# Update database
+echo "Updating database..."
+npm run update_db
+
+cd /workspace/ai-toolkit
 
 echo "AI-Toolkit installation complete!"
+echo "PyTorch with CUDA 12.8.1 support installed"
+echo "UI built and ready to use"
