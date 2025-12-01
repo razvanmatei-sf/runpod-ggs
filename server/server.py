@@ -1068,7 +1068,7 @@ HTML_TEMPLATE = """
             // Show terminal with starting message
             clearUserTerminal();
             showUserTerminal(toolName);
-            appendToUserTerminal('Starting ' + toolName + '...\\\\n', 'info');
+            appendToUserTerminal('Starting ' + toolName + '...\\n', 'info');
 
             fetch('/start_session', {
                 method: 'POST',
@@ -1078,12 +1078,12 @@ HTML_TEMPLATE = """
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    appendToUserTerminal(toolName + ' process started\\\\n', 'success');
-                    appendToUserTerminal('Waiting for service to be ready...\\\\n', 'info');
+                    appendToUserTerminal(toolName + ' process started\\n', 'success');
+                    appendToUserTerminal('Waiting for service to be ready...\\n', 'info');
                     // Start polling for ready status
                     startPollingUserLogs(toolId, toolName);
                 } else {
-                    appendToUserTerminal('Error: ' + data.message + '\\\\n', 'error');
+                    appendToUserTerminal('Error: ' + data.message + '\\n', 'error');
                     showStatus(data.message, 'error');
                 }
             });
@@ -1129,7 +1129,7 @@ HTML_TEMPLATE = """
             // Clear and show terminal
             clearTerminal();
             showTerminal();
-            appendToTerminal('Starting ' + action + ' for ' + toolId + '...\\\\n', 'info');
+            appendToTerminal('Starting ' + action + ' for ' + toolId + '...\\n', 'info');
 
             fetch('/admin_action', {
                 method: 'POST',
@@ -1144,7 +1144,7 @@ HTML_TEMPLATE = """
                     startPollingLogs();
                 } else {
                     showStatus(data.message, 'error');
-                    appendToTerminal('Error: ' + data.message + '\\\\n', 'error');
+                    appendToTerminal('Error: ' + data.message + '\\n', 'error');
                     // Re-enable button on error
                     if (btn) {
                         btn.disabled = false;
@@ -1209,7 +1209,7 @@ HTML_TEMPLATE = """
 
             clearCustomNodesTerminal();
             showCustomNodesTerminal();
-            appendToCustomNodesTerminal('Starting custom nodes installation...\\\\n', 'info');
+            appendToCustomNodesTerminal('Starting custom nodes installation...\\n', 'info');
 
             fetch('/custom_nodes_action', {
                 method: 'POST',
@@ -1223,7 +1223,7 @@ HTML_TEMPLATE = """
                     startPollingCustomNodesLogs();
                 } else {
                     showCustomNodesStatus(data.message, 'error');
-                    appendToCustomNodesTerminal('Error: ' + data.message + '\\\\n', 'error');
+                    appendToCustomNodesTerminal('Error: ' + data.message + '\\n', 'error');
                 }
             });
         }
@@ -1237,7 +1237,7 @@ HTML_TEMPLATE = """
 
             clearCustomNodesTerminal();
             showCustomNodesTerminal();
-            appendToCustomNodesTerminal('Starting custom nodes update...\\\\n', 'info');
+            appendToCustomNodesTerminal('Starting custom nodes update...\\n', 'info');
 
             fetch('/custom_nodes_action', {
                 method: 'POST',
@@ -1251,7 +1251,7 @@ HTML_TEMPLATE = """
                     startPollingCustomNodesLogs();
                 } else {
                     showCustomNodesStatus(data.message, 'error');
-                    appendToCustomNodesTerminal('Error: ' + data.message + '\\\\n', 'error');
+                    appendToCustomNodesTerminal('Error: ' + data.message + '\\n', 'error');
                 }
             });
         }
@@ -1319,7 +1319,7 @@ HTML_TEMPLATE = """
                         }
                         if (!data.running) {
                             clearInterval(pollInterval);
-                            appendToCustomNodesTerminal('\\\\n=== Process completed ===\\\\n', 'success');
+                            appendToCustomNodesTerminal('\\n=== Process completed ===\\n', 'success');
                         }
                     });
             }, 1000);
@@ -1348,7 +1348,7 @@ HTML_TEMPLATE = """
             // Clear and show terminal
             clearModelsTerminal();
             showModelsTerminal();
-            appendToModelsTerminal('Starting download for: ' + selectedModels.join(', ') + '...\\\\n', 'info');
+            appendToModelsTerminal('Starting download for: ' + selectedModels.join(', ') + '...\\n', 'info');
 
             fetch('/download_models', {
                 method: 'POST',
@@ -1367,7 +1367,7 @@ HTML_TEMPLATE = """
                     startPollingModelsLogs();
                 } else {
                     showModelsStatus(data.message, 'error');
-                    appendToModelsTerminal('Error: ' + data.message + '\\\\n', 'error');
+                    appendToModelsTerminal('Error: ' + data.message + '\\n', 'error');
                 }
             });
         }
@@ -1443,7 +1443,7 @@ HTML_TEMPLATE = """
                         lastLogLength = data.content.length;
                     }
                     if (data.running === false && logPollingInterval) {
-                        appendToModelsTerminal('\\\\n--- Download completed ---\\\\n', 'success');
+                        appendToModelsTerminal('\\n--- Download completed ---\\n', 'success');
                         stopPollingLogs();
                     }
                 })
@@ -1612,20 +1612,20 @@ HTML_TEMPLATE = """
                     .then(function(response) { return response.json(); })
                     .then(function(data) {
                         if (data.running) {
-                            appendToUserTerminal('\\\\n' + toolName + ' is ready!\\\\n', 'success');
+                            appendToUserTerminal('\\n' + toolName + ' is ready!\\n', 'success');
                             stopPollingUserLogs();
                             // Open the tool after a brief delay
                             setTimeout(function() {
                                 var runpodId = '{{ runpod_id | e }}';
                                 var url = 'https://' + runpodId + '-' + port + '.proxy.runpod.net';
-                                appendToUserTerminal('Opening ' + url + '\\\\n', 'info');
+                                appendToUserTerminal('Opening ' + url + '\\n', 'info');
                                 window.open(url, '_blank');
                                 // Reload page to update button states
                                 setTimeout(function() { location.reload(); }, 1000);
                             }, 500);
                         } else if (checkCount >= maxChecks) {
-                            appendToUserTerminal('\\\\nTimeout waiting for ' + toolName + ' to start.\\\\n', 'error');
-                            appendToUserTerminal('Try refreshing the page and clicking again.\\\\n', 'info');
+                            appendToUserTerminal('\\nTimeout waiting for ' + toolName + ' to start.\\n', 'error');
+                            appendToUserTerminal('Try refreshing the page and clicking again.\\n', 'info');
                             stopPollingUserLogs();
                         }
                     })
