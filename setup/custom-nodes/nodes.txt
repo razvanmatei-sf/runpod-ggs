@@ -1,0 +1,24 @@
+# ComfyUI Custom Nodes Configuration
+# Format: display_name|repo_url
+# Lines starting with # are comments
+
+ComfyUI-Manager|https://github.com/ltdrdata/ComfyUI-Manager
+RES4LYF|https://github.com/ClownsharkBatwing/RES4LYF
+ComfyUI-Impact-Pack|https://github.com/ltdrdata/ComfyUI-Impact-Pack
+ComfyUI-Inspire-Pack|https://github.com/ltdrdata/ComfyUI-Inspire-Pack
+ComfyUI-AnimateDiff-Evolved|https://github.com/Kosinkadink/ComfyUI-AnimateDiff-Evolved
+ComfyUI-Advanced-ControlNet|https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet
+ComfyUI-VideoHelperSuite|https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite
+ComfyUI-Frame-Interpolation|https://github.com/Fannovel16/ComfyUI-Frame-Interpolation
+ComfyUI-Custom-Scripts|https://github.com/pythongosssss/ComfyUI-Custom-Scripts
+ComfyUI-KJNodes|https://github.com/kijai/ComfyUI-KJNodes
+ComfyUI-SUPIR|https://github.com/kijai/ComfyUI-SUPIR
+ComfyUI-Florence2|https://github.com/kijai/ComfyUI-Florence2
+ComfyUI-IC-Light|https://github.com/kijai/ComfyUI-IC-Light
+ComfyUI-Efficiency-Nodes|https://github.com/jags111/efficiency-nodes-comfyui
+ComfyUI-WD14-Tagger|https://github.com/pythongosssss/ComfyUI-WD14-Tagger
+ComfyUI-layerdiffuse|https://github.com/huchenlei/ComfyUI-layerdiffuse
+ComfyUI-Easy-Use|https://github.com/yolain/ComfyUI-Easy-Use
+ComfyUI-Crystools|https://github.com/crystian/ComfyUI-Crystools
+rgthree-comfy|https://github.com/rgthree/rgthree-comfy
+was-node-suite-comfyui|https://github.com/WASasquatch/was-node-suite-comfyui

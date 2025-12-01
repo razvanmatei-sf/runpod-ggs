@@ -46,25 +46,25 @@ RUN jupyter lab --generate-config && \
 
 # Expose ports
 EXPOSE 8080
-EXPOSE 7860
+EXPOSE 8675
 EXPOSE 7861
-EXPOSE 7801
+EXPOSE 3000
 EXPOSE 8188
 EXPOSE 8888
 
 # Labels for RunPod - using multiple formats for compatibility
 LABEL runpod.port.8080="ComfyStudio"
-LABEL runpod.port.7860="AI-Toolkit"
-LABEL runpod.port.7861="LoRA-Tool"
-LABEL runpod.port.7801="SwarmUI"
+LABEL runpod.port.8675="AI-Toolkit"
+LABEL runpod.port.7861="SwarmUI"
+LABEL runpod.port.3000="LoRA-Tool"
 LABEL runpod.port.8188="ComfyUI"
 LABEL runpod.port.8888="JupyterLab"
 
 # Alternative label formats for RunPod
-LABEL runpod.ports="8080/http:ComfyStudio,7860/http:AI-Toolkit,7861/http:LoRA-Tool,7801/http:SwarmUI,8188/http:ComfyUI,8888/http:JupyterLab"
+LABEL runpod.ports="8080/http:ComfyStudio,8675/http:AI-Toolkit,7861/http:SwarmUI,3000/http:LoRA-Tool,8188/http:ComfyUI,8888/http:JupyterLab"
 
 # Standard Docker labels
-LABEL org.opencontainers.image.ports="8080,7860,7861,7801,8188,8888"
+LABEL org.opencontainers.image.ports="8080,8675,7861,3000,8188,8888"
 
 # Default command
 CMD ["/usr/local/bin/start_server.sh"]

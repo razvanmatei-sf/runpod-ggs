@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LORA Dataset Helper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+      :root {
+        --bg-color: #0D121C;
+        --panel-bg: rgba(23, 29, 42, 0.6);
+        --border-color: rgba(255, 255, 255, 0.1);
+        --text-primary: #F0F4F8;
+        --text-secondary: #A6B3C6;
+        --accent-violet: #8B5CF6;
+        --accent-cyan: #22D3EE;
+        --input-bg: #0A0F19;
+      }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: 'Inter', sans-serif;
+        font-feature-settings: "ss01" 1, "cv01" 1;
+        background-color: var(--bg-color);
+        color: var(--text-primary);
+        overflow-y: scroll;
+      }
+      .animated-glow {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        background: radial-gradient(ellipse at 20% 10%, rgba(139, 92, 246, 0.15), transparent 50%),
+                    radial-gradient(ellipse at 80% 20%, rgba(34, 211, 238, 0.15), transparent 50%),
+                    radial-gradient(ellipse at 50% 90%, rgba(139, 92, 246, 0.1), transparent 50%);
+        filter: blur(80px);
+        animation: pulseGlow 15s ease-in-out infinite alternate;
+        z-index: -1;
+      }
+      @keyframes pulseGlow {
+        from { opacity: 0.8; transform: scale(1); }
+        to { opacity: 1; transform: scale(1.05); }
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border-radius: 20px; }
+      ::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.2); }
+
+      .panel {
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 1rem;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+      }
+      
+      .form-input, .form-select, .form-textarea {
+        background-color: var(--input-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        border-radius: 0.5rem;
+        padding: 0.625rem 0.875rem;
+        width: 100%;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+      .form-input:focus, .form-select:focus, .form-textarea:focus {
+        outline: none;
+        border-color: var(--accent-violet);
+        box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+      }
+      .form-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23A6B3C6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+      }
+      .form-checkbox {
+        appearance: none;
+        display: inline-block;
+        vertical-align: middle;
+        height: 1.125rem;
+        width: 1.125rem;
+        background-color: var(--input-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.375rem;
+        cursor: pointer;
+        position: relative;
+      }
+      .form-checkbox:checked {
+        background-color: var(--accent-violet);
+        border-color: var(--accent-violet);
+      }
+      .form-checkbox:checked::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 10px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: translate(-50%, -60%) rotate(45deg);
+      }
+      
+      /* Custom Slider */
+      input[type=range] { -webkit-appearance: none; background: transparent; width: 100%; }
+      input[type=range]:focus { outline: none; }
+      input[type=range]::-webkit-slider-runnable-track {
+        width: 100%; height: 4px; cursor: pointer; background: var(--input-bg);
+        border-radius: 5px; border: 1px solid var(--border-color);
+      }
+      input[type=range]::-webkit-slider-thumb {
+        -webkit-appearance: none; border: 2px solid var(--bg-color);
+        height: 16px; width: 16px; border-radius: 50%; background: var(--text-primary);
+        cursor: pointer; margin-top: -7px; transition: background .2s;
+      }
+      input[type=range]:focus::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--bg-color), 0 0 0 5px var(--accent-violet); }
+      input[type=range]::-moz-range-track {
+        width: 100%; height: 4px; cursor: pointer; background: var(--input-bg);
+        border-radius: 5px; border: 1px solid var(--border-color);
+      }
+      input[type=range]::-moz-range-thumb {
+        border: 2px solid var(--bg-color); height: 16px; width: 16px; border-radius: 50%;
+        background: var(--text-primary); cursor: pointer;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
+    "jszip": "https://aistudiocdn.com/jszip@^3.10.1",
+    "clsx": "https://aistudiocdn.com/clsx@^2.1.1",
+    "framer-motion": "https://aistudiocdn.com/framer-motion@^11.3.19"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

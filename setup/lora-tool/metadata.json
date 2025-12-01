@@ -1,0 +1,5 @@
+{
+  "name": "LORA Dataset Helper",
+  "description": "An intelligent tool to streamline the preparation of LORA training datasets. It uses AI to automatically generate descriptive captions for your images, applies best-practice settings based on your chosen model and use-case, and organizes your files for optimal training.",
+  "requestFramePermissions": []
+}

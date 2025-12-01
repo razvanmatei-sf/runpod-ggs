@@ -37,9 +37,9 @@ export HF_XET_CHUNK_CACHE_SIZE_BYTES=90737418240
 
 ### Service Ports
 - **Port 8080**: ComfyStudio Flask UI (entry point)
-- **Port 7860**: AI-Toolkit (placeholder)
-- **Port 7861**: LoRA-Tool (placeholder)
-- **Port 7801**: SwarmUI (placeholder)
+- **Port 8675**: AI-Toolkit UI
+- **Port 7861**: SwarmUI web interface
+- **Port 3000**: LoRA-Tool dataset helper
 - **Port 8188**: ComfyUI image generation interface
 - **Port 8888**: Jupyter Lab notebook environment
 
@@ -183,7 +183,7 @@ Users are defined in `server/artist_names.sh`. Add `:admin` suffix for admin acc
 
 1. Create template with image: `ghcr.io/razvanmatei-sf/runpod-ggs:latest`
 2. Mount network volume at `/workspace`
-3. Expose ports: 8080, 7860, 7861, 7801, 8888, 8188
+3. Expose ports: 8080, 8675, 7861, 3000, 8888, 8188
 4. Start pod - UI will be available on port 8080
 5. Select admin user and enable Admin Mode
 6. Use Install buttons to set up tools (ComfyUI, etc.)

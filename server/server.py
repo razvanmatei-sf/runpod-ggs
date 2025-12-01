@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 
 import os
-import subprocess
-import time
-import threading
-from datetime import datetime
-from flask import Flask, render_template_string, request, jsonify
 import signal
+import subprocess
 import sys
+import threading
+import time
+from datetime import datetime
+
+from flask import Flask, jsonify, render_template_string, request
 
 app = Flask(__name__)
 
 # Repository path (set by start_server.sh)
-REPO_DIR = os.environ.get('REPO_DIR', '/workspace/runpod-ggs')
+REPO_DIR = os.environ.get("REPO_DIR", "/workspace/runpod-ggs")
+
 
 def parse_users_from_script():
     """
@@ -23,7 +25,7 @@ def parse_users_from_script():
     script_paths = [
         os.path.join(REPO_DIR, "server", "artist_names.sh"),  # Repo path (preferred)
         "/usr/local/bin/artist_names.sh",  # Docker container path
-        "/workspace/artist_names.sh",       # Workspace path
+        "/workspace/artist_names.sh",  # Workspace path
         os.path.join(os.path.dirname(__file__), "artist_names.sh"),  # Same directory
     ]
 
@@ -33,16 +35,17 @@ def parse_users_from_script():
     for script_path in script_paths:
         if os.path.exists(script_path):
             try:
-                with open(script_path, 'r') as f:
+                with open(script_path, "r") as f:
                     content = f.read()
                     import re
-                    match = re.search(r'USERS=\((.*?)\)', content, re.DOTALL)
+
+                    match = re.search(r"USERS=\((.*?)\)", content, re.DOTALL)
                     if match:
                         block = match.group(1)
                         # Extract quoted strings
                         entries = re.findall(r'"([^"]+)"', block)
                         for entry in entries:
-                            if entry.endswith(':admin'):
+                            if entry.endswith(":admin"):
                                 name = entry[:-6]  # Remove ':admin' suffix
                                 users.append(name)
                                 admins.append(name)
@@ -54,8 +57,10 @@ def parse_users_from_script():
 
     return users, admins
 
+
 # Load users and admins from script (single source of truth)
 USERS, ADMINS = parse_users_from_script()
+
 
 def is_admin(user_name):
     """Check if user is an admin (case-insensitive)"""
@@ -63,6 +68,7 @@ def is_admin(user_name):
         return False
     user_lower = user_name.strip().lower()
     return any(admin.strip().lower() == user_lower for admin in ADMINS)
+
 
 def get_setup_script(tool_id, script_type):
     """Get path to setup script for a tool. script_type is 'install' or 'start'"""
@@ -85,6 +91,7 @@ def get_setup_script(tool_id, script_type):
         return script_path
     return None
 
+
 def get_download_scripts():
     """
     Scan setup/download-models/ directory and return available download scripts.
@@ -98,43 +105,91 @@ def get_download_scripts():
 
     try:
         for filename in sorted(os.listdir(download_dir)):
-            if filename.endswith('.sh'):
+            if filename.endswith(".sh"):
                 # Convert filename to display name
                 # e.g., "download_z_image_turbo.sh" -> "Z Image Turbo"
                 # e.g., "download_flux_models.sh" -> "Flux Models"
-                name = filename.replace('.sh', '')
-                name = name.replace('download_', '')
-                name = name.replace('_', ' ')
+                name = filename.replace(".sh", "")
+                name = name.replace("download_", "")
+                name = name.replace("_", " ")
                 name = name.title()
 
-                scripts.append({
-                    'id': filename.replace('.sh', ''),
-                    'name': name,
-                    'filename': filename,
-                    'path': os.path.join(download_dir, filename)
-                })
+                scripts.append(
+                    {
+                        "id": filename.replace(".sh", ""),
+                        "name": name,
+                        "filename": filename,
+                        "path": os.path.join(download_dir, filename),
+                    }
+                )
     except Exception as e:
         print(f"Error scanning download scripts: {e}")
 
     return scripts
 
+
+def get_custom_nodes():
+    """
+    Parse custom nodes from nodes.txt configuration file.
+    Returns list of dicts with 'name', 'repo_url', 'installed' for each node.
+    """
+    nodes = []
+    nodes_config = os.path.join(REPO_DIR, "setup", "custom-nodes", "nodes.txt")
+    custom_nodes_dir = "/workspace/ComfyUI/custom_nodes"
+
+    if not os.path.exists(nodes_config):
+        return nodes
+
+    try:
+        with open(nodes_config, "r") as f:
+            for line in f:
+                line = line.strip()
+                # Skip comments and empty lines
+                if not line or line.startswith("#"):
+                    continue
+
+                # Parse format: display_name|repo_url
+                if "|" in line:
+                    parts = line.split("|", 1)
+                    if len(parts) == 2:
+                        display_name = parts[0].strip()
+                        repo_url = parts[1].strip()
+
+                        # Extract repo name from URL
+                        repo_name = os.path.basename(repo_url.replace(".git", ""))
+                        node_path = os.path.join(custom_nodes_dir, repo_name)
+
+                        nodes.append(
+                            {
+                                "name": display_name,
+                                "repo_url": repo_url,
+                                "repo_name": repo_name,
+                                "installed": os.path.isdir(node_path),
+                            }
+                        )
+    except Exception as e:
+        print(f"Error parsing custom nodes config: {e}")
+
+    return nodes
+
+
 # Tool configuration
 TOOLS = {
     "ai-toolkit": {
         "name": "AI-Toolkit",
-        "port": 7860,
+        "port": 8675,
         "install_path": "/workspace/ai-toolkit",
         "admin_only": False,
     },
     "lora-tool": {
         "name": "LoRA-Tool",
-        "port": 7861,
+        "port": 3000,
         "install_path": "/workspace/lora-tool",
         "admin_only": False,
     },
     "swarm-ui": {
         "name": "SwarmUI",
-        "port": 7801,
+        "port": 7861,
         "install_path": "/workspace/SwarmUI",
         "admin_only": False,
     },
@@ -397,6 +452,17 @@ HTML_TEMPLATE = """
 
         .admin-tool-btn.update:hover {
             background: #e0e7ff;
+        }
+
+        .admin-tool-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .admin-tool-btn:disabled:hover {
+            background: #fffbeb;
+            transform: none;
         }
 
         .admin-checkbox {
@@ -673,8 +739,10 @@ HTML_TEMPLATE = """
                 <!-- Terminal output for user mode -->
                 <div class="terminal-container" id="userTerminalContainer">
                     <div class="terminal-header">
+                        <button class="terminal-btn" onclick="minimizeUserTerminal()" style="margin-right: auto;">−</button>
                         <span class="terminal-title">Starting...</span>
                         <div class="terminal-controls">
+                            <button class="terminal-btn" onclick="copyUserTerminal()">Copy</button>
                             <button class="terminal-btn" onclick="clearUserTerminal()">Clear</button>
                             <button class="terminal-btn" onclick="hideUserTerminal()">Hide</button>
                         </div>
@@ -688,20 +756,36 @@ HTML_TEMPLATE = """
                 {% for tool_id, tool in tools.items() %}
                 {% if not tool.get('user_only', False) %}
                 <div class="admin-tool-row">
-                    <button class="admin-tool-btn {% if tool.install_path and is_installed(tool.install_path) %}update{% endif %}"
-                            data-tool="{{ tool_id }}"
-                            onclick="handleAdminToolClick('{{ tool_id }}')">
-                        {% if tool.install_path %}
-                            {% if is_installed(tool.install_path) %}
+                    {% if tool.install_path %}
+                        {% if is_installed(tool.install_path) %}
+                        <!-- Tool is installed - show Reinstall and Update buttons -->
+                        <button class="admin-tool-btn"
+                                data-tool="{{ tool_id }}"
+                                data-action="reinstall"
+                                onclick="handleAdminAction('{{ tool_id }}', 'reinstall')">
+                            Reinstall {{ tool.name }}
+                        </button>
+                        <button class="admin-tool-btn update"
+                                data-tool="{{ tool_id }}"
+                                data-action="update"
+                                onclick="handleAdminAction('{{ tool_id }}', 'update')">
                             Update {{ tool.name }}
-                            {% else %}
-                            Install {{ tool.name }}
-                            {% endif %}
+                        </button>
                         {% else %}
-                        {{ tool.name }} (Built-in)
+                        <!-- Tool is not installed - show Install button -->
+                        <button class="admin-tool-btn"
+                                data-tool="{{ tool_id }}"
+                                data-action="install"
+                                onclick="handleAdminAction('{{ tool_id }}', 'install')">
+                            Install {{ tool.name }}
+                        </button>
                         {% endif %}
-                    </button>
-                    <input type="checkbox" class="admin-checkbox" data-tool="{{ tool_id }}">
+                    {% else %}
+                        <!-- Built-in tool (like JupyterLab) -->
+                        <button class="admin-tool-btn" disabled>
+                            {{ tool.name }} (Built-in)
+                        </button>
+                    {% endif %}
                 </div>
                 {% endif %}
                 {% endfor %}
@@ -710,11 +794,17 @@ HTML_TEMPLATE = """
                     Models Download
                 </button>
 
+                <button class="models-btn" onclick="showCustomNodesPage()">
+                    Custom Nodes
+                </button>
+
                 <!-- Terminal output -->
                 <div class="terminal-container" id="terminalContainer">
                     <div class="terminal-header">
+                        <button class="terminal-btn" onclick="minimizeTerminal()" style="margin-right: auto;">−</button>
                         <span class="terminal-title">Terminal Output</span>
                         <div class="terminal-controls">
+                            <button class="terminal-btn" onclick="copyTerminal()">Copy</button>
                             <button class="terminal-btn" onclick="clearTerminal()">Clear</button>
                             <button class="terminal-btn" onclick="hideTerminal()">Hide</button>
                         </div>
@@ -770,13 +860,78 @@ HTML_TEMPLATE = """
             <!-- Terminal output for models page -->
             <div class="terminal-container" id="modelsTerminalContainer">
                 <div class="terminal-header">
+                    <button class="terminal-btn" onclick="minimizeModelsTerminal()" style="margin-right: auto;">−</button>
                     <span class="terminal-title">Download Progress</span>
                     <div class="terminal-controls">
+                        <button class="terminal-btn" onclick="copyModelsTerminal()">Copy</button>
                         <button class="terminal-btn" onclick="clearModelsTerminal()">Clear</button>
                         <button class="terminal-btn" onclick="hideModelsTerminal()">Hide</button>
                     </div>
                 </div>
                 <div class="terminal" id="modelsTerminal"></div>
+            </div>
+        </div>
+
+        <!-- Custom Nodes Page -->
+        <div id="customNodesPage" class="models-page">
+            <button class="back-btn" onclick="hideCustomNodesPage()">
+                ← Back
+            </button>
+
+            <div class="header">
+                <div class="logo">CS</div>
+                <h1>ComfyStudio</h1>
+            </div>
+
+            <div class="profile-row">
+                <select class="profile-select" disabled>
+                    <option>{{ current_artist or 'Choose Profile' }}</option>
+                </select>
+                <div class="admin-toggle visible">
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked disabled>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <h2 style="text-align: center; margin: 20px 0; color: #4b5563;">ComfyUI Custom Nodes</h2>
+
+            <div class="model-checkboxes">
+                {% for node in custom_nodes %}
+                <div class="model-option">
+                    <input type="checkbox" class="model-checkbox" id="node_{{ loop.index }}" value="{{ node.repo_name }}" {% if node.installed %}checked{% endif %}>
+                    <label class="model-label" for="node_{{ loop.index }}">
+                        {{ node.name }}
+                        {% if node.installed %}<span style="color: #10b981; font-size: 12px;"> ✓ Installed</span>{% endif %}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div style="display: flex; gap: 10px; max-width: 600px; margin: 20px auto;">
+                <button class="done-btn" onclick="installCustomNodes()" style="flex: 1;">
+                    Install Selected
+                </button>
+                <button class="done-btn" onclick="updateCustomNodes()" style="flex: 1; background: #667eea;">
+                    Update Installed
+                </button>
+            </div>
+
+            <div id="customNodesStatusMessage" class="status-message hidden"></div>
+
+            <!-- Terminal output for custom nodes page -->
+            <div class="terminal-container" id="customNodesTerminalContainer">
+                <div class="terminal-header">
+                    <button class="terminal-btn" onclick="minimizeCustomNodesTerminal()" style="margin-right: auto;">−</button>
+                    <span class="terminal-title">Installation Progress</span>
+                    <div class="terminal-controls">
+                        <button class="terminal-btn" onclick="copyCustomNodesTerminal()">Copy</button>
+                        <button class="terminal-btn" onclick="clearCustomNodesTerminal()">Clear</button>
+                        <button class="terminal-btn" onclick="hideCustomNodesTerminal()">Hide</button>
+                    </div>
+                </div>
+                <div class="terminal" id="customNodesTerminal"></div>
             </div>
         </div>
     </div>
@@ -916,11 +1071,7 @@ HTML_TEMPLATE = """
             });
         }
 
-        function handleAdminToolClick(toolId) {
-            var btn = document.querySelector('.admin-tool-btn[data-tool="' + toolId + '"]');
-            const isUpdate = btn.classList.contains('update');
-            const action = isUpdate ? 'update' : 'install';
-
+        function handleAdminAction(toolId, action) {
             // Clear and show terminal
             clearTerminal();
             showTerminal();
@@ -952,6 +1103,133 @@ HTML_TEMPLATE = """
         function hideModelsPage() {
             document.getElementById('modelsPage').classList.remove('visible');
             document.getElementById('mainPage').classList.remove('hidden');
+        }
+
+        function showCustomNodesPage() {
+            document.getElementById('mainPage').classList.add('hidden');
+            document.getElementById('customNodesPage').classList.add('visible');
+        }
+
+        function hideCustomNodesPage() {
+            document.getElementById('customNodesPage').classList.remove('visible');
+            document.getElementById('mainPage').classList.remove('hidden');
+        }
+
+        function installCustomNodes() {
+            clearCustomNodesTerminal();
+            showCustomNodesTerminal();
+            appendToCustomNodesTerminal('Starting custom nodes installation...\\n', 'info');
+
+            fetch('/custom_nodes_action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'install' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showCustomNodesStatus(data.message, 'success');
+                    startPollingCustomNodesLogs();
+                } else {
+                    showCustomNodesStatus(data.message, 'error');
+                    appendToCustomNodesTerminal('Error: ' + data.message + '\\n', 'error');
+                }
+            });
+        }
+
+        function updateCustomNodes() {
+            clearCustomNodesTerminal();
+            showCustomNodesTerminal();
+            appendToCustomNodesTerminal('Starting custom nodes update...\\n', 'info');
+
+            fetch('/custom_nodes_action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'update' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showCustomNodesStatus(data.message, 'success');
+                    startPollingCustomNodesLogs();
+                } else {
+                    showCustomNodesStatus(data.message, 'error');
+                    appendToCustomNodesTerminal('Error: ' + data.message + '\\n', 'error');
+                }
+            });
+        }
+
+        function showCustomNodesStatus(message, type) {
+            var statusDiv = document.getElementById('customNodesStatusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status-message ' + type;
+            statusDiv.classList.remove('hidden');
+            setTimeout(function() {
+                statusDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        function showCustomNodesTerminal() {
+            document.getElementById('customNodesTerminalContainer').style.display = 'block';
+        }
+
+        function hideCustomNodesTerminal() {
+            document.getElementById('customNodesTerminalContainer').style.display = 'none';
+        }
+
+        function minimizeCustomNodesTerminal() {
+            var terminal = document.getElementById('customNodesTerminal');
+            if (terminal.style.display === 'none') {
+                terminal.style.display = 'block';
+            } else {
+                terminal.style.display = 'none';
+            }
+        }
+
+        function copyCustomNodesTerminal() {
+            var terminal = document.getElementById('customNodesTerminal');
+            navigator.clipboard.writeText(terminal.textContent).then(function() {
+                showCustomNodesStatus('Terminal content copied to clipboard', 'success');
+            }).catch(function(err) {
+                showCustomNodesStatus('Failed to copy: ' + err, 'error');
+            });
+        }
+
+        function clearCustomNodesTerminal() {
+            document.getElementById('customNodesTerminal').textContent = '';
+        }
+
+        function appendToCustomNodesTerminal(text, type) {
+            var terminal = document.getElementById('customNodesTerminal');
+            var span = document.createElement('span');
+            span.textContent = text;
+            if (type === 'error') {
+                span.style.color = '#ef4444';
+            } else if (type === 'success') {
+                span.style.color = '#10b981';
+            } else if (type === 'info') {
+                span.style.color = '#3b82f6';
+            }
+            terminal.appendChild(span);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function startPollingCustomNodesLogs() {
+            var pollInterval = setInterval(function() {
+                fetch('/logs')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.content) {
+                            document.getElementById('customNodesTerminal').textContent = data.content;
+                            var terminal = document.getElementById('customNodesTerminal');
+                            terminal.scrollTop = terminal.scrollHeight;
+                        }
+                        if (!data.running) {
+                            clearInterval(pollInterval);
+                            appendToCustomNodesTerminal('\\n=== Process completed ===\\n', 'success');
+                        }
+                    });
+            }, 1000);
         }
 
         function downloadModels() {
@@ -1005,10 +1283,51 @@ HTML_TEMPLATE = """
             stopPollingLogs();
         }
 
+        function minimizeModelsTerminal() {
+            var terminal = document.getElementById('modelsTerminal');
+            if (terminal.style.display === 'none') {
+                terminal.style.display = 'block';
+            } else {
+                terminal.style.display = 'none';
+            }
+        }
+
+        function copyModelsTerminal() {
+            var terminal = document.getElementById('modelsTerminal');
+            navigator.clipboard.writeText(terminal.textContent).then(function() {
+                showModelsStatus('Terminal content copied to clipboard', 'success');
+            }).catch(function(err) {
+                showModelsStatus('Failed to copy: ' + err, 'error');
+            });
+        }
+
         function clearModelsTerminal() {
             document.getElementById('modelsTerminal').innerHTML = '';
             lastLogLength = 0;
             fetch('/clear_logs', { method: 'POST' });
+        }
+
+        function minimizeTerminal() {
+            var terminal = document.getElementById('terminal');
+            if (terminal.style.display === 'none') {
+                terminal.style.display = 'block';
+            } else {
+                terminal.style.display = 'none';
+            }
+        }
+
+        function copyTerminal() {
+            var terminal = document.getElementById('terminal');
+            navigator.clipboard.writeText(terminal.textContent).then(function() {
+                showStatus('Terminal content copied to clipboard', 'success');
+            }).catch(function(err) {
+                showStatus('Failed to copy: ' + err, 'error');
+            });
+        }
+
+        function clearTerminal() {
+            document.getElementById('terminal').innerHTML = '';
+            lastLogLength = 0;
         }
 
         function appendToModelsTerminal(text, className) {
@@ -1147,6 +1466,24 @@ HTML_TEMPLATE = """
             stopPollingUserLogs();
         }
 
+        function minimizeUserTerminal() {
+            var terminal = document.getElementById('userTerminal');
+            if (terminal.style.display === 'none') {
+                terminal.style.display = 'block';
+            } else {
+                terminal.style.display = 'none';
+            }
+        }
+
+        function copyUserTerminal() {
+            var terminal = document.getElementById('userTerminal');
+            navigator.clipboard.writeText(terminal.textContent).then(function() {
+                showStatus('Terminal content copied to clipboard', 'success');
+            }).catch(function(err) {
+                showStatus('Failed to copy: ' + err, 'error');
+            });
+        }
+
         function clearUserTerminal() {
             document.getElementById('userTerminal').innerHTML = '';
         }
@@ -1212,15 +1549,18 @@ HTML_TEMPLATE = """
 </html>
 """
 
+
 def get_runpod_id():
     """Get RunPod instance ID from environment"""
-    return os.environ.get('RUNPOD_POD_ID', 'localhost')
+    return os.environ.get("RUNPOD_POD_ID", "localhost")
+
 
 def is_installed(path):
     """Check if a tool is installed by checking directory existence"""
     if path is None:
         return True
     return os.path.isdir(path)
+
 
 def get_all_users():
     """Get list of users for dropdown"""
@@ -1232,7 +1572,7 @@ def get_all_users():
         if os.path.exists(output_dir):
             for item in os.listdir(output_dir):
                 item_path = os.path.join(output_dir, item)
-                if os.path.isdir(item_path) and not item.startswith('.'):
+                if os.path.isdir(item_path) and not item.startswith("."):
                     users.add(item)
     except:
         pass
@@ -1244,18 +1584,22 @@ def get_all_users():
 
     return sorted(list(users))
 
-@app.route('/debug')
+
+@app.route("/debug")
 def debug():
     """Debug endpoint to check parsed users and admins"""
-    return jsonify({
-        'USERS': USERS,
-        'ADMINS': ADMINS,
-        'REPO_DIR': REPO_DIR,
-        'current_artist': current_artist,
-        'is_current_admin': is_admin(current_artist) if current_artist else None
-    })
+    return jsonify(
+        {
+            "USERS": USERS,
+            "ADMINS": ADMINS,
+            "REPO_DIR": REPO_DIR,
+            "current_artist": current_artist,
+            "is_current_admin": is_admin(current_artist) if current_artist else None,
+        }
+    )
 
-@app.route('/')
+
+@app.route("/")
 def index():
     artists = get_all_users()
     return render_template_string(
@@ -1265,120 +1609,178 @@ def index():
         tools=TOOLS,
         current_artist=current_artist,
         admin_mode=admin_mode,
-        active_sessions={k: {"start_time": v["start_time"].isoformat() + "Z"} for k, v in active_sessions.items()},
+        active_sessions={
+            k: {"start_time": v["start_time"].isoformat() + "Z"}
+            for k, v in active_sessions.items()
+        },
         runpod_id=get_runpod_id(),
         is_installed=is_installed,
-        download_scripts=get_download_scripts()
+        download_scripts=get_download_scripts(),
+        custom_nodes=get_custom_nodes(),
     )
 
-@app.route('/set_artist', methods=['POST'])
+
+@app.route("/set_artist", methods=["POST"])
 def set_artist():
     global current_artist, admin_mode
     data = request.get_json()
-    current_artist = data.get('artist', '')
+    current_artist = data.get("artist", "")
 
     # Reset admin mode if not an admin
     if not is_admin(current_artist):
         admin_mode = False
 
-    return jsonify({'success': True})
+    return jsonify({"success": True})
 
-@app.route('/set_admin_mode', methods=['POST'])
+
+@app.route("/set_admin_mode", methods=["POST"])
 def set_admin_mode():
     global admin_mode
     data = request.get_json()
 
     # Only allow admin mode for admins
     if is_admin(current_artist):
-        admin_mode = data.get('admin_mode', False)
+        admin_mode = data.get("admin_mode", False)
 
-    return jsonify({'success': True})
+    return jsonify({"success": True})
 
-@app.route('/start_session', methods=['POST'])
+
+@app.route("/start_session", methods=["POST"])
 def start_session():
     global active_sessions
 
     data = request.get_json()
-    tool_id = data.get('tool_id')
-    artist = data.get('artist')
+    tool_id = data.get("tool_id")
+    artist = data.get("artist")
 
     if not tool_id or tool_id not in TOOLS:
-        return jsonify({'success': False, 'message': 'Invalid tool'})
+        return jsonify({"success": False, "message": "Invalid tool"})
 
     if not artist:
-        return jsonify({'success': False, 'message': 'No artist selected'})
+        return jsonify({"success": False, "message": "No artist selected"})
 
     tool = TOOLS[tool_id]
     process = None
 
     # Create artist output directory if ComfyUI
-    if tool_id == 'comfy-ui':
+    if tool_id == "comfy-ui":
         output_dir = f"/workspace/ComfyUI/output/{artist}"
         os.makedirs(output_dir, exist_ok=True)
 
     # Start the actual service
     try:
-        if tool_id == 'jupyter-lab':
+        if tool_id == "jupyter-lab":
             # Kill any existing jupyter on the port
-            subprocess.run(['fuser', '-k', '8888/tcp'], capture_output=True)
+            subprocess.run(["fuser", "-k", "8888/tcp"], capture_output=True)
             time.sleep(1)
             # Start JupyterLab
-            process = subprocess.Popen([
-                'jupyter', 'lab',
-                '--ip=0.0.0.0',
-                '--port=8888',
-                '--no-browser',
-                '--allow-root',
-                '--NotebookApp.token=',
-                '--NotebookApp.password='
-            ], cwd='/workspace')
+            process = subprocess.Popen(
+                [
+                    "jupyter",
+                    "lab",
+                    "--ip=0.0.0.0",
+                    "--port=8888",
+                    "--no-browser",
+                    "--allow-root",
+                    "--NotebookApp.token=",
+                    "--NotebookApp.password=",
+                ],
+                cwd="/workspace",
+            )
 
-        elif tool_id == 'comfy-ui':
+        elif tool_id == "comfy-ui":
             # Kill any existing comfyui on the port
-            subprocess.run(['fuser', '-k', '8188/tcp'], capture_output=True)
+            subprocess.run(["fuser", "-k", "8188/tcp"], capture_output=True)
             time.sleep(1)
             # Start ComfyUI
             env = os.environ.copy()
-            env['HF_HOME'] = '/workspace'
-            env['HF_HUB_ENABLE_HF_TRANSFER'] = '1'
+            env["HF_HOME"] = "/workspace"
+            env["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
             artist_output_dir = f"/workspace/ComfyUI/output/{artist}"
-            process = subprocess.Popen([
-                '/workspace/ComfyUI/venv/bin/python',
-                'main.py',
-                '--listen', '0.0.0.0',
-                '--port', '8188',
-                '--output-directory', artist_output_dir
-            ], cwd='/workspace/ComfyUI', env=env)
+            process = subprocess.Popen(
+                [
+                    "/workspace/ComfyUI/venv/bin/python",
+                    "main.py",
+                    "--listen",
+                    "0.0.0.0",
+                    "--port",
+                    "8188",
+                    "--output-directory",
+                    artist_output_dir,
+                ],
+                cwd="/workspace/ComfyUI",
+                env=env,
+            )
 
-        # Other tools are placeholders for now
-        # elif tool_id == 'ai-toolkit':
-        # elif tool_id == 'lora-tool':
-        # elif tool_id == 'swarm-ui':
+        elif tool_id == "ai-toolkit":
+            # Kill any existing ai-toolkit on the port
+            subprocess.run(["fuser", "-k", "8675/tcp"], capture_output=True)
+            time.sleep(1)
+            # Start AI-Toolkit using start script
+            start_script = get_setup_script("ai-toolkit", "start")
+            if start_script:
+                process = subprocess.Popen(
+                    ["bash", start_script],
+                    cwd="/workspace/ai-toolkit",
+                )
+            else:
+                raise Exception("AI-Toolkit start script not found")
+
+        elif tool_id == "swarm-ui":
+            # Kill any existing swarm-ui on the port
+            subprocess.run(["fuser", "-k", "7861/tcp"], capture_output=True)
+            time.sleep(1)
+            # Start SwarmUI using start script
+            start_script = get_setup_script("swarm-ui", "start")
+            if start_script:
+                process = subprocess.Popen(
+                    ["bash", start_script],
+                    cwd="/workspace/SwarmUI",
+                )
+            else:
+                raise Exception("SwarmUI start script not found")
+
+        elif tool_id == "lora-tool":
+            # Kill any existing lora-tool on the port
+            subprocess.run(["fuser", "-k", "3000/tcp"], capture_output=True)
+            time.sleep(1)
+            # Start LoRA-Tool using start script
+            start_script = get_setup_script("lora-tool", "start")
+            if start_script:
+                process = subprocess.Popen(
+                    ["bash", start_script],
+                    cwd="/workspace/lora-tool",
+                )
+            else:
+                raise Exception("LoRA-Tool start script not found")
 
     except Exception as e:
-        return jsonify({'success': False, 'message': f'Failed to start: {str(e)}'})
+        return jsonify({"success": False, "message": f"Failed to start: {str(e)}"})
 
     active_sessions[tool_id] = {
         "process": process,
         "start_time": datetime.utcnow(),
-        "artist": artist
+        "artist": artist,
     }
 
-    return jsonify({
-        'success': True,
-        'tool_name': tool['name'],
-        'message': f'{tool["name"]} session started'
-    })
+    return jsonify(
+        {
+            "success": True,
+            "tool_name": tool["name"],
+            "message": f"{tool['name']} session started",
+        }
+    )
 
-@app.route('/stop_session', methods=['POST'])
+
+@app.route("/stop_session", methods=["POST"])
 def stop_session():
     global active_sessions
 
     data = request.get_json()
-    tool_id = data.get('tool_id')
+    tool_id = data.get("tool_id")
 
     if not tool_id or tool_id not in TOOLS:
-        return jsonify({'success': False, 'message': 'Invalid tool'})
+        return jsonify({"success": False, "message": "Invalid tool"})
 
     tool = TOOLS[tool_id]
 
@@ -1389,33 +1791,39 @@ def stop_session():
             session["process"].terminate()
 
         # Kill by port
-        port = tool['port']
-        subprocess.run(['fuser', '-k', f'{port}/tcp'], capture_output=True)
+        port = tool["port"]
+        subprocess.run(["fuser", "-k", f"{port}/tcp"], capture_output=True)
 
         del active_sessions[tool_id]
 
-    return jsonify({
-        'success': True,
-        'tool_name': tool['name'],
-        'message': f'{tool["name"]} stopped'
-    })
+    return jsonify(
+        {
+            "success": True,
+            "tool_name": tool["name"],
+            "message": f"{tool['name']} stopped",
+        }
+    )
 
-@app.route('/tool_status/<tool_id>')
+
+@app.route("/tool_status/<tool_id>")
 def tool_status(tool_id):
     if tool_id not in TOOLS:
-        return jsonify({'error': 'Invalid tool'})
+        return jsonify({"error": "Invalid tool"})
 
     tool = TOOLS[tool_id]
     is_running = tool_id in active_sessions
 
-    return jsonify({
-        'tool_id': tool_id,
-        'name': tool['name'],
-        'running': is_running,
-        'installed': is_installed(tool.get('install_path'))
-    })
+    return jsonify(
+        {
+            "tool_id": tool_id,
+            "name": tool["name"],
+            "running": is_running,
+            "installed": is_installed(tool.get("install_path")),
+        }
+    )
 
-@app.route('/logs')
+
+@app.route("/logs")
 def get_logs():
     """Get current log file contents"""
     global running_process
@@ -1423,7 +1831,7 @@ def get_logs():
     content = ""
     if os.path.exists(LOG_FILE):
         try:
-            with open(LOG_FILE, 'r') as f:
+            with open(LOG_FILE, "r") as f:
                 content = f.read()
         except:
             pass
@@ -1436,127 +1844,148 @@ def get_logs():
         if not process_running:
             running_process = None
 
-    return jsonify({
-        'content': content,
-        'running': process_running
-    })
+    return jsonify({"content": content, "running": process_running})
 
-@app.route('/clear_logs', methods=['POST'])
+
+@app.route("/clear_logs", methods=["POST"])
 def clear_logs():
     """Clear the log file"""
     try:
-        with open(LOG_FILE, 'w') as f:
-            f.write('')
-        return jsonify({'success': True})
+        with open(LOG_FILE, "w") as f:
+            f.write("")
+        return jsonify({"success": True})
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+        return jsonify({"success": False, "message": str(e)})
 
-@app.route('/admin_action', methods=['POST'])
+
+@app.route("/admin_action", methods=["POST"])
 def admin_action():
     """Handle admin install/update actions"""
     global current_artist
 
     # Check if user is admin
     if not is_admin(current_artist):
-        return jsonify({'success': False, 'message': 'Unauthorized'})
+        return jsonify({"success": False, "message": "Unauthorized"})
 
     data = request.get_json()
-    tool_id = data.get('tool_id')
-    action = data.get('action')  # 'install' or 'update'
+    tool_id = data.get("tool_id")
+    action = data.get("action")  # 'install', 'reinstall', or 'update'
 
     if not tool_id or tool_id not in TOOLS:
-        return jsonify({'success': False, 'message': 'Invalid tool'})
+        return jsonify({"success": False, "message": "Invalid tool"})
 
-    if action not in ['install', 'update']:
-        return jsonify({'success': False, 'message': 'Invalid action'})
+    if action not in ["install", "reinstall", "update"]:
+        return jsonify({"success": False, "message": "Invalid action"})
 
     tool = TOOLS[tool_id]
 
-    # Get the install script path
-    script_path = get_setup_script(tool_id, 'install')
+    # Determine which script to use based on action
+    if action == "install":
+        script_type = "install"
+    elif action == "reinstall":
+        script_type = "reinstall"
+    else:  # update
+        script_type = "update"
+
+    # Get the appropriate script path
+    script_path = get_setup_script(tool_id, script_type)
 
     if not script_path:
-        return jsonify({
-            'success': False,
-            'message': f'No install script found for {tool["name"]}. Create setup/{tool_id}/install.sh'
-        })
+        return jsonify(
+            {
+                "success": False,
+                "message": f"No {script_type} script found for {tool['name']}. Create setup/{tool_id}/{script_type}_{tool_id}.sh",
+            }
+        )
 
     try:
         global running_process
 
         # Clear log file first
-        with open(LOG_FILE, 'w') as f:
+        with open(LOG_FILE, "w") as f:
             f.write(f"=== {action.capitalize()} {tool['name']} ===\n")
             f.write(f"Script: {script_path}\n")
             f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
             f.write("=" * 40 + "\n\n")
 
         # Open log file for appending
-        log_file = open(LOG_FILE, 'a')
+        log_file = open(LOG_FILE, "a")
 
         # Run the install script with output to log file
         running_process = subprocess.Popen(
-            ['bash', script_path],
+            ["bash", script_path],
             stdout=log_file,
             stderr=subprocess.STDOUT,
-            cwd='/workspace',
-            bufsize=1  # Line buffered
+            cwd="/workspace",
+            bufsize=1,  # Line buffered
         )
 
         # Start a thread to close the log file when process completes
         def wait_and_close():
             running_process.wait()
-            log_file.write(f"\n=== Process completed with exit code: {running_process.returncode} ===\n")
+            log_file.write(
+                f"\n=== Process completed with exit code: {running_process.returncode} ===\n"
+            )
             log_file.close()
 
         thread = threading.Thread(target=wait_and_close, daemon=True)
         thread.start()
 
         # Return immediately - script runs in background
-        return jsonify({
-            'success': True,
-            'tool_name': tool['name'],
-            'message': f'{action.capitalize()} started for {tool["name"]}. Check terminal for progress.',
-            'script': script_path
-        })
+        return jsonify(
+            {
+                "success": True,
+                "tool_name": tool["name"],
+                "message": f"{action.capitalize()} started for {tool['name']}. Check terminal for progress.",
+                "script": script_path,
+            }
+        )
 
     except Exception as e:
-        return jsonify({'success': False, 'message': f'Failed to run script: {str(e)}'})
+        return jsonify({"success": False, "message": f"Failed to run script: {str(e)}"})
 
-@app.route('/download_models', methods=['POST'])
+
+@app.route("/download_models", methods=["POST"])
 def download_models():
     """Handle model download requests"""
     global current_artist
 
     # Check if user is admin
     if not is_admin(current_artist):
-        return jsonify({'success': False, 'message': 'Unauthorized'})
+        return jsonify({"success": False, "message": "Unauthorized"})
 
     data = request.get_json()
-    scripts = data.get('models', [])  # Now contains script filenames like "download_flux_models.sh"
-    hf_token = data.get('hf_token', '')
-    civit_token = data.get('civit_token', '')
+    scripts = data.get(
+        "models", []
+    )  # Now contains script filenames like "download_flux_models.sh"
+    hf_token = data.get("hf_token", "")
+    civit_token = data.get("civit_token", "")
 
     if not scripts:
-        return jsonify({'success': False, 'message': 'No models selected'})
+        return jsonify({"success": False, "message": "No models selected"})
 
-    download_dir = os.path.join(REPO_DIR, 'setup', 'download-models')
+    download_dir = os.path.join(REPO_DIR, "setup", "download-models")
     scripts_to_run = []
     script_names = []
 
     for script_filename in scripts:
         # Security: ensure filename doesn't contain path traversal
-        if '/' in script_filename or '\\' in script_filename or '..' in script_filename:
+        if "/" in script_filename or "\\" in script_filename or ".." in script_filename:
             continue
         script_path = os.path.join(download_dir, script_filename)
-        if os.path.exists(script_path) and script_filename.endswith('.sh'):
+        if os.path.exists(script_path) and script_filename.endswith(".sh"):
             scripts_to_run.append(script_path)
             # Clean name for display
-            name = script_filename.replace('.sh', '').replace('download_', '').replace('_', ' ').title()
+            name = (
+                script_filename.replace(".sh", "")
+                .replace("download_", "")
+                .replace("_", " ")
+                .title()
+            )
             script_names.append(name)
 
     if not scripts_to_run:
-        return jsonify({'success': False, 'message': 'No valid model scripts found'})
+        return jsonify({"success": False, "message": "No valid model scripts found"})
 
     try:
         global running_process
@@ -1564,14 +1993,14 @@ def download_models():
         # Set environment variables
         env = os.environ.copy()
         if hf_token:
-            env['HUGGING_FACE_HUB_TOKEN'] = hf_token
-            env['HF_TOKEN'] = hf_token
+            env["HUGGING_FACE_HUB_TOKEN"] = hf_token
+            env["HF_TOKEN"] = hf_token
         if civit_token:
-            env['CIVITAI_API_TOKEN'] = civit_token
-        env['HF_HUB_ENABLE_HF_TRANSFER'] = '1'
+            env["CIVITAI_API_TOKEN"] = civit_token
+        env["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
 
         # Clear log file first
-        with open(LOG_FILE, 'w') as f:
+        with open(LOG_FILE, "w") as f:
             f.write(f"=== Downloading Models: {', '.join(script_names)} ===\n")
             f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
             f.write("=" * 40 + "\n\n")
@@ -1579,40 +2008,122 @@ def download_models():
         # Create a combined script to run all downloads sequentially
         combined_script = "#!/bin/bash\nset -e\n"
         for script_path in scripts_to_run:
-            combined_script += f'\necho "\\n=== Running {os.path.basename(script_path)} ===\\n"\n'
+            combined_script += (
+                f'\necho "\\n=== Running {os.path.basename(script_path)} ===\\n"\n'
+            )
             combined_script += f'bash "{script_path}"\n'
         combined_script += '\necho "\\n=== All downloads completed ===\\n"\n'
 
         # Open log file for appending
-        log_file = open(LOG_FILE, 'a')
+        log_file = open(LOG_FILE, "a")
 
         # Run the combined script
         running_process = subprocess.Popen(
-            ['bash', '-c', combined_script],
+            ["bash", "-c", combined_script],
             stdout=log_file,
             stderr=subprocess.STDOUT,
-            cwd='/workspace',
+            cwd="/workspace",
             env=env,
-            bufsize=1
+            bufsize=1,
         )
 
         # Start a thread to close the log file when process completes
         def wait_and_close():
             running_process.wait()
-            log_file.write(f"\n=== Process completed with exit code: {running_process.returncode} ===\n")
+            log_file.write(
+                f"\n=== Process completed with exit code: {running_process.returncode} ===\n"
+            )
             log_file.close()
 
         thread = threading.Thread(target=wait_and_close, daemon=True)
         thread.start()
 
-        return jsonify({
-            'success': True,
-            'message': f'Download started for: {", ".join(script_names)}. Check terminal for progress.',
-            'scripts': scripts_to_run
-        })
+        return jsonify(
+            {
+                "success": True,
+                "message": f"Download started for: {', '.join(script_names)}. Check terminal for progress.",
+                "scripts": scripts_to_run,
+            }
+        )
 
     except Exception as e:
-        return jsonify({'success': False, 'message': f'Failed to start downloads: {str(e)}'})
+        return jsonify(
+            {"success": False, "message": f"Failed to start downloads: {str(e)}"}
+        )
+
+
+@app.route("/custom_nodes_action", methods=["POST"])
+def custom_nodes_action():
+    """Handle custom nodes install/update actions"""
+    global current_artist
+
+    # Check if user is admin
+    if not is_admin(current_artist):
+        return jsonify({"success": False, "message": "Unauthorized"})
+
+    data = request.get_json()
+    action = data.get("action")  # 'install' or 'update'
+
+    if action not in ["install", "update"]:
+        return jsonify({"success": False, "message": "Invalid action"})
+
+    # Get the appropriate script path
+    script_name = f"{action}_custom_nodes.sh"
+    script_path = os.path.join(REPO_DIR, "setup", "custom-nodes", script_name)
+
+    if not os.path.exists(script_path):
+        return jsonify(
+            {
+                "success": False,
+                "message": f"Script not found: {script_path}",
+            }
+        )
+
+    try:
+        global running_process
+
+        # Clear log file first
+        with open(LOG_FILE, "w") as f:
+            f.write(f"=== {action.capitalize()} Custom Nodes ===\n")
+            f.write(f"Script: {script_path}\n")
+            f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
+            f.write("=" * 40 + "\n\n")
+
+        # Open log file for appending
+        log_file = open(LOG_FILE, "a")
+
+        # Run the script with output to log file
+        running_process = subprocess.Popen(
+            ["bash", script_path],
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            cwd="/workspace",
+            bufsize=1,  # Line buffered
+        )
+
+        # Start a thread to close the log file when process completes
+        def wait_and_close():
+            running_process.wait()
+            log_file.write(
+                f"\n=== Process completed with exit code: {running_process.returncode} ===\n"
+            )
+            log_file.close()
+
+        thread = threading.Thread(target=wait_and_close, daemon=True)
+        thread.start()
+
+        # Return immediately - script runs in background
+        return jsonify(
+            {
+                "success": True,
+                "message": f"{action.capitalize()} started for custom nodes. Check terminal for progress.",
+                "script": script_path,
+            }
+        )
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to run script: {str(e)}"})
+
 
 def cleanup_sessions():
     """Cleanup all active sessions"""
@@ -1621,15 +2132,17 @@ def cleanup_sessions():
             session["process"].terminate()
         tool = TOOLS.get(tool_id)
         if tool:
-            subprocess.run(['fuser', '-k', f'{tool["port"]}/tcp'], capture_output=True)
+            subprocess.run(["fuser", "-k", f"{tool['port']}/tcp"], capture_output=True)
+
 
 def signal_handler(sig, frame):
     cleanup_sessions()
     sys.exit(0)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
     print("Starting ComfyStudio on port 8080...")
-    app.run(host='0.0.0.0', port=8080, debug=False)
+    app.run(host="0.0.0.0", port=8080, debug=False)
