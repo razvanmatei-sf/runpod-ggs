@@ -5,17 +5,34 @@ FROM runpod/pytorch:2.2.0-py3.10-cuda12.1.1-devel-ubuntu22.04
 # Set working directory
 WORKDIR /workspace
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Set noninteractive to avoid prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies (includes AI-Toolkit requirements)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     wget \
     curl \
     psmisc \
     python3-pip \
+    python3-dev \
+    python3-setuptools \
+    python3-wheel \
+    python3-venv \
+    python3-opencv \
+    build-essential \
+    cmake \
     ffmpeg \
     htop \
     nvtop \
     tmux \
+    openssh-client \
+    openssh-server \
+    openssl \
+    rsync \
+    unzip \
+    libgl1 \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 23
@@ -25,10 +42,6 @@ RUN curl -sL https://deb.nodesource.com/setup_23.x -o /tmp/nodesource_setup.sh &
     apt-get install -y nodejs && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-
-# Install UV package installer (blazingly fast pip replacement)
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:$PATH"
 
 # Install Flask for the server (ignore existing packages to avoid conflicts)
 RUN pip install --ignore-installed --no-deps Flask blinker click itsdangerous werkzeug
