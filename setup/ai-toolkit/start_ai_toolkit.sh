@@ -5,11 +5,9 @@ echo "Starting AI-Toolkit UI..."
 
 cd /workspace/ai-toolkit/ui
 
-# Ensure dependencies are installed
-if [ ! -d "node_modules" ]; then
-    echo "Installing Node.js dependencies..."
-    npm install
-fi
+# Force npm install to ensure all dependencies are present
+echo "Installing/updating Node.js dependencies..."
+npm install
 
 # Ensure the build exists
 if [ ! -d ".next" ]; then
