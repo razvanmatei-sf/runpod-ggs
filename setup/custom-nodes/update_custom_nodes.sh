@@ -3,6 +3,9 @@
 # ComfyUI Custom Nodes Update Script
 set -e
 
+# Suppress UV hardlink warning (can't use hardlinks across filesystems)
+export UV_LINK_MODE=copy
+
 echo "========================================================"
 echo "Updating ComfyUI Custom Nodes"
 echo "========================================================"

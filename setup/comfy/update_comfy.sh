@@ -3,6 +3,9 @@
 # ComfyUI Update Script - Updates code and dependencies
 set -e
 
+# Suppress UV hardlink warning (can't use hardlinks across filesystems)
+export UV_LINK_MODE=copy
+
 echo "========================================================"
 echo "ComfyUI Update"
 echo "========================================================"

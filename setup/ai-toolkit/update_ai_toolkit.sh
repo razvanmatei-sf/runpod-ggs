@@ -3,6 +3,9 @@
 # AI-Toolkit Update Script - Updates code and dependencies
 set -e
 
+# Suppress UV hardlink warning (can't use hardlinks across filesystems)
+export UV_LINK_MODE=copy
+
 echo "========================================================"
 echo "AI-Toolkit Update with CUDA 12.8.1 support"
 echo "========================================================"

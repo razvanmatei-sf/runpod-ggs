@@ -3,6 +3,9 @@
 # ComfyUI Installation Script for RunPod
 set -e
 
+# Suppress UV hardlink warning (can't use hardlinks across filesystems)
+export UV_LINK_MODE=copy
+
 echo "========================================================"
 echo "ComfyUI Installation"
 echo "========================================================"
