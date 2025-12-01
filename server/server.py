@@ -1126,18 +1126,18 @@ HTML_TEMPLATE = r"""
             // Get the button and disable it
             var btnId = action + '-btn-' + toolId;
             var btn = document.getElementById(btnId);
+            // Get tool name from tools object
+            var tools = {{ tools | tojson | safe }};
+            var toolName = tools[toolId] ? tools[toolId].name : toolId;
+
             if (btn) {
                 btn.disabled = true;
-                btn.textContent = action.charAt(0).toUpperCase() + action.slice(1) + 'ing...';
+                btn.textContent = action.charAt(0).toUpperCase() + action.slice(1) + 'ing ' + toolName + '...';
                 // Track active button globally so we can re-enable it when done
                 activeAdminButton = btn;
                 activeAdminAction = action;
                 activeAdminToolId = toolId;
             }
-
-            // Get tool name from tools object
-            var tools = {{ tools | tojson | safe }};
-            var toolName = tools[toolId] ? tools[toolId].name : toolId;
 
             // Update terminal title based on action
             var terminalTitle = document.querySelector('#terminalContainer .terminal-title');
