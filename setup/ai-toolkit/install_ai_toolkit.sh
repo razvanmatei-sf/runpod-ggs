@@ -6,6 +6,9 @@ export PATH="/root/.cargo/bin:$PATH"
 export PATH="/root/.local/bin:$PATH"
 export PATH="/usr/local/bin:$PATH"
 
+# Suppress UV hardlink warning (can't use hardlinks across filesystems)
+export UV_LINK_MODE=copy
+
 echo "Installing AI-Toolkit with CUDA 12.8 support for RTX 50-series..."
 
 # Check if UV is installed, install if not
