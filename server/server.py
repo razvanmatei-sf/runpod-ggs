@@ -218,7 +218,7 @@ LOG_FILE = "/tmp/comfystudio.log"
 running_process = None  # Track the currently running admin process
 
 # HTML Template
-HTML_TEMPLATE = """
+HTML_TEMPLATE = r"""
 <!DOCTYPE html>
 <html>
 <head>
