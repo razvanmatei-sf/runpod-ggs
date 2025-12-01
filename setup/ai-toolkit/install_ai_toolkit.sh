@@ -20,7 +20,7 @@ uv venv venv
 
 # Pre-install numpy as a binary wheel to avoid slow source build
 echo "Pre-installing numpy wheel..."
-/workspace/ai-toolkit/venv/bin/pip install --no-cache-dir numpy
+uv pip install --python venv/bin/python --no-cache-dir numpy
 
 # Install PyTorch nightly with CUDA 12.8 support using UV
 echo "Installing PyTorch nightly with CUDA 12.8 using UV (10-100x faster)..."
@@ -28,7 +28,7 @@ uv pip install --python venv/bin/python --no-cache-dir --pre torch torchvision t
 
 # Install requirements with venv's pip (matches official installation method)
 echo "Installing AI-Toolkit requirements..."
-/workspace/ai-toolkit/venv/bin/pip install --no-cache-dir -r requirements.txt
+uv pip install --python venv/bin/python --no-cache-dir -r requirements.txt
 
 # Reinstall PyTorch to ensure correct version (force)
 echo "Ensuring PyTorch nightly with CUDA 12.8..."
@@ -36,7 +36,7 @@ uv pip install --python venv/bin/python --no-cache-dir --pre torch torchvision t
 
 # Install specific setuptools version for compatibility
 echo "Installing setuptools 69.5.1..."
-/workspace/ai-toolkit/venv/bin/pip install --no-cache-dir setuptools==69.5.1
+uv pip install --python venv/bin/python --no-cache-dir setuptools==69.5.1
 
 # Build UI
 echo "Building AI-Toolkit UI..."
