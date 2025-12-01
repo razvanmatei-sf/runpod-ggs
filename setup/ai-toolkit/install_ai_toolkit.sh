@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Ensure PATH includes UV and other tools
+export PATH="/root/.cargo/bin:$PATH"
+export PATH="/usr/local/bin:$PATH"
+
 echo "Installing AI-Toolkit with CUDA 12.8 support for RTX 50-series..."
 
 cd /workspace
@@ -20,19 +24,19 @@ uv venv venv
 
 # Install PyTorch nightly with CUDA 12.8 support using UV (required for RTX 50-series)
 echo "Installing PyTorch nightly with CUDA 12.8 using UV (10-100x faster)..."
-uv pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+/root/.cargo/bin/uv pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
 
 # Install requirements with UV
 echo "Installing AI-Toolkit requirements with UV..."
-uv pip install --python venv/bin/python --no-cache-dir -r requirements.txt
+/root/.cargo/bin/uv pip install --python venv/bin/python --no-cache-dir -r requirements.txt
 
 # Reinstall PyTorch to ensure correct version (force)
 echo "Ensuring PyTorch nightly with CUDA 12.8..."
-uv pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force
+/root/.cargo/bin/uv pip install --python venv/bin/python --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force
 
 # Install specific setuptools version for compatibility
 echo "Installing setuptools 69.5.1..."
-uv pip install --python venv/bin/python --no-cache-dir setuptools==69.5.1
+/root/.cargo/bin/uv pip install --python venv/bin/python --no-cache-dir setuptools==69.5.1
 
 # Build UI
 echo "Building AI-Toolkit UI..."
