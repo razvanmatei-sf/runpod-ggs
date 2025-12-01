@@ -5,7 +5,7 @@
 ### 🆕 New Tools
 - **AI-Toolkit** - Training toolkit with web UI for Flux model fine-tuning
 - **SwarmUI** - Modern image generation interface with video processing
-- **LoRA-Tool** - Dataset helper with AI-powered captioning
+- **LoRA-Tool** - Dataset helper with AI-powered captioning (bundled app - no install needed)
 
 ### 🧩 Custom Nodes Manager
 - New dedicated page for managing ComfyUI extensions
@@ -14,10 +14,12 @@
 - Bulk update for all installed nodes
 
 ### 🔄 Smart Tool Management
-All tools now support:
+ComfyUI, AI-Toolkit, and SwarmUI support:
 - **Install** - Fresh installation
 - **Reinstall** - Clean install with automatic backup/restore
 - **Update** - Quick updates preserving all data
+
+LoRA-Tool is bundled - runs directly from repo, always up-to-date
 
 ### 💻 Terminal Improvements
 - ✅ **Copy button** - Copy entire log to clipboard
@@ -46,10 +48,11 @@ All tools now support:
 - Enhanced error handling
 
 ### 📁 New Scripts Created
-- Install/reinstall/update scripts for all tools
+- Install/reinstall/update scripts for external tools (ComfyUI, AI-Toolkit, SwarmUI)
 - Custom nodes management scripts
 - Process termination scripts
 - Backup/restore automation
+- LoRA-Tool bundled in repo (no install scripts needed)
 
 ---
 

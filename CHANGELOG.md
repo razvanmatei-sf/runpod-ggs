@@ -21,6 +21,7 @@ ComfyStudio now includes installation and management for multiple AI tools:
   - Dataset helper for LoRA training
   - AI-powered image captioning (Gemini, OpenAI)
   - Interactive workspace for dataset preparation
+  - Bundled with ComfyStudio - runs directly from repo
 
 #### **Custom Nodes Manager**
 - Dedicated page for managing ComfyUI custom nodes
@@ -46,7 +47,7 @@ New Install/Reinstall/Update pattern for all tools:
   - Update dependencies
   - No data loss
 
-Available for: ComfyUI, AI-Toolkit, SwarmUI, LoRA-Tool
+Available for: ComfyUI, AI-Toolkit, SwarmUI
 
 ### 🔧 Terminal Improvements
 
@@ -104,7 +105,7 @@ setup/
 ├── comfy/           (install, start, reinstall, update, kill)
 ├── ai-toolkit/      (install, start, reinstall, update, kill)
 ├── swarm-ui/        (install, start, reinstall, update, kill)
-├── lora-tool/       (install, start, reinstall, update, kill)
+├── lora-tool/       (bundled app - start, kill only)
 ├── custom-nodes/    (install, update, nodes.txt config)
 └── download-models/ (model download scripts)
 ```
@@ -148,7 +149,7 @@ Automatic backups during reinstalls:
 2. **Installing Additional Tools**:
    - AI-Toolkit: Click "Install AI-Toolkit"
    - SwarmUI: Click "Install SwarmUI"
-   - LoRA-Tool: Click "Install LoRA-Tool"
+   - LoRA-Tool: Bundled - just click to start (no install needed)
 
 3. **Using Tools**:
    - Switch to user mode to start sessions
@@ -156,8 +157,9 @@ Automatic backups during reinstalls:
    - Access via proxied URLs on RunPod
 
 4. **Updating Tools**:
-   - Use "Update" buttons for quick updates
+   - Use "Update" buttons for quick updates (ComfyUI, AI-Toolkit, SwarmUI)
    - Use "Reinstall" for clean installations with backup
+   - LoRA-Tool updates automatically via git-sync (bundled in repo)
 
 ### 📚 Documentation
 

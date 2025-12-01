@@ -186,7 +186,7 @@ TOOLS = {
     "lora-tool": {
         "name": "LoRA-Tool",
         "port": 3000,
-        "install_path": "/workspace/lora-tool",
+        "install_path": None,  # Runs directly from repo, no install needed
         "admin_only": False,
     },
     "swarm-ui": {
@@ -1746,12 +1746,12 @@ def start_session():
             # Kill any existing lora-tool on the port
             subprocess.run(["fuser", "-k", "3000/tcp"], capture_output=True)
             time.sleep(1)
-            # Start LoRA-Tool using start script
+            # Start LoRA-Tool using start script (runs from repo directory)
             start_script = get_setup_script("lora-tool", "start")
             if start_script:
                 process = subprocess.Popen(
                     ["bash", start_script],
-                    cwd="/workspace/lora-tool",
+                    cwd=os.path.join(REPO_DIR, "setup", "lora-tool"),
                 )
             else:
                 raise Exception("LoRA-Tool start script not found")

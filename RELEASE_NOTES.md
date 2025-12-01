@@ -6,7 +6,7 @@
 ComfyStudio now supports **4 AI tools** with full installation and management:
 - **AI-Toolkit** - Advanced training toolkit with web UI (port 8675)
 - **SwarmUI** - Modern image generation interface (port 7861)  
-- **LoRA-Tool** - Dataset helper with AI captioning (port 3000)
+- **LoRA-Tool** - Dataset helper with AI captioning (port 3000) - Bundled app
 - **ComfyUI** - Original powerful workflow system (port 8188)
 
 ### Custom Nodes Manager 
@@ -18,10 +18,12 @@ New dedicated page for managing ComfyUI extensions:
 - ✅ Customizable via `nodes.txt` configuration
 
 ### Smart Tool Management
-Every tool now has **3 management options**:
+ComfyUI, AI-Toolkit, and SwarmUI have **3 management options**:
 - **Install** - Fresh installation
 - **Reinstall** - Clean install with automatic backup/restore of your data
 - **Update** - Quick updates preserving everything
+
+LoRA-Tool is **bundled** - runs directly from repo, no install needed
 
 ### Terminal Enhancements
 - 📋 **Copy Button** - Copy logs to clipboard instantly
@@ -40,7 +42,8 @@ Every tool now has **3 management options**:
 **Admin Setup:**
 1. Select admin user → Enable Admin Mode
 2. Install ComfyUI → Download Models → Install Custom Nodes
-3. Install additional tools (AI-Toolkit, SwarmUI, LoRA-Tool)
+3. Install additional tools (AI-Toolkit, SwarmUI)
+4. LoRA-Tool is ready to use (bundled - just click start)
 
 **User Mode:**
 1. Select your profile
@@ -61,7 +64,7 @@ docker pull ghcr.io/razvanmatei-sf/runpod-ggs:latest
 
 ## 🔧 Technical Details
 
-**New Scripts:** Install, start, reinstall, update, and kill scripts for all tools
+**New Scripts:** Install, start, reinstall, update, and kill scripts for external tools; LoRA-Tool runs directly from repo
 
 **Port Map:**
 - 8080 → ComfyStudio UI

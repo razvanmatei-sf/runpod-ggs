@@ -39,7 +39,7 @@ export HF_XET_CHUNK_CACHE_SIZE_BYTES=90737418240
 - **Port 8080**: ComfyStudio Flask UI (entry point)
 - **Port 8675**: AI-Toolkit UI
 - **Port 7861**: SwarmUI web interface
-- **Port 3000**: LoRA-Tool dataset helper
+- **Port 3000**: LoRA-Tool dataset helper (bundled app)
 - **Port 8188**: ComfyUI image generation interface
 - **Port 8888**: Jupyter Lab notebook environment
 
@@ -52,6 +52,7 @@ Each user session creates isolated output at `/workspace/ComfyUI/output/{user_na
 - **User Output Directories**: `/workspace/ComfyUI/output/{user_name}/`
 - **Models Directory**: `/workspace/models/`
 - **Cloned Repository**: `/workspace/runpod-ggs/`
+- **LoRA-Tool**: Runs directly from `/workspace/runpod-ggs/setup/lora-tool/`
 
 ### Key Files
 - `server/server.py` - Core Flask app with embedded HTML frontend
@@ -83,10 +84,15 @@ The `start_server.sh` script automatically clones or pulls the latest code from 
 ### Setup Script Naming Convention
 
 Scripts in `setup/` folders follow this pattern:
-- `setup/{tool}/install_{tool}.sh` - Installation script
+- `setup/{tool}/install_{tool}.sh` - Installation script (for external tools)
 - `setup/{tool}/start_{tool}.sh` - Startup script
+- `setup/{tool}/reinstall_{tool}.sh` - Reinstall with backup
+- `setup/{tool}/update_{tool}.sh` - Update script
+- `setup/{tool}/kill_{tool}.sh` - Process termination
 
 Example: `setup/comfy/install_comfy.sh`, `setup/comfy/start_comfy.sh`
+
+**Note**: LoRA-Tool is bundled in the repo and runs directly - no install script needed
 
 ### RunPod Integration
 - Pod ID from `$RUNPOD_POD_ID` environment variable
@@ -186,9 +192,10 @@ Users are defined in `server/artist_names.sh`. Add `:admin` suffix for admin acc
 3. Expose ports: 8080, 8675, 7861, 3000, 8888, 8188
 4. Start pod - UI will be available on port 8080
 5. Select admin user and enable Admin Mode
-6. Use Install buttons to set up tools (ComfyUI, etc.)
+6. Use Install buttons to set up tools (ComfyUI, AI-Toolkit, SwarmUI)
 7. Use Models Download page to download required models
-8. Regular users can then select their profile and use the tools
+8. LoRA-Tool is bundled - ready to use immediately (no install needed)
+9. Regular users can then select their profile and use the tools
 
 ## Debugging
 
