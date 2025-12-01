@@ -152,11 +152,11 @@ When writing JavaScript in the Python template string:
 
 ## Tech Stack
 
-- Python 3.10
+- Python 3.12
 - Flask 3.1.x
-- PyTorch 2.2.0 (base image), PyTorch nightly cu128 (AI-Toolkit)
-- CUDA 12.1.1 (base image) / CUDA 12.8 (AI-Toolkit for RTX 50-series)
-- Ubuntu 22.04
+- PyTorch 2.8.0 (base image)
+- CUDA 12.8.1
+- Ubuntu 24.04
 - Node.js 23 (for AI-Toolkit UI)
 - Jupyter Lab
 
