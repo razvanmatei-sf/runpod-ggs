@@ -39,7 +39,7 @@ echo "Building from: $(pwd)"
 echo "Local image: $FULL_IMAGE_NAME"
 echo "Registry image: $REGISTRY_NAME"
 echo ""
-echo "Base image: runpod/pytorch:2.2.0-py3.10-cuda12.1.1-devel-ubuntu22.04"
+echo "Base image: runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404"
 
 # Build the Docker image
 echo "Building Docker image for linux/amd64 platform..."
