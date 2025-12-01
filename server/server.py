@@ -2,6 +2,7 @@
 
 import os
 import signal
+import socket
 import subprocess
 import sys
 import threading
@@ -1697,10 +1698,11 @@ HTML_TEMPLATE = r"""
                 fetch('/tool_status/' + toolId)
                     .then(function(response) { return response.json(); })
                     .then(function(data) {
-                        if (data.running) {
+                        if (data.running && data.port_ready) {
                             appendToUserTerminal('\\n' + toolName + ' is ready!\\n', 'success');
                             stopPollingUserLogs();
-                            // Open the tool after a brief delay
+                            // Open the tool after a delay to ensure it's fully ready
+                            appendToUserTerminal('Opening in 3 seconds...\\n', 'info');
                             setTimeout(function() {
                                 var runpodId = '{{ runpod_id | e }}';
                                 var url = 'https://' + runpodId + '-' + port + '.proxy.runpod.net';
@@ -1708,7 +1710,7 @@ HTML_TEMPLATE = r"""
                                 appendToUserTerminal('\\nRefresh the page to update button states.\\n', 'info');
                                 window.open(url, '_blank');
                                 // Don't auto-reload - let user see logs
-                            }, 500);
+                            }, 3000);
                         } else if (processExited) {
                             appendToUserTerminal('\\n' + toolName + ' process exited unexpectedly.\\n', 'error');
                             appendToUserTerminal('Check the logs above for errors.\\n', 'info');
@@ -2052,6 +2054,18 @@ def user_logs():
         return jsonify({"content": f"Error reading logs: {str(e)}", "running": False})
 
 
+def check_port_open(port, timeout=1):
+    """Check if a port is actually responding"""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        result = sock.connect_ex(("127.0.0.1", port))
+        sock.close()
+        return result == 0
+    except:
+        return False
+
+
 @app.route("/tool_status/<tool_id>")
 def tool_status(tool_id):
     if tool_id not in TOOLS:
@@ -2060,11 +2074,17 @@ def tool_status(tool_id):
     tool = TOOLS[tool_id]
     is_running = tool_id in active_sessions
 
+    # Also check if port is actually responding (service is ready)
+    port_ready = False
+    if is_running and tool.get("port"):
+        port_ready = check_port_open(tool["port"])
+
     return jsonify(
         {
             "tool_id": tool_id,
             "name": tool["name"],
             "running": is_running,
+            "port_ready": port_ready,
             "installed": is_installed(tool.get("install_path")),
         }
     )
