@@ -3,6 +3,9 @@
 # AI-Toolkit Update Script - Updates code and dependencies
 set -e
 
+# Start timer
+START_TIME=$(date +%s)
+
 # Suppress UV hardlink warning (can't use hardlinks across filesystems)
 export UV_LINK_MODE=copy
 
@@ -37,8 +40,17 @@ npm run update_db
 
 cd /workspace/ai-toolkit
 
+# Calculate elapsed time
+END_TIME=$(date +%s)
+ELAPSED=$((END_TIME - START_TIME))
+MINUTES=$((ELAPSED / 60))
+SECONDS=$((ELAPSED % 60))
+
+echo ""
 echo "========================================================"
 echo "Update complete!"
 echo "PyTorch with CUDA 12.8.1 support updated"
 echo "UI rebuilt and database updated"
+echo "========================================================"
+echo "⏱️  Total update time: ${MINUTES}m ${SECONDS}s"
 echo "========================================================"

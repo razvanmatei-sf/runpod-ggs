@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Start timer
+START_TIME=$(date +%s)
+
 echo "Installing SwarmUI..."
 
 cd /workspace
@@ -73,4 +76,15 @@ cd ..
 echo "Setting up SwarmUI (this may take a while)..."
 ./launch-linux.sh --launch_mode none --cloudflared-path cloudflared --port 7861
 
+# Calculate elapsed time
+END_TIME=$(date +%s)
+ELAPSED=$((END_TIME - START_TIME))
+MINUTES=$((ELAPSED / 60))
+SECONDS=$((ELAPSED % 60))
+
+echo ""
+echo "========================================================"
 echo "SwarmUI installation complete!"
+echo "========================================================"
+echo "⏱️  Total installation time: ${MINUTES}m ${SECONDS}s"
+echo "========================================================"

@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Start timer
+START_TIME=$(date +%s)
+
 # Ensure PATH includes UV and other tools
 export PATH="/root/.cargo/bin:$PATH"
 export PATH="/root/.local/bin:$PATH"
@@ -86,6 +89,17 @@ npm run update_db
 
 cd /workspace/ai-toolkit
 
+# Calculate elapsed time
+END_TIME=$(date +%s)
+ELAPSED=$((END_TIME - START_TIME))
+MINUTES=$((ELAPSED / 60))
+SECONDS=$((ELAPSED % 60))
+
+echo ""
+echo "========================================================"
 echo "AI-Toolkit installation complete!"
 echo "PyTorch nightly with CUDA 12.8 installed (RTX 50-series compatible)"
 echo "UI built and ready to use"
+echo "========================================================"
+echo "⏱️  Total installation time: ${MINUTES}m ${SECONDS}s"
+echo "========================================================"

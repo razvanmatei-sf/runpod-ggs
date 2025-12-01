@@ -3,6 +3,9 @@
 # ComfyUI Custom Nodes Update Script
 set -e
 
+# Start timer
+START_TIME=$(date +%s)
+
 # Suppress UV hardlink warning (can't use hardlinks across filesystems)
 export UV_LINK_MODE=copy
 
@@ -88,6 +91,15 @@ while IFS='|' read -r display_name repo_url || [ -n "$display_name" ]; do
 
 done < "$NODES_CONFIG"
 
+# Calculate elapsed time
+END_TIME=$(date +%s)
+ELAPSED=$((END_TIME - START_TIME))
+MINUTES=$((ELAPSED / 60))
+SECONDS=$((ELAPSED % 60))
+
+echo ""
 echo "========================================================"
 echo "Custom nodes update complete!"
+echo "========================================================"
+echo "⏱️  Total update time: ${MINUTES}m ${SECONDS}s"
 echo "========================================================"

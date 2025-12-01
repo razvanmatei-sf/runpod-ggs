@@ -3,6 +3,9 @@
 # ComfyUI Installation Script for RunPod
 set -e
 
+# Start timer
+START_TIME=$(date +%s)
+
 # Suppress UV hardlink warning (can't use hardlinks across filesystems)
 export UV_LINK_MODE=copy
 
@@ -69,6 +72,15 @@ uv pip install --python venv/bin/python -r /workspace/runpod-ggs/setup/comfy/req
 apt update
 apt install -y psmisc
 
+# Calculate elapsed time
+END_TIME=$(date +%s)
+ELAPSED=$((END_TIME - START_TIME))
+MINUTES=$((ELAPSED / 60))
+SECONDS=$((ELAPSED % 60))
+
+echo ""
 echo "========================================================"
 echo "Installation complete!"
+echo "========================================================"
+echo "⏱️  Total installation time: ${MINUTES}m ${SECONDS}s"
 echo "========================================================"

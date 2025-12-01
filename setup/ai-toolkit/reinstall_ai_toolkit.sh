@@ -3,6 +3,9 @@
 # AI-Toolkit Reinstall Script - Backs up data and reinstalls
 set -e
 
+# Start timer
+START_TIME=$(date +%s)
+
 echo "========================================================"
 echo "AI-Toolkit Reinstall (with backup)"
 echo "========================================================"
@@ -63,7 +66,16 @@ if [ -d "$BACKUP_DIR/output" ]; then
     echo "Output restored"
 fi
 
+# Calculate elapsed time
+END_TIME=$(date +%s)
+ELAPSED=$((END_TIME - START_TIME))
+MINUTES=$((ELAPSED / 60))
+SECONDS=$((ELAPSED % 60))
+
+echo ""
 echo "========================================================"
 echo "Reinstall complete!"
 echo "Backups saved in: $BACKUP_DIR"
+echo "========================================================"
+echo "⏱️  Total reinstall time: ${MINUTES}m ${SECONDS}s"
 echo "========================================================"
