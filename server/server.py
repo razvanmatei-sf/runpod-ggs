@@ -85,7 +85,9 @@ def get_setup_script(tool_id, script_type):
         return None
 
     # Script naming: install_comfy.sh, start_comfy.sh, etc.
-    script_name = f"{script_type}_{folder}.sh"
+    # Replace hyphens with underscores for script names
+    script_folder_name = folder.replace("-", "_")
+    script_name = f"{script_type}_{script_folder_name}.sh"
     script_path = os.path.join(REPO_DIR, "setup", folder, script_name)
     if os.path.exists(script_path):
         return script_path
