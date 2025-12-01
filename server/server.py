@@ -1124,6 +1124,10 @@ HTML_TEMPLATE = r"""
             if (btn) {
                 btn.disabled = true;
                 btn.textContent = action.charAt(0).toUpperCase() + action.slice(1) + 'ing...';
+                // Track active button globally so we can re-enable it when done
+                activeAdminButton = btn;
+                activeAdminAction = action;
+                activeAdminToolId = toolId;
             }
 
             // Get tool name from tools object
@@ -1503,8 +1507,11 @@ HTML_TEMPLATE = r"""
         }
 
         // Terminal functions
-        let logPollingInterval = null;
-        let lastLogLength = 0;
+        var logPollingInterval = null;
+        var lastLogLength = 0;
+        var activeAdminButton = null;
+        var activeAdminAction = null;
+        var activeAdminToolId = null;
 
         function showTerminal() {
             document.getElementById('terminalContainer').classList.add('visible');
@@ -1547,6 +1554,8 @@ HTML_TEMPLATE = r"""
                     if (data.running === false && logPollingInterval) {
                         appendToTerminal('\n--- Process completed ---\n', 'success');
                         stopPollingLogs();
+                        // Re-enable the admin button
+                        resetAdminButton();
                         // Don't auto-reload - let user see any errors
                     }
                 })
@@ -1591,6 +1600,16 @@ HTML_TEMPLATE = r"""
             if (terminalTimerInterval) {
                 clearInterval(terminalTimerInterval);
                 terminalTimerInterval = null;
+            }
+        }
+
+        function resetAdminButton() {
+            if (activeAdminButton && activeAdminAction && activeAdminToolId) {
+                activeAdminButton.disabled = false;
+                activeAdminButton.textContent = activeAdminAction.charAt(0).toUpperCase() + activeAdminAction.slice(1);
+                activeAdminButton = null;
+                activeAdminAction = null;
+                activeAdminToolId = null;
             }
         }
 
