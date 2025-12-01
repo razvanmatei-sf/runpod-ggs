@@ -57,8 +57,8 @@ echo "Installing optimized wheels for Python 3.12 + PyTorch 2.8 + CUDA 12..."
 # flash_attn 2.8.3 - Official wheel for torch2.8 + cp312 + CUDA 12
 pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3%2Bcu12torch2.8cxx11abiTRUE-cp312-cp312-linux_x86_64.whl
 
-# xformers - From PyTorch index for cu128, ABI3 wheel works with Python 3.9+
-pip install xformers --index-url https://download.pytorch.org/whl/cu128
+# xformers - Use PyPI with PyTorch index as fallback for CUDA wheels
+pip install xformers --extra-index-url https://download.pytorch.org/whl/cu128
 
 # sageattention - cp312 wheel from Kijai's precompiled wheels
 pip install https://huggingface.co/Kijai/PrecompiledWheels/resolve/main/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl
