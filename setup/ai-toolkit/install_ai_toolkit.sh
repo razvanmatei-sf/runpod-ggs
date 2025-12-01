@@ -7,6 +7,19 @@ echo "========================================================"
 echo "AI-Toolkit Installation (CUDA 12.8 for RTX 50-series)"
 echo "========================================================"
 
+# Install system dependencies (from AI-Toolkit Dockerfile)
+echo "Installing system dependencies..."
+apt-get update
+apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    python3-opencv \
+    openssh-client \
+    openssl \
+    rsync \
+    unzip \
+    libgl1
+
 cd /workspace
 
 # Remove existing installation if present
