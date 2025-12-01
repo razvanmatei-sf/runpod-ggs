@@ -767,8 +767,10 @@ HTML_TEMPLATE = """
                 <!-- Terminal output for user mode -->
                 <div class="terminal-container" id="userTerminalContainer">
                     <div class="terminal-header">
-                        <button class="terminal-btn" onclick="minimizeUserTerminal()" style="margin-right: auto;">−</button>
-                        <span class="terminal-title">Starting...</span>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-right: auto;">
+                            <button class="terminal-btn" onclick="minimizeUserTerminal()">−</button>
+                            <span class="terminal-title">Starting...</span>
+                        </div>
                         <div class="terminal-controls">
                             <button class="terminal-btn" onclick="copyUserTerminal()">Copy</button>
                             <button class="terminal-btn" onclick="clearUserTerminal()">Clear</button>
@@ -831,8 +833,10 @@ HTML_TEMPLATE = """
                 <!-- Terminal output -->
                 <div class="terminal-container" id="terminalContainer">
                     <div class="terminal-header">
-                        <button class="terminal-btn" onclick="minimizeTerminal()" style="margin-right: auto;">−</button>
-                        <span class="terminal-title">Terminal Output</span>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-right: auto;">
+                            <button class="terminal-btn" onclick="minimizeTerminal()">−</button>
+                            <span class="terminal-title">Terminal Output</span>
+                        </div>
                         <div class="terminal-controls">
                             <button class="terminal-btn" onclick="copyTerminal()">Copy</button>
                             <button class="terminal-btn" onclick="clearTerminal()">Clear</button>
@@ -889,8 +893,10 @@ HTML_TEMPLATE = """
             <!-- Terminal output for models page -->
             <div class="terminal-container" id="modelsTerminalContainer">
                 <div class="terminal-header">
-                    <button class="terminal-btn" onclick="minimizeModelsTerminal()" style="margin-right: auto;">−</button>
-                    <span class="terminal-title">Download Progress</span>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-right: auto;">
+                        <button class="terminal-btn" onclick="minimizeModelsTerminal()">−</button>
+                        <span class="terminal-title">Download Progress</span>
+                    </div>
                     <div class="terminal-controls">
                         <button class="terminal-btn" onclick="copyModelsTerminal()">Copy</button>
                         <button class="terminal-btn" onclick="clearModelsTerminal()">Clear</button>
@@ -951,8 +957,10 @@ HTML_TEMPLATE = """
             <!-- Terminal output for custom nodes page -->
             <div class="terminal-container" id="customNodesTerminalContainer">
                 <div class="terminal-header">
-                    <button class="terminal-btn" onclick="minimizeCustomNodesTerminal()" style="margin-right: auto;">−</button>
-                    <span class="terminal-title">Installation Progress</span>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-right: auto;">
+                        <button class="terminal-btn" onclick="minimizeCustomNodesTerminal()">−</button>
+                        <span class="terminal-title">Installation Progress</span>
+                    </div>
                     <div class="terminal-controls">
                         <button class="terminal-btn" onclick="copyCustomNodesTerminal()">Copy</button>
                         <button class="terminal-btn" onclick="clearCustomNodesTerminal()">Clear</button>
