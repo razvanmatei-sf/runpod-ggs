@@ -656,6 +656,14 @@ HTML_TEMPLATE = r"""
             font-weight: 600;
         }
 
+        .terminal-timer {
+            color: #fbbf24;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: monospace;
+            margin-left: 10px;
+        }
+
         .terminal-controls {
             display: flex;
             gap: 8px;
@@ -836,6 +844,7 @@ HTML_TEMPLATE = r"""
                         <div style="display: flex; align-items: center; gap: 10px; margin-right: auto;">
                             <button class="terminal-btn" onclick="minimizeTerminal()">−</button>
                             <span class="terminal-title">Terminal Output</span>
+                            <span class="terminal-timer" id="terminalTimer"></span>
                         </div>
                         <div class="terminal-controls">
                             <button class="terminal-btn" onclick="copyTerminal()">Copy</button>
@@ -896,6 +905,7 @@ HTML_TEMPLATE = r"""
                     <div style="display: flex; align-items: center; gap: 10px; margin-right: auto;">
                         <button class="terminal-btn" onclick="minimizeModelsTerminal()">−</button>
                         <span class="terminal-title">Download Progress</span>
+                        <span class="terminal-timer" id="modelsTerminalTimer"></span>
                     </div>
                     <div class="terminal-controls">
                         <button class="terminal-btn" onclick="copyModelsTerminal()">Copy</button>
@@ -960,6 +970,7 @@ HTML_TEMPLATE = r"""
                     <div style="display: flex; align-items: center; gap: 10px; margin-right: auto;">
                         <button class="terminal-btn" onclick="minimizeCustomNodesTerminal()">−</button>
                         <span class="terminal-title">Installation Progress</span>
+                        <span class="terminal-timer" id="customNodesTerminalTimer"></span>
                     </div>
                     <div class="terminal-controls">
                         <button class="terminal-btn" onclick="copyCustomNodesTerminal()">Copy</button>
@@ -1126,9 +1137,10 @@ HTML_TEMPLATE = r"""
                 terminalTitle.textContent = actionText + ' ' + toolName;
             }
 
-            // Clear and show terminal
+            // Clear and show terminal, start timer
             clearTerminal();
             showTerminal();
+            startTerminalTimer('terminalTimer');
             appendToTerminal('Starting ' + action + ' for ' + toolId + '...\\n', 'info');
 
             fetch('/admin_action', {
@@ -1201,11 +1213,12 @@ HTML_TEMPLATE = r"""
         }
 
         function installCustomNodes() {
-            // Update terminal title
+            // Update terminal title and start timer
             var terminalTitle = document.querySelector('#customNodesTerminalContainer .terminal-title');
             if (terminalTitle) {
                 terminalTitle.textContent = 'Installing Custom Nodes';
             }
+            startTerminalTimer('customNodesTerminalTimer');
 
             clearCustomNodesTerminal();
             showCustomNodesTerminal();
@@ -1229,11 +1242,12 @@ HTML_TEMPLATE = r"""
         }
 
         function updateCustomNodes() {
-            // Update terminal title
+            // Update terminal title and start timer
             var terminalTitle = document.querySelector('#customNodesTerminalContainer .terminal-title');
             if (terminalTitle) {
                 terminalTitle.textContent = 'Updating Custom Nodes';
             }
+            startTerminalTimer('customNodesTerminalTimer');
 
             clearCustomNodesTerminal();
             showCustomNodesTerminal();
@@ -1320,6 +1334,7 @@ HTML_TEMPLATE = r"""
                         if (!data.running) {
                             clearInterval(pollInterval);
                             appendToCustomNodesTerminal('\\n=== Process completed ===\\n', 'success');
+                            stopTerminalTimer();
                         }
                     });
             }, 1000);
@@ -1339,11 +1354,12 @@ HTML_TEMPLATE = r"""
                 return;
             }
 
-            // Update terminal title
+            // Update terminal title and start timer
             var terminalTitle = document.querySelector('#modelsTerminalContainer .terminal-title');
             if (terminalTitle) {
                 terminalTitle.textContent = 'Downloading Models';
             }
+            startTerminalTimer('modelsTerminalTimer');
 
             // Clear and show terminal
             clearModelsTerminal();
@@ -1444,6 +1460,7 @@ HTML_TEMPLATE = r"""
                     }
                     if (data.running === false && logPollingInterval) {
                         appendToModelsTerminal('\\n--- Download completed ---\\n', 'success');
+                        stopTerminalTimer();
                         stopPollingLogs();
                     }
                 })
@@ -1547,6 +1564,33 @@ HTML_TEMPLATE = r"""
             if (logPollingInterval) {
                 clearInterval(logPollingInterval);
                 logPollingInterval = null;
+            }
+            stopTerminalTimer();
+        }
+
+        // Terminal timer functions
+        var terminalTimerInterval = null;
+        var terminalTimerStart = null;
+
+        function startTerminalTimer(timerId) {
+            stopTerminalTimer();
+            terminalTimerStart = Date.now();
+            var timerElement = document.getElementById(timerId || 'terminalTimer');
+            if (timerElement) {
+                timerElement.textContent = '0:00';
+                terminalTimerInterval = setInterval(function() {
+                    var elapsed = Math.floor((Date.now() - terminalTimerStart) / 1000);
+                    var minutes = Math.floor(elapsed / 60);
+                    var seconds = elapsed % 60;
+                    timerElement.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+                }, 1000);
+            }
+        }
+
+        function stopTerminalTimer() {
+            if (terminalTimerInterval) {
+                clearInterval(terminalTimerInterval);
+                terminalTimerInterval = null;
             }
         }
 
