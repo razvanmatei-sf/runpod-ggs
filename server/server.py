@@ -1051,7 +1051,7 @@ HTML_TEMPLATE = """
             var btn = document.querySelector('[data-tool="' + toolId + '"]');
             if (btn.classList.contains('active')) {
                 // Tool is running - open it in new tab
-                var runpodId = '{{ runpod_id }}';
+                var runpodId = '{{ runpod_id | e }}';
                 var tool = {{ tools | tojson }}[toolId];
                 var url = 'https://' + runpodId + '-' + tool.port + '.proxy.runpod.net';
                 window.open(url, '_blank');
@@ -1616,7 +1616,7 @@ HTML_TEMPLATE = """
                             stopPollingUserLogs();
                             // Open the tool after a brief delay
                             setTimeout(function() {
-                                var runpodId = '{{ runpod_id }}';
+                                var runpodId = '{{ runpod_id | e }}';
                                 var url = 'https://' + runpodId + '-' + port + '.proxy.runpod.net';
                                 appendToUserTerminal('Opening ' + url + '\\\\n', 'info');
                                 window.open(url, '_blank');
