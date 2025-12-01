@@ -24,8 +24,8 @@ if [ ! -d "$CUSTOM_NODES_DIR" ]; then
     exit 1
 fi
 
-# Activate ComfyUI virtual environment
-source /workspace/ComfyUI/venv/bin/activate
+# Use ComfyUI virtual environment with UV (no activation needed)
+PYTHON_BIN="/workspace/ComfyUI/venv/bin/python"
 
 # Read nodes from config and update them
 echo "Reading custom nodes from: $NODES_CONFIG"
@@ -66,7 +66,7 @@ while IFS='|' read -r display_name repo_url || [ -n "$display_name" ]; do
     # Check for and update dependencies
     if [ -f "requirements.txt" ]; then
         echo "Updating Python requirements for $display_name with UV..."
-        uv pip install -r requirements.txt
+        uv pip install --python "$PYTHON_BIN" -r requirements.txt
         echo "Requirements updated for $display_name"
     elif [ -f "install.py" ]; then
         echo "Running install.py for $display_name..."

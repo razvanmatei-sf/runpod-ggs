@@ -18,15 +18,12 @@ cd ai-toolkit
 echo "Creating virtual environment with UV..."
 uv venv venv
 
-# Activate virtual environment
-source venv/bin/activate
-
-# Install PyTorch with CUDA 12.6 support using UV
+# Install PyTorch with CUDA 12.6 support using UV (no activation needed)
 echo "Installing PyTorch 2.7.0 with CUDA 12.6 using UV (10-100x faster)..."
-uv pip install --no-cache-dir torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu126
+uv pip install --python venv/bin/python --no-cache-dir torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu126
 
 # Install requirements with UV
 echo "Installing AI-Toolkit requirements with UV..."
-uv pip install -r requirements.txt
+uv pip install --python venv/bin/python -r requirements.txt
 
 echo "AI-Toolkit installation complete!"

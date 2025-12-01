@@ -13,11 +13,8 @@ echo "Updating AI-Toolkit repository..."
 git stash
 git pull --force
 
-echo "Activating virtual environment..."
-source venv/bin/activate
-
 echo "Updating Python dependencies with UV..."
-uv pip install -r requirements.txt
+uv pip install --python venv/bin/python -r requirements.txt
 
 echo "Updating UI dependencies..."
 cd ui
