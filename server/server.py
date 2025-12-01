@@ -1668,7 +1668,7 @@ HTML_TEMPLATE = r"""
             var terminal = document.getElementById('userTerminal');
             var span = document.createElement('span');
             if (className) span.className = className;
-            span.textContent = text;
+            span.innerHTML = text.replace(/\n/g, '<br>');
             terminal.appendChild(span);
             terminal.scrollTop = terminal.scrollHeight;
         }
