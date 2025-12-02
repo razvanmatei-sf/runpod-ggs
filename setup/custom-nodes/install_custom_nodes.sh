@@ -34,24 +34,23 @@ mkdir -p "$CUSTOM_NODES_DIR"
 echo "Reading custom nodes from: $NODES_CONFIG"
 echo ""
 
-while IFS='|' read -r display_name repo_url || [ -n "$display_name" ]; do
+while read -r repo_url || [ -n "$repo_url" ]; do
     # Skip comments and empty lines
-    if [[ "$display_name" =~ ^#.*$ ]] || [ -z "$display_name" ]; then
+    if [[ "$repo_url" =~ ^#.*$ ]] || [ -z "$repo_url" ]; then
         continue
     fi
 
     # Trim whitespace
-    display_name=$(echo "$display_name" | xargs)
     repo_url=$(echo "$repo_url" | xargs)
-
-    echo "----------------------------------------"
-    echo "Installing: $display_name"
-    echo "Repository: $repo_url"
-    echo "----------------------------------------"
 
     # Extract repo name from URL (last part without .git)
     repo_name=$(basename "$repo_url" .git)
     node_path="$CUSTOM_NODES_DIR/$repo_name"
+
+    echo "----------------------------------------"
+    echo "Installing: $repo_name"
+    echo "Repository: $repo_url"
+    echo "----------------------------------------"
 
     # Clone or update the repository
     if [ -d "$node_path" ]; then
@@ -67,22 +66,22 @@ while IFS='|' read -r display_name repo_url || [ -n "$display_name" ]; do
     cd "$node_path"
 
     if [ -f "requirements.txt" ]; then
-        echo "Installing Python requirements for $display_name..."
+        echo "Installing Python requirements for $repo_name..."
         pip install -r requirements.txt
-        echo "Requirements installed for $display_name"
+        echo "Requirements installed for $repo_name"
     elif [ -f "install.py" ]; then
-        echo "Running install.py for $display_name..."
+        echo "Running install.py for $repo_name..."
         python install.py
-        echo "Install script completed for $display_name"
+        echo "Install script completed for $repo_name"
     elif [ -f "install.sh" ]; then
-        echo "Running install.sh for $display_name..."
+        echo "Running install.sh for $repo_name..."
         bash install.sh
-        echo "Install script completed for $display_name"
+        echo "Install script completed for $repo_name"
     else
-        echo "No dependencies to install for $display_name"
+        echo "No dependencies to install for $repo_name"
     fi
 
-    echo "✓ $display_name installed successfully"
+    echo "✓ $repo_name installed successfully"
     echo ""
 
 done < "$NODES_CONFIG"

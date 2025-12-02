@@ -155,25 +155,19 @@ def get_custom_nodes():
                 if not line or line.startswith("#"):
                     continue
 
-                # Parse format: display_name|repo_url
-                if "|" in line:
-                    parts = line.split("|", 1)
-                    if len(parts) == 2:
-                        display_name = parts[0].strip()
-                        repo_url = parts[1].strip()
+                repo_url = line
+                # Extract repo name from URL
+                repo_name = os.path.basename(repo_url.replace(".git", ""))
+                node_path = os.path.join(custom_nodes_dir, repo_name)
 
-                        # Extract repo name from URL
-                        repo_name = os.path.basename(repo_url.replace(".git", ""))
-                        node_path = os.path.join(custom_nodes_dir, repo_name)
-
-                        nodes.append(
-                            {
-                                "name": display_name,
-                                "repo_url": repo_url,
-                                "repo_name": repo_name,
-                                "installed": os.path.isdir(node_path),
-                            }
-                        )
+                nodes.append(
+                    {
+                        "name": repo_name,
+                        "repo_url": repo_url,
+                        "repo_name": repo_name,
+                        "installed": os.path.isdir(node_path),
+                    }
+                )
     except Exception as e:
         print(f"Error parsing custom nodes config: {e}")
 

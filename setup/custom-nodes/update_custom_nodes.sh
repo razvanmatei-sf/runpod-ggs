@@ -31,14 +31,13 @@ source /workspace/ComfyUI/venv/bin/activate
 echo "Reading custom nodes from: $NODES_CONFIG"
 echo ""
 
-while IFS='|' read -r display_name repo_url || [ -n "$display_name" ]; do
+while read -r repo_url || [ -n "$repo_url" ]; do
     # Skip comments and empty lines
-    if [[ "$display_name" =~ ^#.*$ ]] || [ -z "$display_name" ]; then
+    if [[ "$repo_url" =~ ^#.*$ ]] || [ -z "$repo_url" ]; then
         continue
     fi
 
     # Trim whitespace
-    display_name=$(echo "$display_name" | xargs)
     repo_url=$(echo "$repo_url" | xargs)
 
     # Extract repo name from URL (last part without .git)
@@ -47,40 +46,40 @@ while IFS='|' read -r display_name repo_url || [ -n "$display_name" ]; do
 
     # Only update if the node is installed
     if [ ! -d "$node_path" ]; then
-        echo "⊘ Skipping $display_name (not installed)"
+        echo "⊘ Skipping $repo_name (not installed)"
         continue
     fi
 
     echo "----------------------------------------"
-    echo "Updating: $display_name"
+    echo "Updating: $repo_name"
     echo "Path: $node_path"
     echo "----------------------------------------"
 
     cd "$node_path"
 
     # Update the repository
-    echo "Pulling latest changes for $display_name..."
+    echo "Pulling latest changes for $repo_name..."
     git stash
     git pull --force
 
     # Check for and update dependencies
     if [ -f "requirements.txt" ]; then
-        echo "Updating Python requirements for $display_name..."
+        echo "Updating Python requirements for $repo_name..."
         pip install -r requirements.txt
-        echo "Requirements updated for $display_name"
+        echo "Requirements updated for $repo_name"
     elif [ -f "install.py" ]; then
-        echo "Running install.py for $display_name..."
+        echo "Running install.py for $repo_name..."
         python install.py
-        echo "Install script completed for $display_name"
+        echo "Install script completed for $repo_name"
     elif [ -f "install.sh" ]; then
-        echo "Running install.sh for $display_name..."
+        echo "Running install.sh for $repo_name..."
         bash install.sh
-        echo "Install script completed for $display_name"
+        echo "Install script completed for $repo_name"
     else
-        echo "No dependencies to update for $display_name"
+        echo "No dependencies to update for $repo_name"
     fi
 
-    echo "✓ $display_name updated successfully"
+    echo "✓ $repo_name updated successfully"
     echo ""
 
 done < "$NODES_CONFIG"
