@@ -30,10 +30,10 @@ echo "Upgrading pip..."
 pip install --upgrade pip
 
 echo "Installing PyTorch nightly with CUDA 12.8..."
-pip install --pre --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
 
 echo "Installing AI-Toolkit requirements..."
-pip install --no-cache-dir -r requirements.txt
+pip install -r requirements.txt
 
 # Build UI
 echo "Building AI-Toolkit UI..."
