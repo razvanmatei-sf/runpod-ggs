@@ -6,7 +6,7 @@ echo "Installing ComfyUI"
 
 cd /workspace
 
-git clone https://github.com/comfyanonymous/ComfyUI
+git clone --depth 1 https://github.com/comfyanonymous/ComfyUI
 
 cd /workspace/ComfyUI
 
@@ -23,9 +23,9 @@ pip install torch==2.8.0 torchvision torchaudio --index-url https://download.pyt
 
 cd custom_nodes
 
-git clone https://github.com/ltdrdata/ComfyUI-Manager
-git clone https://github.com/city96/ComfyUI-GGUF
-git clone https://github.com/ClownsharkBatwing/RES4LYF
+git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Manager
+git clone --depth 1 https://github.com/city96/ComfyUI-GGUF
+git clone --depth 1 https://github.com/ClownsharkBatwing/RES4LYF
 
 cd ComfyUI-Manager
 git stash
