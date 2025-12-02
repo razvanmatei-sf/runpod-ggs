@@ -16,7 +16,7 @@ if [ -d "ComfyUI" ]; then
 fi
 
 echo "Cloning ComfyUI..."
-git clone --depth 1 https://github.com/comfyanonymous/ComfyUI
+git clone https://github.com/comfyanonymous/ComfyUI
 
 cd /workspace/ComfyUI
 
@@ -30,7 +30,7 @@ echo "Upgrading pip..."
 pip install --upgrade pip
 
 echo "Installing PyTorch..."
-pip install torch==2.8.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu129
+pip install torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 echo "Installing ComfyUI requirements..."
 pip install -r requirements.txt
@@ -51,13 +51,13 @@ pip install -r /workspace/runpod-ggs/setup/comfy/requirements.txt
 cd custom_nodes
 
 echo "Installing ComfyUI-Manager..."
-git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Manager
+git clone https://github.com/ltdrdata/ComfyUI-Manager
 if [ -f "ComfyUI-Manager/requirements.txt" ]; then
     pip install -r ComfyUI-Manager/requirements.txt
 fi
 
 echo "Installing RES4LYF..."
-git clone --depth 1 https://github.com/ClownsharkBatwing/RES4LYF
+git clone https://github.com/ClownsharkBatwing/RES4LYF
 if [ -f "RES4LYF/requirements.txt" ]; then
     pip install -r RES4LYF/requirements.txt
 fi
