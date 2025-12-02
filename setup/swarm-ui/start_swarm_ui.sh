@@ -3,6 +3,9 @@ set -e
 
 echo "Starting SwarmUI..."
 
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools"
+
 cd /workspace/SwarmUI
 
 # Start SwarmUI on port 7861
