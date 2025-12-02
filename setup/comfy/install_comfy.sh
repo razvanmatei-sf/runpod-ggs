@@ -3,36 +3,22 @@
 # ComfyUI Installation Script for RunPod
 set -e
 
-echo "========================================================"
-echo "ComfyUI Installation"
-echo "========================================================"
+echo "Installing ComfyUI"
 
 cd /workspace
 
-# Remove existing ComfyUI if present (fresh install)
 if [ -d "ComfyUI" ]; then
     echo "Removing existing ComfyUI installation..."
     rm -rf ComfyUI
 fi
 
-echo "Cloning ComfyUI..."
 git clone https://github.com/comfyanonymous/ComfyUI
-
 cd /workspace/ComfyUI
 
-echo "Creating virtual environment..."
-python3 -m venv venv
-
-# Activate venv
+python3 -m venv --system-site-packages venv
 source venv/bin/activate
 
-echo "Upgrading pip..."
 pip install --upgrade pip
-
-echo "Installing PyTorch..."
-pip install torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-
-echo "Installing ComfyUI requirements..."
 pip install -r requirements.txt
 
 # Remove default xformers if installed
@@ -44,31 +30,18 @@ pip install https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/xformers-
 pip install https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/sageattention-2.2.0.post4-cp39-abi3-linux_x86_64.whl
 pip install https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/insightface-0.7.3-cp310-cp310-linux_x86_64.whl
 
-echo "Installing shared requirements..."
 pip install -r /workspace/runpod-ggs/setup/comfy/requirements.txt
 
-# Install custom nodes
 cd custom_nodes
 
-echo "Installing ComfyUI-Manager..."
 git clone https://github.com/ltdrdata/ComfyUI-Manager
-if [ -f "ComfyUI-Manager/requirements.txt" ]; then
-    pip install -r ComfyUI-Manager/requirements.txt
-fi
+[ -f "ComfyUI-Manager/requirements.txt" ] && pip install -r ComfyUI-Manager/requirements.txt
 
-echo "Installing RES4LYF..."
 git clone https://github.com/ClownsharkBatwing/RES4LYF
-if [ -f "RES4LYF/requirements.txt" ]; then
-    pip install -r RES4LYF/requirements.txt
-fi
+[ -f "RES4LYF/requirements.txt" ] && pip install -r RES4LYF/requirements.txt
 
 cd /workspace/ComfyUI
 
-# Install psmisc for fuser command
-apt-get update
-apt-get install -y psmisc
+apt-get update && apt-get install -y psmisc
 
-echo ""
-echo "========================================================"
-echo "ComfyUI Installation complete!"
-echo "========================================================"
+echo "ComfyUI Installation complete"
