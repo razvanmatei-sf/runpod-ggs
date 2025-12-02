@@ -20,8 +20,8 @@ download() {
 download "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_fp8_e4m3fn.safetensors" \
     "/workspace/ComfyUI/models/diffusion_models/qwen_image_fp8_e4m3fn.safetensors"
 
-download "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/non_official/diffusion_models/qwen_image_distill_full_fp8_e4m3fn.safetensors" \
-    "/workspace/ComfyUI/models/diffusion_models/qwen_image_distill_full_fp8_e4m3fn.safetensors"
+#download "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/non_official/diffusion_models/qwen_image_distill_full_fp8_e4m3fn.safetensors" \
+#    "/workspace/ComfyUI/models/diffusion_models/qwen_image_distill_full_fp8_e4m3fn.safetensors"
 
 download "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_2509_fp8_e4m3fn.safetensors" \
     "/workspace/ComfyUI/models/diffusion_models/qwen_image_edit_2509_fp8_e4m3fn.safetensors"
@@ -32,8 +32,8 @@ download "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split
 download "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors" \
     "/workspace/ComfyUI/models/vae/qwen_image_vae.safetensors"
 
-download "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Lightning-4steps-V1.0.safetensors" \
-    "/workspace/ComfyUI/models/loras/Qwen-Image-Lightning-4steps-V1.0.safetensors"
+#download "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Lightning-4steps-V1.0.safetensors" \
+#    "/workspace/ComfyUI/models/loras/Qwen-Image-Lightning-4steps-V1.0.safetensors"
 
 download "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Lightning-4steps-V2.0.safetensors" \
     "/workspace/ComfyUI/models/loras/Qwen-Image-Lightning-4steps-V2.0.safetensors"
