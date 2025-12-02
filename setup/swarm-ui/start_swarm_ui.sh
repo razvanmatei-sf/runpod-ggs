@@ -3,7 +3,7 @@ set -e
 
 echo "Starting SwarmUI..."
 
-export DOTNET_ROOT="$HOME/.dotnet"
+export DOTNET_ROOT="/workspace/.dotnet"
 export PATH="$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools"
 
 cd /workspace/SwarmUI

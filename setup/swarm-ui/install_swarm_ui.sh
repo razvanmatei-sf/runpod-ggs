@@ -29,9 +29,12 @@ cd SwarmUI
 cd launchtools
 wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
 chmod +x dotnet-install.sh
-./dotnet-install.sh --channel 8.0 --runtime aspnetcore
-./dotnet-install.sh --channel 8.0
+./dotnet-install.sh --channel 8.0 --runtime aspnetcore --install-dir /workspace/.dotnet
+./dotnet-install.sh --channel 8.0 --install-dir /workspace/.dotnet
 cd ..
+
+export DOTNET_ROOT="/workspace/.dotnet"
+export PATH="$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools"
 
 ./launch-linux.sh --launch_mode none --cloudflared-path cloudflared --port 7861
 
