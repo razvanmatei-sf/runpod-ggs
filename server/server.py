@@ -1158,7 +1158,7 @@ HTML_TEMPLATE = r"""
             clearTerminal();
             showTerminal();
             startTerminalTimer('terminalTimer');
-            appendToTerminal('Starting ' + action + ' for ' + toolId + '...\\n', 'info');
+            appendToTerminal('Starting ' + action + ' for ' + toolId + '...\n', 'info');
 
             fetch('/admin_action', {
                 method: 'POST',
@@ -1173,7 +1173,7 @@ HTML_TEMPLATE = r"""
                     startPollingLogs();
                 } else {
                     showStatus(data.message, 'error');
-                    appendToTerminal('Error: ' + data.message + '\\n', 'error');
+                    appendToTerminal('Error: ' + data.message + '\n', 'error');
                     // Re-enable button on error
                     if (btn) {
                         btn.disabled = false;
