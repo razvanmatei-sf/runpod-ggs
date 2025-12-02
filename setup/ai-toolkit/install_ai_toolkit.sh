@@ -35,12 +35,6 @@ pip install --pre --no-cache-dir torch torchvision torchaudio --index-url https:
 echo "Installing AI-Toolkit requirements..."
 pip install --no-cache-dir -r requirements.txt
 
-echo "Reinstalling PyTorch nightly (ensuring correct version)..."
-pip install --pre --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force
-
-echo "Installing setuptools..."
-pip install setuptools==69.5.1 --no-cache-dir
-
 # Build UI
 echo "Building AI-Toolkit UI..."
 cd ui
