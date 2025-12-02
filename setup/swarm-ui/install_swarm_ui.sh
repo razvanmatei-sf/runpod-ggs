@@ -36,6 +36,6 @@ cd ..
 export DOTNET_ROOT="/workspace/.dotnet"
 export PATH="$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools"
 
-./launch-linux.sh --launch_mode none --cloudflared-path cloudflared --port 7861
+./launch-linux.sh --launch_mode none --port 7861
 
 echo "SwarmUI Installation complete"
