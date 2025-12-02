@@ -4,7 +4,7 @@
 set -e
 
 echo "========================================================"
-echo "AI-Toolkit Installation (CUDA 12.8 for RTX 50-series)"
+echo "AI-Toolkit Installation"
 echo "========================================================"
 
 cd /workspace
@@ -30,16 +30,16 @@ echo "Upgrading pip..."
 pip install --upgrade pip
 
 echo "Installing PyTorch nightly with CUDA 12.8..."
-pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+pip install --pre --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
 
 echo "Installing AI-Toolkit requirements..."
-pip install -r requirements.txt
+pip install --no-cache-dir -r requirements.txt
 
 echo "Reinstalling PyTorch nightly (ensuring correct version)..."
-pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force-reinstall
+pip install --pre --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --force
 
 echo "Installing setuptools..."
-pip install setuptools==69.5.1
+pip install setuptools==69.5.1 --no-cache-dir
 
 # Build UI
 echo "Building AI-Toolkit UI..."
@@ -47,9 +47,6 @@ cd ui
 
 echo "Installing Node.js dependencies..."
 npm install
-
-echo "Generating Prisma client..."
-npx prisma generate
 
 echo "Building UI assets..."
 npm run build
