@@ -59,6 +59,7 @@ cd ..
 cd ..
 
 pip install -r requirements.txt
+pip install -r /workspace/runpod-ggs/setup/comfy/requirements.txt
 
 pip uninstall xformers --yes
 
