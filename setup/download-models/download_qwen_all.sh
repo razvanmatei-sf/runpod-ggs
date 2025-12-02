@@ -14,7 +14,7 @@ download() {
         return
     fi
     echo "Downloading $(basename "$dest")..."
-    wget --progress=bar:force -O "$dest" "$url" 2>&1 | grep --line-buffered -oP '\d+%|\d+[KM]' || curl -L --progress-bar -o "$dest" "$url"
+    curl -L -s -o "$dest" "$url"
 }
 
 download "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_fp8_e4m3fn.safetensors" \
