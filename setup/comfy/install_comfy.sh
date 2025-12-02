@@ -67,10 +67,6 @@ pip install https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/xformers-
 pip install https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/sageattention-2.2.0.post4-cp39-abi3-linux_x86_64.whl
 pip install https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/insightface-0.7.3-cp310-cp310-linux_x86_64.whl
 
-cd ..
-
-pip install -r requirements.txt
-
 apt update
 apt install psmisc
 
