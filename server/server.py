@@ -1158,7 +1158,6 @@ HTML_TEMPLATE = r"""
             clearTerminal();
             showTerminal();
             startTerminalTimer('terminalTimer');
-            appendToTerminal('Starting ' + action + ' for ' + toolId + '...\n', 'info');
 
             fetch('/admin_action', {
                 method: 'POST',
