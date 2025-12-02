@@ -26,6 +26,7 @@ cd custom_nodes
 git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Manager
 git clone --depth 1 https://github.com/city96/ComfyUI-GGUF
 git clone --depth 1 https://github.com/ClownsharkBatwing/RES4LYF
+git clone --depth 1 https://github.com/rgthree/rgthree-comfy
 
 cd ComfyUI-Manager
 git stash
@@ -46,6 +47,13 @@ git stash
 git reset --hard
 git pull --force
 pip install -r requirements.txt
+cd ..
+
+cd rgthree-comfy
+git stash
+git reset --hard
+git pull --force
+[ -f "requirements.txt" ] && pip install -r requirements.txt
 cd ..
 
 cd ..
