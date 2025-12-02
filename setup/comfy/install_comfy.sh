@@ -32,21 +32,21 @@ cd ComfyUI-Manager
 git stash
 git reset --hard
 git pull --force
-pip install -r requirements.txt
+[ -f "requirements.txt" ] && pip install -r requirements.txt
 cd ..
 
 cd ComfyUI-GGUF
 git stash
 git reset --hard
 git pull --force
-pip install -r requirements.txt
+[ -f "requirements.txt" ] && pip install -r requirements.txt
 cd ..
 
 cd RES4LYF
 git stash
 git reset --hard
 git pull --force
-pip install -r requirements.txt
+[ -f "requirements.txt" ] && pip install -r requirements.txt
 cd ..
 
 cd rgthree-comfy
