@@ -41,6 +41,11 @@ download "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_file
     "/workspace/ComfyUI/models/vae/ae.safetensors"
 
 echo ""
+echo "=== Downloading ControlNet ==="
+download "https://huggingface.co/alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union/resolve/main/Z-Image-Turbo-Fun-Controlnet-Union.safetensors" \
+    "/workspace/ComfyUI/models/controlnet/Z-Image-Turbo-Fun-Controlnet-Union.safetensors"
+
+echo ""
 echo "=========================================="
 echo "Z Image Turbo download complete!"
 echo "=========================================="
