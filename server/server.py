@@ -1917,26 +1917,8 @@ def is_installed(path):
 
 
 def get_all_users():
-    """Get list of users for dropdown"""
-    output_dir = "/workspace/ComfyUI/output"
-    users = set()
-
-    # Try to get users from output directory first
-    try:
-        if os.path.exists(output_dir):
-            for item in os.listdir(output_dir):
-                item_path = os.path.join(output_dir, item)
-                if os.path.isdir(item_path) and not item.startswith("."):
-                    users.add(item)
-    except:
-        pass
-
-    # If no users found from directory, use USERS from artist_names.sh
-    if not users:
-        for user in USERS:
-            users.add(user)
-
-    return sorted(list(users))
+    """Get list of users for dropdown from artist_names.sh"""
+    return sorted(USERS)
 
 
 @app.route("/debug")
