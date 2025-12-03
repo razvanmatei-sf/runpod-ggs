@@ -12,11 +12,11 @@ cd /workspace/ComfyUI/venv
 source bin/activate
 cd /workspace/ComfyUI
 
-# Build command with optional output directory
-CMD="python main.py --listen 0.0.0.0 --use-sage-attention"
+# Build command args
+ARGS="--listen 0.0.0.0 --use-sage-attention"
 if [ -n "$COMFY_OUTPUT_DIR" ]; then
     mkdir -p "$COMFY_OUTPUT_DIR"
-    CMD="$CMD --output-directory $COMFY_OUTPUT_DIR"
+    ARGS="$ARGS --output-directory \"$COMFY_OUTPUT_DIR\""
 fi
 
-$CMD
+eval python main.py $ARGS
