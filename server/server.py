@@ -102,33 +102,65 @@ def get_setup_script(tool_id, script_type):
 def parse_model_destinations(script_path):
     """
     Parse a download script to extract destination model filenames.
-    Returns list of destination file paths.
+    Returns list of full destination file paths.
     """
+    import re
+
     destinations = []
     try:
         with open(script_path, "r") as f:
             content = f.read()
+            lines = content.splitlines()
 
-        # Pattern 1: -O filename or -o filename (wget/curl)
-        import re
+        current_dir = None
 
-        # Match: -O "path" or -O path or -o "path" or -o path
-        for match in re.finditer(
-            r'-[Oo]\s+["\']?([^"\'\s\n]+\.(?:safetensors|gguf|bin|pt|pth|ckpt))["\']?',
-            content,
-        ):
-            destinations.append(match.group(1))
+        # Join continuation lines (backslash at end of line)
+        joined_lines = []
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            while line.rstrip().endswith("\\") and i + 1 < len(lines):
+                line = line.rstrip()[:-1] + " " + lines[i + 1].strip()
+                i += 1
+            joined_lines.append(line)
+            i += 1
 
-        # Pattern 2: download "url" "dest" function calls
-        for match in re.finditer(
-            r'download\s+["\'][^"\']+["\']\s+["\']?([^"\'"\s\n]+)["\']?', content
-        ):
-            dest = match.group(1)
-            if any(
-                ext in dest
-                for ext in [".safetensors", ".gguf", ".bin", ".pt", ".pth", ".ckpt"]
-            ):
-                destinations.append(dest)
+        for line in joined_lines:
+            line_stripped = line.strip()
+
+            # Track cd commands to know current directory
+            # Match: cd "$MODELS_DIR/subdir" or cd /workspace/models/subdir
+            cd_match = re.match(r'cd\s+["\']?([^"\';\s]+)["\']?', line_stripped)
+            if cd_match:
+                cd_path = cd_match.group(1)
+                # Expand $MODELS_DIR variable
+                cd_path = cd_path.replace("$MODELS_DIR", "/workspace/models")
+                cd_path = cd_path.replace("${MODELS_DIR}", "/workspace/models")
+                current_dir = cd_path
+                continue
+
+            # Pattern 1: -O filename (wget) - just filename, need to combine with current_dir
+            o_match = re.search(
+                r"-[Oo]\s+([^\s\\]+\.(?:safetensors|gguf|bin|pt|pth|ckpt))",
+                line_stripped,
+            )
+            if o_match:
+                filename = o_match.group(1)
+                if current_dir and not filename.startswith("/"):
+                    destinations.append(os.path.join(current_dir, filename))
+                else:
+                    destinations.append(filename)
+                continue
+
+            # Pattern 2: download "url" "dest" function calls (full path in dest)
+            dl_match = re.search(r'download\s+"[^"]+"\s+"([^"]+)"', line_stripped)
+            if dl_match:
+                dest = dl_match.group(1)
+                if any(
+                    ext in dest
+                    for ext in [".safetensors", ".gguf", ".bin", ".pt", ".pth", ".ckpt"]
+                ):
+                    destinations.append(dest)
 
     except Exception as e:
         print(f"Error parsing script {script_path}: {e}")
@@ -146,31 +178,15 @@ def check_models_installed(destinations):
 
     installed = 0
     for dest in destinations:
-        # Normalize paths - could be relative (ComfyUI/models/...) or absolute (/workspace/...)
-        if dest.startswith("ComfyUI/"):
-            full_path = os.path.join("/workspace", dest)
-        elif dest.startswith("/"):
+        # Normalize paths
+        if dest.startswith("/"):
             full_path = dest
+        elif dest.startswith("ComfyUI/"):
+            full_path = os.path.join("/workspace", dest)
         else:
             full_path = os.path.join("/workspace", dest)
 
-        # Also check /workspace/models directly
-        basename = os.path.basename(dest)
-        alt_paths = [
-            full_path,
-            os.path.join(
-                "/workspace/models",
-                os.path.dirname(dest).split("/")[-1] if "/" in dest else "",
-                basename,
-            ),
-            os.path.join(
-                "/workspace/ComfyUI/models",
-                os.path.dirname(dest).split("/")[-1] if "/" in dest else "",
-                basename,
-            ),
-        ]
-
-        if any(os.path.exists(p) for p in alt_paths):
+        if os.path.exists(full_path):
             installed += 1
 
     return (installed, len(destinations))
