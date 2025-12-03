@@ -8,6 +8,10 @@ echo "=========================================="
 echo "Starting ComfyStudio"
 echo "=========================================="
 
+# Setup SSH known hosts for GitHub (required for private repo access)
+mkdir -p ~/.ssh
+ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts 2>/dev/null
+
 # Configuration
 WORKSPACE_DIR="/workspace"
 REPO_URL="https://github.com/razvanmatei-sf/runpod-ggs.git"
