@@ -1,10 +1,8 @@
 #!/bin/bash
 
-# Sync workflows from private repo (optional - don't fail if not available)
-if [ -d "/workspace/ComfyUI/user/default/workflows/.git" ]; then
-    cd /workspace/ComfyUI/user/default/workflows
-    git pull 2>/dev/null || echo "Warning: Could not sync workflows (no network or auth)"
-fi
+# Sync workflows from private repo
+cd /workspace/ComfyUI/user/default/workflows
+git pull
 
 apt update
 apt install -y psmisc
