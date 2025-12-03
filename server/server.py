@@ -493,7 +493,15 @@ HTML_TEMPLATE = r"""
             background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
             border-color: #22c55e;
             color: white;
+            cursor: pointer;
+        }
+
+        .tool-btn.starting {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            border-color: #f59e0b;
+            color: white;
             cursor: not-allowed;
+            pointer-events: none;
         }
 
         .tool-btn:disabled {
@@ -502,6 +510,12 @@ HTML_TEMPLATE = r"""
         }
 
         .tool-btn.active:hover {
+            border-color: #16a34a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+
+        .tool-btn.starting:hover {
             transform: none;
             box-shadow: none;
         }
@@ -1181,13 +1195,20 @@ HTML_TEMPLATE = r"""
                 var tool = {{ tools | tojson }}[toolId];
                 var url = 'https://' + runpodId + '-' + tool.port + '.proxy.runpod.net';
                 window.open(url, '_blank');
-            } else {
-                // Start the tool
-                startSession(toolId);
+            } else if (!btn.classList.contains('starting')) {
+                // Start the tool (only if not already starting)
+                btn.classList.add('starting');
+                // Update button text to show starting state
+                var toolNameSpan = btn.querySelector('.tool-name');
+                if (toolNameSpan) {
+                    toolNameSpan.setAttribute('data-original-text', toolNameSpan.textContent);
+                    toolNameSpan.textContent = 'Starting...';
+                }
+                startSession(toolId, btn);
             }
         }
 
-        function startSession(toolId) {
+        function startSession(toolId, btn) {
             var tools = {{ tools | tojson }};
             var toolName = tools[toolId] ? tools[toolId].name : toolId;
 
@@ -1211,6 +1232,25 @@ HTML_TEMPLATE = r"""
                 } else {
                     appendToUserTerminal('Error: ' + data.message + '\\n', 'error');
                     showStatus(data.message, 'error');
+                    // Reset button state on error
+                    if (btn) {
+                        btn.classList.remove('starting');
+                        var toolNameSpan = btn.querySelector('.tool-name');
+                        if (toolNameSpan && toolNameSpan.getAttribute('data-original-text')) {
+                            toolNameSpan.textContent = toolNameSpan.getAttribute('data-original-text');
+                        }
+                    }
+                }
+            })
+            .catch(function(error) {
+                appendToUserTerminal('Error: ' + error + '\\n', 'error');
+                // Reset button state on error
+                if (btn) {
+                    btn.classList.remove('starting');
+                    var toolNameSpan = btn.querySelector('.tool-name');
+                    if (toolNameSpan && toolNameSpan.getAttribute('data-original-text')) {
+                        toolNameSpan.textContent = toolNameSpan.getAttribute('data-original-text');
+                    }
                 }
             });
         }
