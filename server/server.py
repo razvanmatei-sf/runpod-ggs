@@ -1824,7 +1824,7 @@ HTML_TEMPLATE = r"""
             var tool = tools[toolId];
             var port = tool ? tool.port : null;
             var checkCount = 0;
-            var maxChecks = 120; // 120 seconds timeout (2 minutes)
+            var maxChecks = 300; // 300 seconds timeout (5 minutes)
             var lastLogLength = 0;
             var processExited = false;
 
