@@ -99,10 +99,87 @@ def get_setup_script(tool_id, script_type):
     return None
 
 
+def parse_model_destinations(script_path):
+    """
+    Parse a download script to extract destination model filenames.
+    Returns list of destination file paths.
+    """
+    destinations = []
+    try:
+        with open(script_path, "r") as f:
+            content = f.read()
+
+        # Pattern 1: -O filename or -o filename (wget/curl)
+        import re
+
+        # Match: -O "path" or -O path or -o "path" or -o path
+        for match in re.finditer(
+            r'-[Oo]\s+["\']?([^"\'\s\n]+\.(?:safetensors|gguf|bin|pt|pth|ckpt))["\']?',
+            content,
+        ):
+            destinations.append(match.group(1))
+
+        # Pattern 2: download "url" "dest" function calls
+        for match in re.finditer(
+            r'download\s+["\'][^"\']+["\']\s+["\']?([^"\'"\s\n]+)["\']?', content
+        ):
+            dest = match.group(1)
+            if any(
+                ext in dest
+                for ext in [".safetensors", ".gguf", ".bin", ".pt", ".pth", ".ckpt"]
+            ):
+                destinations.append(dest)
+
+    except Exception as e:
+        print(f"Error parsing script {script_path}: {e}")
+
+    return destinations
+
+
+def check_models_installed(destinations):
+    """
+    Check how many model files from a script are installed.
+    Returns tuple of (installed_count, total_count).
+    """
+    if not destinations:
+        return (0, 0)
+
+    installed = 0
+    for dest in destinations:
+        # Normalize paths - could be relative (ComfyUI/models/...) or absolute (/workspace/...)
+        if dest.startswith("ComfyUI/"):
+            full_path = os.path.join("/workspace", dest)
+        elif dest.startswith("/"):
+            full_path = dest
+        else:
+            full_path = os.path.join("/workspace", dest)
+
+        # Also check /workspace/models directly
+        basename = os.path.basename(dest)
+        alt_paths = [
+            full_path,
+            os.path.join(
+                "/workspace/models",
+                os.path.dirname(dest).split("/")[-1] if "/" in dest else "",
+                basename,
+            ),
+            os.path.join(
+                "/workspace/ComfyUI/models",
+                os.path.dirname(dest).split("/")[-1] if "/" in dest else "",
+                basename,
+            ),
+        ]
+
+        if any(os.path.exists(p) for p in alt_paths):
+            installed += 1
+
+    return (installed, len(destinations))
+
+
 def get_download_scripts():
     """
     Scan setup/download-models/ directory and return available download scripts.
-    Returns list of dicts with 'id', 'name', 'path' for each script.
+    Returns list of dicts with 'id', 'name', 'path', 'installed', 'total' for each script.
     """
     scripts = []
     download_dir = os.path.join(REPO_DIR, "setup", "download-models")
@@ -111,7 +188,7 @@ def get_download_scripts():
         return scripts
 
     try:
-        for filename in sorted(os.listdir(download_dir)):
+        for filename in os.listdir(download_dir):
             if filename.endswith(".sh"):
                 # Convert filename to display name
                 # e.g., "download_z_image_turbo.sh" -> "Z Image Turbo"
@@ -121,17 +198,25 @@ def get_download_scripts():
                 name = name.replace("_", " ")
                 name = name.title()
 
+                script_path = os.path.join(download_dir, filename)
+                destinations = parse_model_destinations(script_path)
+                installed, total = check_models_installed(destinations)
+
                 scripts.append(
                     {
                         "id": filename.replace(".sh", ""),
                         "name": name,
                         "filename": filename,
-                        "path": os.path.join(download_dir, filename),
+                        "path": script_path,
+                        "installed": installed,
+                        "total": total,
                     }
                 )
     except Exception as e:
         print(f"Error scanning download scripts: {e}")
 
+    # Sort by name (case-insensitive)
+    scripts.sort(key=lambda x: x["name"].lower())
     return scripts
 
 
@@ -171,6 +256,8 @@ def get_custom_nodes():
     except Exception as e:
         print(f"Error parsing custom nodes config: {e}")
 
+    # Sort nodes by name (case-insensitive)
+    nodes.sort(key=lambda x: x["name"].lower())
     return nodes
 
 
@@ -527,18 +614,18 @@ HTML_TEMPLATE = r"""
         .back-btn {
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: center;
             background: none;
             border: none;
             color: #667eea;
             cursor: pointer;
-            font-size: 14px;
-            margin-bottom: 1rem;
-            padding: 0;
+            padding: 8px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
         }
 
         .back-btn:hover {
-            text-decoration: underline;
+            background-color: rgba(102, 126, 234, 0.1);
         }
 
         .token-input {
@@ -873,41 +960,47 @@ HTML_TEMPLATE = r"""
 
         <!-- Models Download Page -->
         <div id="modelsPage" class="models-page">
-            <button class="back-btn" onclick="hideModelsPage()">
-                ← Back
-            </button>
-
-            <div class="header">
+            <div class="header" style="position: relative;">
+                <button class="back-btn" onclick="hideModelsPage()" style="position: absolute; left: 0; top: 50%; transform: translateY(-50%);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </button>
                 <div class="logo">CS</div>
                 <h1>ComfyStudio</h1>
-            </div>
-
-            <div class="profile-row">
-                <select class="profile-select" disabled>
-                    <option>{{ current_artist or 'Choose Profile' }}</option>
-                </select>
-                <div class="admin-toggle visible">
-                    <label class="toggle-switch">
-                        <input type="checkbox" checked disabled>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
             </div>
 
             <input type="text" class="token-input" id="hfToken" placeholder="HuggingFace Token">
             <input type="text" class="token-input" id="civitToken" placeholder="CivitAI Token">
 
             <div class="model-checkboxes">
+                <div class="model-option" style="border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 10px;">
+                    <input type="checkbox" class="model-checkbox" id="downloadAllModels" onchange="toggleAllModels(this)">
+                    <label class="model-label" for="downloadAllModels" style="font-weight: bold;">
+                        Download All
+                    </label>
+                </div>
                 {% for script in download_scripts %}
                 <div class="model-option">
                     <input type="checkbox" class="model-checkbox" id="model_{{ script.id }}" value="{{ script.filename }}">
-                    <label class="model-label" for="model_{{ script.id }}">{{ script.name }}</label>
+                    <label class="model-label" for="model_{{ script.id }}">
+                        {{ script.name }}
+                        {% if script.total > 0 %}
+                            {% if script.installed == script.total %}
+                                <span style="color: #10b981; font-size: 12px;"> ✓ Installed</span>
+                            {% elif script.installed > 0 %}
+                                <span style="color: #f59e0b; font-size: 12px;"> ({{ script.installed }}/{{ script.total }})</span>
+                            {% else %}
+                                <span style="color: #6b7280; font-size: 12px;"> (new)</span>
+                            {% endif %}
+                        {% endif %}
+                    </label>
                 </div>
                 {% endfor %}
             </div>
 
-            <button class="done-btn" onclick="downloadModels()">
-                Done
+            <button class="done-btn" onclick="downloadModels()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                Download
             </button>
 
             <div id="modelsStatusMessage" class="status-message hidden"></div>
@@ -931,30 +1024,23 @@ HTML_TEMPLATE = r"""
 
         <!-- Custom Nodes Page -->
         <div id="customNodesPage" class="models-page">
-            <button class="back-btn" onclick="hideCustomNodesPage()">
-                ← Back
-            </button>
-
-            <div class="header">
+            <div class="header" style="position: relative;">
+                <button class="back-btn" onclick="hideCustomNodesPage()" style="position: absolute; left: 0; top: 50%; transform: translateY(-50%);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </button>
                 <div class="logo">CS</div>
                 <h1>ComfyStudio</h1>
             </div>
 
-            <div class="profile-row">
-                <select class="profile-select" disabled>
-                    <option>{{ current_artist or 'Choose Profile' }}</option>
-                </select>
-                <div class="admin-toggle visible">
-                    <label class="toggle-switch">
-                        <input type="checkbox" checked disabled>
-                        <span class="toggle-slider"></span>
+            <div class="model-checkboxes">
+                <div class="model-option" style="border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 10px;">
+                    <input type="checkbox" class="model-checkbox" id="installAllNodes" onchange="toggleAllNodes(this)">
+                    <label class="model-label" for="installAllNodes" style="font-weight: bold;">
+                        Install All
                     </label>
                 </div>
-            </div>
-
-            <h2 style="text-align: center; margin: 20px 0; color: #4b5563;">ComfyUI Custom Nodes</h2>
-
-            <div class="model-checkboxes">
                 {% for node in custom_nodes %}
                 <div class="model-option">
                     <input type="checkbox" class="model-checkbox" id="node_{{ loop.index }}" value="{{ node.repo_name }}" {% if node.installed %}checked{% endif %}>
@@ -1226,6 +1312,20 @@ HTML_TEMPLATE = r"""
         function hideCustomNodesPage() {
             document.getElementById('customNodesPage').classList.remove('visible');
             document.getElementById('mainPage').classList.remove('hidden');
+        }
+
+        function toggleAllModels(checkbox) {
+            var modelCheckboxes = document.querySelectorAll('#modelsPage .model-checkbox:not(#downloadAllModels)');
+            modelCheckboxes.forEach(function(cb) {
+                cb.checked = checkbox.checked;
+            });
+        }
+
+        function toggleAllNodes(checkbox) {
+            var nodeCheckboxes = document.querySelectorAll('#customNodesPage .model-checkbox:not(#installAllNodes)');
+            nodeCheckboxes.forEach(function(cb) {
+                cb.checked = checkbox.checked;
+            });
         }
 
         function installCustomNodes() {
