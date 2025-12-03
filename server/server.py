@@ -1202,7 +1202,7 @@ HTML_TEMPLATE = r"""
                 var toolNameSpan = btn.querySelector('.tool-name');
                 if (toolNameSpan) {
                     toolNameSpan.setAttribute('data-original-text', toolNameSpan.textContent);
-                    toolNameSpan.textContent = 'Starting...';
+                    toolNameSpan.textContent = 'Starting ' + toolNameSpan.textContent + '...';
                 }
                 startSession(toolId, btn);
             }
@@ -1212,10 +1212,9 @@ HTML_TEMPLATE = r"""
             var tools = {{ tools | tojson }};
             var toolName = tools[toolId] ? tools[toolId].name : toolId;
 
-            // Show terminal with starting message
+            // Show terminal
             clearUserTerminal();
             showUserTerminal(toolName);
-            appendToUserTerminal('Starting ' + toolName + '...\\n', 'info');
 
             fetch('/start_session', {
                 method: 'POST',
@@ -1225,12 +1224,9 @@ HTML_TEMPLATE = r"""
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    appendToUserTerminal(toolName + ' process started\\n', 'success');
-                    appendToUserTerminal('Waiting for service to be ready...\\n\\n', 'info');
                     // Start polling for ready status and logs
                     startPollingUserLogs(toolId, toolName);
                 } else {
-                    appendToUserTerminal('Error: ' + data.message + '\\n', 'error');
                     showStatus(data.message, 'error');
                     // Reset button state on error
                     if (btn) {
@@ -1243,7 +1239,7 @@ HTML_TEMPLATE = r"""
                 }
             })
             .catch(function(error) {
-                appendToUserTerminal('Error: ' + error + '\\n', 'error');
+                showStatus('Error: ' + error, 'error');
                 // Reset button state on error
                 if (btn) {
                     btn.classList.remove('starting');
@@ -1863,27 +1859,18 @@ HTML_TEMPLATE = r"""
                     .then(function(response) { return response.json(); })
                     .then(function(data) {
                         if (data.running && data.port_ready) {
-                            appendToUserTerminal('\\n' + toolName + ' is ready!\\n', 'success');
                             stopPollingUserLogs();
-                            // Open the tool after a delay to ensure it's fully ready
-                            appendToUserTerminal('Opening in 3 seconds...\\n', 'info');
-                            setTimeout(function() {
-                                var runpodId = '{{ runpod_id | e }}';
-                                var url = 'https://' + runpodId + '-' + port + '.proxy.runpod.net';
-                                appendToUserTerminal('Opening ' + url + '\\n', 'info');
-                                window.open(url, '_blank');
-                                // Auto-reload after 5 seconds to update button states
-                                appendToUserTerminal('\\nPage will refresh in 5 seconds...\\n', 'info');
-                                setTimeout(function() { location.reload(); }, 5000);
-                            }, 3000);
+                            // Open the tool
+                            var runpodId = '{{ runpod_id | e }}';
+                            var url = 'https://' + runpodId + '-' + port + '.proxy.runpod.net';
+                            window.open(url, '_blank');
+                            setTimeout(function() { location.reload(); }, 1000);
                         } else if (processExited) {
-                            appendToUserTerminal('\\n' + toolName + ' process exited unexpectedly.\\n', 'error');
-                            appendToUserTerminal('Check the logs above for errors.\\n', 'info');
                             stopPollingUserLogs();
+                            showStatus(toolName + ' process exited unexpectedly', 'error');
                         } else if (checkCount >= maxChecks) {
-                            appendToUserTerminal('\\nTimeout waiting for ' + toolName + ' to start.\\n', 'error');
-                            appendToUserTerminal('Check the logs above for errors.\\n', 'info');
                             stopPollingUserLogs();
+                            showStatus('Timeout waiting for ' + toolName + ' to start', 'error');
                         }
                     })
                     .catch(function(err) {
