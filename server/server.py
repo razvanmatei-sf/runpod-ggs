@@ -2064,49 +2064,44 @@ def start_session():
             threading.Thread(target=monitor_process, daemon=True).start()
 
         elif tool_id == "comfy-ui":
-            # Kill any existing comfyui on the port
-            subprocess.run(["fuser", "-k", "8188/tcp"], capture_output=True)
-            time.sleep(1)
+            # Start ComfyUI using start script
+            start_script = get_setup_script("comfy-ui", "start")
+            if start_script:
+                # Setup log capture
+                user_process_running = True
+                with open(USER_LOG_FILE, "w") as f:
+                    f.write(f"=== Starting ComfyUI ===\n")
+                    f.write(f"Script: {start_script}\n")
+                    f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
+                    f.write("=" * 40 + "\n\n")
 
-            # Setup log capture
-            user_process_running = True
-            with open(USER_LOG_FILE, "w") as f:
-                f.write(f"=== Starting ComfyUI ===\n")
-                f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
-                f.write("=" * 40 + "\n\n")
+                log_file = open(USER_LOG_FILE, "a")
+                env = os.environ.copy()
+                env["HF_HOME"] = "/workspace"
+                env["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+                env["COMFY_OUTPUT_DIR"] = f"/workspace/ComfyUI/output/{artist}"
+                process = subprocess.Popen(
+                    ["bash", start_script],
+                    cwd="/workspace/ComfyUI",
+                    env=env,
+                    stdout=log_file,
+                    stderr=log_file,
+                )
 
-            log_file = open(USER_LOG_FILE, "a")
-            env = os.environ.copy()
-            env["HF_HOME"] = "/workspace"
-            env["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
-            artist_output_dir = f"/workspace/ComfyUI/output/{artist}"
-            process = subprocess.Popen(
-                [
-                    "/workspace/ComfyUI/venv/bin/python",
-                    "main.py",
-                    "--listen",
-                    "0.0.0.0",
-                    "--port",
-                    "8188",
-                    "--output-directory",
-                    artist_output_dir,
-                ],
-                cwd="/workspace/ComfyUI",
-                env=env,
-                stdout=log_file,
-                stderr=log_file,
-            )
+                def monitor_process():
+                    global user_process_running
+                    process.wait()
+                    with open(USER_LOG_FILE, "a") as f:
+                        f.write(
+                            f"\n=== Process exited with code: {process.returncode} ===\n"
+                        )
+                    user_process_running = False
 
-            def monitor_process():
-                global user_process_running
-                process.wait()
-                with open(USER_LOG_FILE, "a") as f:
-                    f.write(
-                        f"\n=== Process exited with code: {process.returncode} ===\n"
-                    )
-                user_process_running = False
-
-            threading.Thread(target=monitor_process, daemon=True).start()
+                threading.Thread(target=monitor_process, daemon=True).start()
+            else:
+                return jsonify(
+                    {"success": False, "message": "ComfyUI start script not found"}
+                )
 
         elif tool_id == "ai-toolkit":
             # Kill any existing ai-toolkit on the port

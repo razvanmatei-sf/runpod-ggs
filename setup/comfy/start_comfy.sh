@@ -6,9 +6,17 @@ git pull
 
 apt update
 apt install psmisc
-fuser -k 3000/tcp
+fuser -k 8188/tcp
 
 cd /workspace/ComfyUI/venv
 source bin/activate
 cd /workspace/ComfyUI
-python main.py --listen 0.0.0.0 --use-sage-attention
+
+# Build command with optional output directory
+CMD="python main.py --listen 0.0.0.0 --use-sage-attention"
+if [ -n "$COMFY_OUTPUT_DIR" ]; then
+    mkdir -p "$COMFY_OUTPUT_DIR"
+    CMD="$CMD --output-directory $COMFY_OUTPUT_DIR"
+fi
+
+$CMD
