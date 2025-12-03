@@ -8,8 +8,12 @@ echo "=========================================="
 echo "Starting ComfyStudio"
 echo "=========================================="
 
-# Setup SSH known hosts for GitHub (required for private repo access)
+# Setup SSH for GitHub (copy keys from persistent storage)
 mkdir -p ~/.ssh
+if [ -d "/workspace/.ssh" ]; then
+    cp -r /workspace/.ssh/* ~/.ssh/ 2>/dev/null || true
+    chmod 600 ~/.ssh/id_* 2>/dev/null || true
+fi
 ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts 2>/dev/null
 
 # Configuration
