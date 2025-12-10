@@ -129,22 +129,21 @@ endblock %} {% block content %}
             });
     }
 
-    let lastLogLength = 0;
+    let lastLogContent = '';
 
     function pollLogs() {
         fetch('/logs/' + toolId)
             .then(response => response.json())
             .then(data => {
-                if (data.logs !== undefined) {
+                if (data.logs !== undefined && data.logs !== lastLogContent) {
                     const output = document.getElementById('terminal-output');
-                    const newLength = data.logs.length;
+                    lastLogContent = data.logs;
+                    output.textContent = data.logs;
 
-                    // Only update and scroll if content changed
-                    if (newLength !== lastLogLength) {
-                        output.textContent = data.logs;
+                    // Use requestAnimationFrame to scroll after DOM update
+                    requestAnimationFrame(() => {
                         output.scrollTop = output.scrollHeight;
-                        lastLogLength = newLength;
-                    }
+                    });
                 }
             });
     }
