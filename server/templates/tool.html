@@ -39,6 +39,15 @@ endblock %} {% block content %}
         >
             Stop
         </button>
+        {% else %} {% if tool_id == 'swarm-ui' %}
+        <button
+            type="button"
+            class="tool-btn tool-btn-start"
+            disabled
+            style="opacity: 0.5; cursor: not-allowed"
+        >
+            Coming Soon
+        </button>
         {% else %}
         <button
             type="button"
@@ -47,7 +56,7 @@ endblock %} {% block content %}
         >
             Start
         </button>
-        {% endif %}
+        {% endif %} {% endif %}
     </div>
 </div>
 

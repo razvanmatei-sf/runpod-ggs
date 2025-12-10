@@ -1,16 +1,589 @@
-{% extends "base.html" %}
-
-{% block title %}Admin - SF AI Workbench{% endblock %}
-
+{% extends "base.html" %} {% block title %}Admin - SF AI Workbench{% endblock %}
 {% block content %}
 <div class="page-title">Admin</div>
 
-<div class="lora-tool-page">
-    <p class="lora-tool-desc">
-        Administrative tools for managing the workbench, users, and system settings.
-    </p>
-    <p style="color: var(--text-muted); font-size: 14px;">
-        Coming soon
-    </p>
-</div>
+<!-- Tool Management Section -->
+<section class="admin-section">
+    <h2 class="section-title">Tool Management</h2>
+
+    <div class="admin-tools">
+        {% for tool_id, tool in admin_tools.items() %}
+        <div class="admin-tool-row">
+            <div class="admin-tool-info">
+                <span class="admin-tool-name">{{ tool.name }}</span>
+                <span
+                    class="status-dot {% if tool.installed %}running{% else %}stopped{% endif %}"
+                ></span>
+                {% if tool.installed %}
+                <span class="admin-status-text installed">Installed</span>
+                {% else %}
+                <span class="admin-status-text">Not installed</span>
+                {% endif %}
+            </div>
+            <div class="admin-tool-actions">
+                {% if tool.installed %}
+                <button
+                    type="button"
+                    class="tool-btn tool-btn-open"
+                    onclick="adminAction('{{ tool_id }}', 'update')"
+                >
+                    Update
+                </button>
+                <button
+                    type="button"
+                    class="tool-btn tool-btn-restart"
+                    onclick="adminAction('{{ tool_id }}', 'reinstall')"
+                >
+                    Reinstall
+                </button>
+                <button
+                    type="button"
+                    class="tool-btn tool-btn-stop"
+                    onclick="adminAction('{{ tool_id }}', 'kill')"
+                >
+                    Remove
+                </button>
+                {% else %}
+                <button
+                    type="button"
+                    class="tool-btn tool-btn-start"
+                    onclick="adminAction('{{ tool_id }}', 'install')"
+                >
+                    Install
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Models Download Section -->
+<section class="admin-section">
+    <div class="section-header" style="margin-top: 0">
+        <h2 class="section-title">Models Download</h2>
+        <button
+            type="button"
+            class="admin-toggle-btn"
+            onclick="toggleSection('models-section')"
+        >
+            <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <polyline points="6 9 12 15 18 9" />
+            </svg>
+        </button>
+    </div>
+
+    <div id="models-section" class="admin-collapsible">
+        <div class="admin-tokens">
+            <div class="admin-input-group">
+                <label for="hf-token">HuggingFace Token</label>
+                <input
+                    type="password"
+                    id="hf-token"
+                    class="admin-input"
+                    placeholder="hf_xxxxxxxxxxxx"
+                />
+            </div>
+            <div class="admin-input-group">
+                <label for="civitai-token">CivitAI Token</label>
+                <input
+                    type="password"
+                    id="civitai-token"
+                    class="admin-input"
+                    placeholder="xxxxxxxxxxxxxxxx"
+                />
+            </div>
+        </div>
+
+        <div class="admin-list">
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    id="select-all-models"
+                    onchange="toggleAllModels(this)"
+                />
+                <span class="admin-checkbox-label"
+                    ><strong>Select All</strong></span
+                >
+            </label>
+
+            {% for script in download_scripts %}
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    name="model"
+                    value="{{ script.id }}"
+                    class="model-checkbox"
+                />
+                <span class="admin-checkbox-label">
+                    {{ script.name }} {% if script.installed == script.total and
+                    script.total > 0 %}
+                    <span class="admin-badge installed">Installed</span>
+                    {% elif script.installed > 0 %}
+                    <span class="admin-badge partial"
+                        >{{ script.installed }}/{{ script.total }}</span
+                    >
+                    {% else %}
+                    <span class="admin-badge new">new</span>
+                    {% endif %}
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+
+        <div class="admin-actions">
+            <button
+                type="button"
+                class="tool-btn tool-btn-start"
+                onclick="downloadModels()"
+            >
+                Download Selected
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Custom Nodes Section -->
+<section class="admin-section">
+    <div class="section-header" style="margin-top: 0">
+        <h2 class="section-title">Custom Nodes</h2>
+        <button
+            type="button"
+            class="admin-toggle-btn"
+            onclick="toggleSection('nodes-section')"
+        >
+            <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <polyline points="6 9 12 15 18 9" />
+            </svg>
+        </button>
+    </div>
+
+    <div id="nodes-section" class="admin-collapsible">
+        <div class="admin-list">
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    id="select-all-nodes"
+                    onchange="toggleAllNodes(this)"
+                />
+                <span class="admin-checkbox-label"
+                    ><strong>Select All</strong></span
+                >
+            </label>
+
+            {% for node in custom_nodes %}
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    name="node"
+                    value="{{ node.repo_url }}"
+                    class="node-checkbox"
+                />
+                <span class="admin-checkbox-label">
+                    {{ node.name }} {% if node.installed %}
+                    <span class="admin-badge installed">Installed</span>
+                    {% else %}
+                    <span class="admin-badge new">new</span>
+                    {% endif %}
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+
+        <div class="admin-actions">
+            <button
+                type="button"
+                class="tool-btn tool-btn-start"
+                onclick="installNodes()"
+            >
+                Install Selected
+            </button>
+            <button
+                type="button"
+                class="tool-btn tool-btn-open"
+                onclick="updateAllNodes()"
+            >
+                Update All
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Terminal Output -->
+<section class="admin-section">
+    <h2 class="section-title">Output</h2>
+    <div class="terminal">
+        <div class="terminal-header">
+            <span class="terminal-title">Terminal</span>
+            <div class="terminal-actions">
+                <button
+                    type="button"
+                    class="terminal-action"
+                    onclick="copyTerminal()"
+                >
+                    Copy
+                </button>
+                <button
+                    type="button"
+                    class="terminal-action"
+                    onclick="clearTerminal()"
+                >
+                    Clear
+                </button>
+            </div>
+        </div>
+        <div class="terminal-body" id="admin-terminal">
+            <span class="terminal-line">Ready for admin commands.</span>
+        </div>
+    </div>
+</section>
+
+<style>
+    .admin-section {
+        margin-bottom: 32px;
+    }
+
+    .admin-tools {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .admin-tool-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+    }
+
+    .admin-tool-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .admin-tool-name {
+        font-size: 16px;
+        font-weight: 500;
+        min-width: 120px;
+    }
+
+    .admin-status-text {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .admin-status-text.installed {
+        color: var(--accent-green);
+    }
+
+    .admin-tool-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .admin-toggle-btn {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 6px 10px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .admin-toggle-btn:hover {
+        background: var(--bg-card);
+    }
+
+    .admin-collapsible {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 12px;
+    }
+
+    .admin-tokens {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .admin-input-group {
+        flex: 1;
+    }
+
+    .admin-input-group label {
+        display: block;
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+    }
+
+    .admin-input {
+        width: 100%;
+        padding: 10px 14px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 14px;
+    }
+
+    .admin-input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+    }
+
+    .admin-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .admin-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: 16px;
+    }
+
+    .admin-checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .admin-checkbox-item:hover {
+        background: var(--bg-tertiary);
+    }
+
+    .admin-checkbox-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--accent-blue);
+        cursor: pointer;
+    }
+
+    .admin-checkbox-label {
+        flex: 1;
+        font-size: 14px;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .admin-badge {
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: 500;
+    }
+
+    .admin-badge.new {
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+    }
+
+    .admin-badge.installed {
+        background: rgba(34, 197, 94, 0.2);
+        color: var(--accent-green);
+    }
+
+    .admin-badge.partial {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--accent-orange);
+    }
+
+    .admin-actions {
+        display: flex;
+        gap: 8px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .terminal {
+        height: 250px;
+    }
+</style>
+{% endblock %} {% block scripts %}
+<script>
+    let pollInterval = null;
+
+    function adminAction(toolId, action) {
+        const terminal = document.getElementById("admin-terminal");
+        terminal.textContent = `Starting ${action} for ${toolId}...\n`;
+
+        fetch("/admin_action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tool_id: toolId, action: action }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    startPollingLogs();
+                } else {
+                    terminal.textContent += `Error: ${data.message}\n`;
+                }
+            });
+    }
+
+    function downloadModels() {
+        const selected = Array.from(
+            document.querySelectorAll(".model-checkbox:checked"),
+        ).map((cb) => cb.value);
+        if (selected.length === 0) {
+            alert("Please select at least one model pack to download.");
+            return;
+        }
+
+        const hfToken = document.getElementById("hf-token").value;
+        const civitaiToken = document.getElementById("civitai-token").value;
+        const terminal = document.getElementById("admin-terminal");
+        terminal.textContent = `Starting download for: ${selected.join(", ")}...\n`;
+
+        fetch("/download_models", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                scripts: selected,
+                hf_token: hfToken,
+                civitai_token: civitaiToken,
+            }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    startPollingLogs();
+                } else {
+                    terminal.textContent += `Error: ${data.message}\n`;
+                }
+            });
+    }
+
+    function installNodes() {
+        const selected = Array.from(
+            document.querySelectorAll(".node-checkbox:checked"),
+        ).map((cb) => cb.value);
+        if (selected.length === 0) {
+            alert("Please select at least one custom node to install.");
+            return;
+        }
+
+        const terminal = document.getElementById("admin-terminal");
+        terminal.textContent = `Installing ${selected.length} custom nodes...\n`;
+
+        fetch("/custom_nodes_action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "install", nodes: selected }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    startPollingLogs();
+                } else {
+                    terminal.textContent += `Error: ${data.message}\n`;
+                }
+            });
+    }
+
+    function updateAllNodes() {
+        const terminal = document.getElementById("admin-terminal");
+        terminal.textContent = `Updating all custom nodes...\n`;
+
+        fetch("/custom_nodes_action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "update" }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    startPollingLogs();
+                } else {
+                    terminal.textContent += `Error: ${data.message}\n`;
+                }
+            });
+    }
+
+    function startPollingLogs() {
+        if (pollInterval) clearInterval(pollInterval);
+        pollInterval = setInterval(pollLogs, 500);
+    }
+
+    let lastLogContent = "";
+
+    function pollLogs() {
+        fetch("/logs")
+            .then((response) => response.json())
+            .then((data) => {
+                const terminal = document.getElementById("admin-terminal");
+                if (data.content && data.content !== lastLogContent) {
+                    lastLogContent = data.content;
+                    terminal.textContent = data.content;
+                    requestAnimationFrame(() => {
+                        terminal.scrollTop = terminal.scrollHeight;
+                    });
+                }
+                if (!data.running && pollInterval) {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                }
+            });
+    }
+
+    function toggleSection(sectionId) {
+        const section = document.getElementById(sectionId);
+        section.style.display =
+            section.style.display === "none" ? "block" : "none";
+    }
+
+    function toggleAllModels(checkbox) {
+        document
+            .querySelectorAll(".model-checkbox")
+            .forEach((cb) => (cb.checked = checkbox.checked));
+    }
+
+    function toggleAllNodes(checkbox) {
+        document
+            .querySelectorAll(".node-checkbox")
+            .forEach((cb) => (cb.checked = checkbox.checked));
+    }
+
+    function copyTerminal() {
+        const terminal = document.getElementById("admin-terminal");
+        navigator.clipboard.writeText(terminal.textContent);
+    }
+
+    function clearTerminal() {
+        document.getElementById("admin-terminal").textContent =
+            "Ready for admin commands.";
+        lastLogContent = "";
+    }
+</script>
 {% endblock %}

@@ -2036,12 +2036,32 @@ def admin():
         return redirect(url_for("login"))
     if not is_admin(current_artist):
         return redirect(url_for("home"))
+
+    # Get tool installation status
+    admin_tools = {
+        "comfy-ui": {
+            "name": "ComfyUI",
+            "installed": is_installed(TOOLS["comfy-ui"]["install_path"]),
+        },
+        "swarm-ui": {
+            "name": "SwarmUI",
+            "installed": is_installed(TOOLS["swarm-ui"]["install_path"]),
+        },
+        "ai-toolkit": {
+            "name": "AI-Toolkit",
+            "installed": is_installed(TOOLS["ai-toolkit"]["install_path"]),
+        },
+    }
+
     return render_template(
         "admin.html",
         current_user=current_artist,
         is_admin=True,
         active_page="admin",
         runpod_id=get_runpod_id(),
+        admin_tools=admin_tools,
+        download_scripts=get_download_scripts(),
+        custom_nodes=get_custom_nodes(),
     )
 
 
