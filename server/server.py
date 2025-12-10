@@ -19,7 +19,14 @@ from flask import (
     url_for,
 )
 
-app = Flask(__name__, static_folder="static", template_folder="templates")
+# Get the directory where server.py is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+app = Flask(
+    __name__,
+    static_folder=os.path.join(SCRIPT_DIR, "static"),
+    template_folder=os.path.join(SCRIPT_DIR, "templates"),
+)
 
 # Repository path (set by start_server.sh)
 REPO_DIR = os.environ.get("REPO_DIR", "/workspace/runpod-ggs")
