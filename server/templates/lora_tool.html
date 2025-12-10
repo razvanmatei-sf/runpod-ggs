@@ -1,40 +1,77 @@
-{% extends "base.html" %}
-
-{% block title %}LoRA Tool - SF AI Workbench{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}LoRA Tool - SF AI Workbench{%
+endblock %} {% block content %}
 <div class="tool-header">
-    <h1 class="tool-title">LoRA Tool</h1>
-    <span class="status-dot {% if tool_status == 'running' %}running{% else %}stopped{% endif %}"></span>
+    <span
+        id="status-dot"
+        class="status-dot {% if tool_status == 'running' %}running{% elif tool_status == 'starting' %}starting{% else %}stopped{% endif %}"
+    ></span>
+    <div id="tool-controls" class="tool-controls">
+        {% if tool_status == 'running' %}
+        <button
+            type="button"
+            class="tool-btn tool-btn-open"
+            onclick="openTool()"
+        >
+            Open
+        </button>
+        <button
+            type="button"
+            class="tool-btn tool-btn-restart"
+            onclick="restartTool()"
+        >
+            Restart
+        </button>
+        <button
+            type="button"
+            class="tool-btn tool-btn-stop"
+            onclick="stopTool()"
+        >
+            Stop
+        </button>
+        {% elif tool_status == 'starting' %}
+        <button type="button" class="tool-btn tool-btn-start" disabled>
+            Starting...
+        </button>
+        <button
+            type="button"
+            class="tool-btn tool-btn-stop"
+            onclick="stopTool()"
+        >
+            Stop
+        </button>
+        {% else %}
+        <button
+            type="button"
+            class="tool-btn tool-btn-start"
+            onclick="startTool()"
+        >
+            Start
+        </button>
+        {% endif %}
+    </div>
 </div>
 
 <div class="lora-tool-page">
     <p class="lora-tool-desc">
-        Dataset helper tool with AI-powered captioning for preparing LoRA training data.
+        Dataset helper tool with AI-powered captioning for preparing LoRA
+        training data.
     </p>
-
-    <div class="tool-controls">
-        {% if tool_status == 'running' %}
-        <button type="button" class="tool-btn tool-btn-open" onclick="openTool()">Open LoRA Tool</button>
-        <button type="button" class="tool-btn tool-btn-stop" onclick="stopTool()">Stop</button>
-        {% else %}
-        <button type="button" class="tool-btn tool-btn-start" onclick="launchTool()">Launch LoRA Tool</button>
-        {% endif %}
-    </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
     const toolId = 'lora-tool';
     const toolPort = {{ tool.port }};
+    let statusPollInterval = null;
+    let currentStatus = '{{ tool_status }}';
 
-    function launchTool() {
+    function startTool() {
+        updateUIForStatus('starting');
         fetch('/start/' + toolId, { method: 'POST' })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'started' || data.status === 'already_running') {
-                    location.reload();
+                    currentStatus = 'starting';
+                    startPolling();
                 }
             });
     }
@@ -43,7 +80,24 @@
         fetch('/stop/' + toolId, { method: 'POST' })
             .then(response => response.json())
             .then(data => {
-                location.reload();
+                currentStatus = 'stopped';
+                updateUIForStatus('stopped');
+                stopPolling();
+            });
+    }
+
+    function restartTool() {
+        updateUIForStatus('starting');
+        fetch('/stop/' + toolId, { method: 'POST' })
+            .then(() => {
+                setTimeout(() => {
+                    fetch('/start/' + toolId, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            currentStatus = 'starting';
+                            startPolling();
+                        });
+                }, 1000);
             });
     }
 
@@ -56,16 +110,57 @@
         }
     }
 
-    // Poll status to detect when tool starts/stops
-    setInterval(() => {
+    function pollStatus() {
         fetch('/tool_status/' + toolId)
             .then(response => response.json())
             .then(data => {
-                const currentStatus = '{{ tool_status }}';
                 if (data.status !== currentStatus) {
-                    location.reload();
+                    currentStatus = data.status;
+                    updateUIForStatus(data.status);
                 }
             });
-    }, 3000);
+    }
+
+    function updateUIForStatus(status) {
+        const statusDot = document.getElementById('status-dot');
+        const controls = document.getElementById('tool-controls');
+
+        statusDot.className = 'status-dot ' + status;
+
+        if (status === 'running') {
+            controls.innerHTML = `
+                <button type="button" class="tool-btn tool-btn-open" onclick="openTool()">Open</button>
+                <button type="button" class="tool-btn tool-btn-restart" onclick="restartTool()">Restart</button>
+                <button type="button" class="tool-btn tool-btn-stop" onclick="stopTool()">Stop</button>
+            `;
+        } else if (status === 'starting') {
+            controls.innerHTML = `
+                <button type="button" class="tool-btn tool-btn-start" disabled>Starting...</button>
+                <button type="button" class="tool-btn tool-btn-stop" onclick="stopTool()">Stop</button>
+            `;
+            startPolling();
+        } else {
+            controls.innerHTML = `
+                <button type="button" class="tool-btn tool-btn-start" onclick="startTool()">Start</button>
+            `;
+        }
+    }
+
+    function startPolling() {
+        if (!statusPollInterval) {
+            statusPollInterval = setInterval(pollStatus, 3000);
+        }
+    }
+
+    function stopPolling() {
+        if (statusPollInterval) {
+            clearInterval(statusPollInterval);
+            statusPollInterval = null;
+        }
+    }
+
+    {% if tool_status in ['running', 'starting'] %}
+    startPolling();
+    {% endif %}
 </script>
 {% endblock %}

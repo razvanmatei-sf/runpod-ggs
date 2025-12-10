@@ -19,9 +19,9 @@
     --text-muted: rgba(255, 255, 255, 0.5);
     --text-disabled: rgba(255, 255, 255, 0.3);
 
-    /* Accent Colors */
-    --accent-primary: #7c3aed;
-    --accent-primary-hover: #6d28d9;
+    /* Accent Colors - RunPod Violet */
+    --accent-primary: rgb(95, 76, 254);
+    --accent-primary-hover: rgb(146, 137, 254);
     --accent-green: #22c55e;
     --accent-green-hover: #16a34a;
     --accent-red: #ef4444;
@@ -565,7 +565,7 @@ a:hover {
 
 .tool-controls {
     display: flex;
-    gap: var(--space-1);
+    gap: 30px;
 }
 
 .tool-btn {
