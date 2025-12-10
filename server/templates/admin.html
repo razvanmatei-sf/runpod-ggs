@@ -146,6 +146,13 @@
             >
                 Download Selected
             </button>
+            <button
+                type="button"
+                class="tool-btn tool-btn-stop"
+                onclick="removeModels()"
+            >
+                Remove Selected
+            </button>
         </div>
     </div>
 </section>
@@ -218,6 +225,13 @@
                 onclick="updateAllNodes()"
             >
                 Update All
+            </button>
+            <button
+                type="button"
+                class="tool-btn tool-btn-stop"
+                onclick="removeNodes()"
+            >
+                Remove Selected
             </button>
         </div>
     </div>
@@ -500,7 +514,7 @@
         fetch("/custom_nodes_action", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "install", nodes: selected }),
+            body: JSON.stringify({ action: "install" }),
         })
             .then((response) => response.json())
             .then((data) => {
@@ -529,6 +543,50 @@
                     terminal.textContent += `Error: ${data.message}\n`;
                 }
             });
+    }
+
+    function removeModels() {
+        const selected = Array.from(
+            document.querySelectorAll(".model-checkbox:checked"),
+        ).map((cb) => cb.value);
+        if (selected.length === 0) {
+            alert("Please select at least one model pack to remove.");
+            return;
+        }
+
+        if (
+            !confirm(
+                `Are you sure you want to remove ${selected.length} model pack(s)?`,
+            )
+        ) {
+            return;
+        }
+
+        const terminal = document.getElementById("admin-terminal");
+        terminal.textContent = `Removing selected models...\n`;
+        terminal.textContent += `Note: Model removal is not yet implemented.\n`;
+    }
+
+    function removeNodes() {
+        const selected = Array.from(
+            document.querySelectorAll(".node-checkbox:checked"),
+        ).map((cb) => cb.value);
+        if (selected.length === 0) {
+            alert("Please select at least one custom node to remove.");
+            return;
+        }
+
+        if (
+            !confirm(
+                `Are you sure you want to remove ${selected.length} custom node(s)?`,
+            )
+        ) {
+            return;
+        }
+
+        const terminal = document.getElementById("admin-terminal");
+        terminal.textContent = `Removing selected custom nodes...\n`;
+        terminal.textContent += `Note: Node removal is not yet implemented.\n`;
     }
 
     function startPollingLogs() {
