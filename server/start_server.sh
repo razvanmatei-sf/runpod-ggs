@@ -28,13 +28,14 @@ if [ -d "$REPO_DIR/.git" ]; then
     echo "Repository exists, pulling latest changes..."
     cd "$REPO_DIR"
     git fetch --all
+    git checkout feature/sf-ai-workbench 2>/dev/null || git checkout -b feature/sf-ai-workbench origin/feature/sf-ai-workbench
     git reset --hard origin/feature/sf-ai-workbench
     git pull origin feature/sf-ai-workbench
     echo "Repository updated."
 else
     echo "Cloning repository..."
     rm -rf "$REPO_DIR"
-    git clone "$REPO_URL" "$REPO_DIR"
+    git clone -b feature/sf-ai-workbench "$REPO_URL" "$REPO_DIR"
     echo "Repository cloned."
 fi
 
@@ -74,6 +75,6 @@ echo ""
 # Export repo path for the server to use
 export REPO_DIR="$REPO_DIR"
 
-# Start the server from git repo (runs in foreground)
-# Using repo version allows updates without rebuilding Docker image
-exec python3 "$REPO_DIR/server/server.py"
+# Start the server from Docker image (runs in foreground)
+# This ensures the new UI is used regardless of repo state
+exec python3 /usr/local/bin/server.py

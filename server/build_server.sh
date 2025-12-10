@@ -3,8 +3,8 @@ set -e
 
 echo "Building ComfyStudio Docker Image"
 
-IMAGE_NAME="runpod-ggs:latest"
-REGISTRY_NAME="ghcr.io/razvanmatei-sf/runpod-ggs:latest"
+IMAGE_NAME="runpod-ggs:v2"
+REGISTRY_NAME="ghcr.io/razvanmatei-sf/runpod-ggs:v2"
 
 docker buildx build --platform linux/amd64 --load -t "$IMAGE_NAME" .
 docker tag "$IMAGE_NAME" "$REGISTRY_NAME"
