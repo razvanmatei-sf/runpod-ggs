@@ -28,8 +28,8 @@ if [ -d "$REPO_DIR/.git" ]; then
     echo "Repository exists, pulling latest changes..."
     cd "$REPO_DIR"
     git fetch --all
-    git reset --hard origin/main
-    git pull
+    git reset --hard origin/feature/sf-ai-workbench
+    git pull origin feature/sf-ai-workbench
     echo "Repository updated."
 else
     echo "Cloning repository..."
