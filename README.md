@@ -135,14 +135,18 @@ docker run -it --rm \
 
 ### Users & Admins
 
-Edit `server/artist_names.sh`:
+User profiles are managed dynamically through the Admin page:
 
-```bash
-USERS=(
-    "Regular User"
-    "Admin User:admin"    # :admin suffix grants admin access
-)
-```
+1. Go to Admin page (requires admin privileges)
+2. In the "User Profiles" section, paste names (one per line) to add users
+3. Toggle the "Admin" checkbox to grant/revoke admin privileges
+4. Delete users with the Delete button (optionally removes their output folder)
+
+**Notes:**
+- User data is stored in `/workspace/users.json`
+- User folders are created in `/workspace/ComfyUI/output/{username}`
+- On first run, existing folders are auto-discovered and added to the system
+- "Razvan Matei" is a hardcoded superadmin that cannot be deleted or demoted
 
 ### Custom Nodes
 
@@ -183,6 +187,13 @@ setup/
 - `TORCH_CUDA_ARCH_LIST` - GPU architectures for PyTorch
 
 ## Latest Updates
+
+### January 2025
+
+- **Dynamic User Profiles**: Manage users via Admin UI instead of static config file
+- **Admin Toggles**: Grant/revoke admin status per user with one click
+- **Auto-Discovery**: Existing output folders automatically become user profiles
+- **Superadmin Protection**: Razvan Matei is always admin and cannot be removed
 
 ### December 2025
 

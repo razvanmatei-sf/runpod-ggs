@@ -2,7 +2,82 @@
 {% block content %}
 <div class="page-title">Admin</div>
 
-<!-- Tool Management Section -->
+<!-- User Profiles Section -->
+<section class="admin-section">
+    <div class="section-header" style="margin-top: 0">
+        <h2 class="section-title">User Profiles</h2>
+        <button
+            type="button"
+            class="admin-toggle-btn"
+            onclick="toggleSection('users-section')"
+        >
+            <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <polyline points="6 9 12 15 18 9" />
+            </svg>
+        </button>
+    </div>
+
+    <div id="users-section" class="admin-collapsible">
+        <!-- Add New Users -->
+        <div class="admin-input-group" style="margin-bottom: 16px">
+            <label for="new-users-text">Add Users (one name per line)</label>
+            <textarea
+                id="new-users-text"
+                class="admin-input admin-textarea"
+                rows="4"
+                placeholder="John Doe&#10;Jane Smith&#10;..."
+            ></textarea>
+        </div>
+        <div style="margin-bottom: 20px">
+            <button
+                type="button"
+                class="tool-btn tool-btn-start"
+                onclick="addUsers()"
+            >
+                Add Users
+            </button>
+        </div>
+
+        <!-- Current Users List -->
+        <div class="admin-input-group">
+            <label>Current Users</label>
+        </div>
+        <div class="admin-list" id="users-list">
+            {% for user in users_data %}
+            <div class="admin-user-item" data-username="{{ user.name }}">
+                <div class="admin-user-info">
+                    <span class="admin-user-name">{{ user.name }}</span>
+                    {% if user.name == superadmin_name %}
+                    <span class="admin-badge installed">Superadmin</span>
+                    {% endif %}
+                </div>
+                <div class="admin-user-actions">
+                    <label class="admin-toggle-label">
+                        <input type="checkbox" class="admin-toggle-checkbox" {% if user.is_admin %}checked{% endif %} {% if user.name == superadmin_name %}disabled{% endif %} onchange="toggleUserAdmin('{{ user.name }}', this.checked)" />
+                        <span class="admin-toggle-text">Admin</span>
+                    </label>
+                    {% if user.name != superadmin_name %}
+                    <button
+                        type="button"
+                        class="tool-btn tool-btn-stop tool-btn-small"
+                        onclick="deleteUser('{{ user.name }}')"
+                    >
+                        Delete
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
 <section class="admin-section">
     <h2 class="section-title">Tool Management</h2>
 
@@ -442,6 +517,69 @@
     .terminal {
         height: 250px;
     }
+
+    /* User Profiles Styles */
+    .admin-textarea {
+        resize: vertical;
+        min-height: 80px;
+        font-family: inherit;
+    }
+
+    .admin-user-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: var(--bg-tertiary);
+        border-radius: 8px;
+        margin-bottom: 8px;
+    }
+
+    .admin-user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .admin-user-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .admin-user-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .admin-toggle-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+    }
+
+    .admin-toggle-checkbox {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--accent-blue);
+    }
+
+    .admin-toggle-checkbox:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .admin-toggle-text {
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+
+    .tool-btn-small {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
 </style>
 {% endblock %} {% block scripts %}
 <script>
@@ -642,6 +780,123 @@
         document.getElementById("admin-terminal").textContent =
             "Ready for admin commands.";
         lastLogContent = "";
+    }
+
+    // User Profile Management Functions
+    function addUsers() {
+        const textarea = document.getElementById("new-users-text");
+        const namesText = textarea.value.trim();
+
+        if (!namesText) {
+            alert("Please enter at least one user name.");
+            return;
+        }
+
+        fetch("/api/users", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ names: namesText }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    textarea.value = "";
+                    refreshUsersList(data.users);
+                    alert("Users added successfully!");
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch((err) => alert("Error adding users: " + err));
+    }
+
+    function toggleUserAdmin(userName, isAdmin) {
+        fetch("/api/users/" + encodeURIComponent(userName) + "/admin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ is_admin: isAdmin }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (!data.success) {
+                    alert("Error: " + data.message);
+                    // Revert checkbox
+                    location.reload();
+                }
+            })
+            .catch((err) => {
+                alert("Error updating admin status: " + err);
+                location.reload();
+            });
+    }
+
+    function deleteUser(userName) {
+        if (
+            !confirm("Are you sure you want to delete user '" + userName + "'?")
+        ) {
+            return;
+        }
+
+        const deleteFolder = confirm(
+            "Also delete the user's output folder?\n\nClick OK to delete folder, Cancel to keep it.",
+        );
+
+        fetch("/api/users/" + encodeURIComponent(userName), {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ delete_folder: deleteFolder }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    refreshUsersList(data.users);
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch((err) => alert("Error deleting user: " + err));
+    }
+
+    function refreshUsersList(users) {
+        const listEl = document.getElementById("users-list");
+        const superadminName = "{{ superadmin_name }}";
+
+        listEl.innerHTML = users
+            .map((user) => {
+                const isSuperadmin = user.name === superadminName;
+                return `
+                <div class="admin-user-item" data-username="${user.name}">
+                    <div class="admin-user-info">
+                        <span class="admin-user-name">${user.name}</span>
+                        ${isSuperadmin ? '<span class="admin-badge installed">Superadmin</span>' : ""}
+                    </div>
+                    <div class="admin-user-actions">
+                        <label class="admin-toggle-label">
+                            <input
+                                type="checkbox"
+                                class="admin-toggle-checkbox"
+                                ${user.is_admin ? "checked" : ""}
+                                ${isSuperadmin ? "disabled" : ""}
+                                onchange="toggleUserAdmin('${user.name}', this.checked)"
+                            />
+                            <span class="admin-toggle-text">Admin</span>
+                        </label>
+                        ${
+                            !isSuperadmin
+                                ? `<button
+                                type="button"
+                                class="tool-btn tool-btn-stop tool-btn-small"
+                                onclick="deleteUser('${user.name}')"
+                            >
+                                Delete
+                            </button>`
+                                : ""
+                        }
+                    </div>
+                </div>
+            `;
+            })
+            .join("");
     }
 </script>
 {% endblock %}

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
+# ABOUTME: Main Flask server for SF AI Workbench
+# ABOUTME: Handles routes, tool management, and user profiles
 
+import json
 import os
 import signal
 import socket
@@ -36,58 +39,38 @@ USER_LOG_FILE = "/tmp/comfystudio_user_log.txt"
 user_process_running = False
 
 
-def parse_users_from_script():
-    """
-    Parse users from artist_names.sh USERS array.
-    Returns tuple: (all_users, admins)
-    Users with ':admin' suffix are added to admins list.
-    """
-    script_paths = [
-        os.path.join(REPO_DIR, "server", "artist_names.sh"),  # Repo path (preferred)
-        "/usr/local/bin/artist_names.sh",  # Docker container path
-        "/workspace/artist_names.sh",  # Workspace path
-        os.path.join(os.path.dirname(__file__), "artist_names.sh"),  # Same directory
-    ]
+# Import user management module
+from user_management import (
+    SUPERADMIN_NAME,
+    add_users_bulk,
+    delete_user,
+    ensure_razvan_exists,
+    get_admins_list,
+    get_all_user_names,
+    initialize_users,
+    is_admin_check,
+    load_users_from_file,
+    save_users_to_file,
+    set_user_admin,
+)
 
-    users = []
-    admins = []
+# Paths for user management
+USERS_JSON_PATH = "/workspace/users.json"
+USERS_OUTPUT_DIR = "/workspace/ComfyUI/output"
 
-    for script_path in script_paths:
-        if os.path.exists(script_path):
-            try:
-                with open(script_path, "r") as f:
-                    content = f.read()
-                    import re
-
-                    match = re.search(r"USERS=\((.*?)\)", content, re.DOTALL)
-                    if match:
-                        block = match.group(1)
-                        # Extract quoted strings
-                        entries = re.findall(r'"([^"]+)"', block)
-                        for entry in entries:
-                            if entry.endswith(":admin"):
-                                name = entry[:-6]  # Remove ':admin' suffix
-                                users.append(name)
-                                admins.append(name)
-                            else:
-                                users.append(entry)
-                        break
-            except:
-                pass
-
-    return users, admins
-
-
-# Load users and admins from script (single source of truth)
-USERS, ADMINS = parse_users_from_script()
+# Initialize users and admins from JSON/folders
+USERS_DATA, ADMINS = initialize_users(USERS_JSON_PATH, USERS_OUTPUT_DIR)
 
 
 def is_admin(user_name):
-    """Check if user is an admin (case-insensitive)"""
-    if not user_name:
-        return False
-    user_lower = user_name.strip().lower()
-    return any(admin.strip().lower() == user_lower for admin in ADMINS)
+    """Check if user is an admin (case-insensitive). Razvan is always admin."""
+    return is_admin_check(user_name, ADMINS)
+
+
+def reload_users():
+    """Reload users and admins from storage"""
+    global USERS_DATA, ADMINS
+    USERS_DATA, ADMINS = initialize_users(USERS_JSON_PATH, USERS_OUTPUT_DIR)
 
 
 def get_setup_script(tool_id, script_type):
@@ -1919,8 +1902,8 @@ def is_installed(path):
 
 
 def get_all_users():
-    """Get list of users for dropdown from artist_names.sh"""
-    return sorted(USERS)
+    """Get list of users for dropdown from users.json"""
+    return get_all_user_names(USERS_JSON_PATH)
 
 
 @app.route("/debug")
@@ -1928,8 +1911,9 @@ def debug():
     """Debug endpoint to check parsed users and admins"""
     return jsonify(
         {
-            "USERS": USERS,
+            "USERS_DATA": USERS_DATA,
             "ADMINS": ADMINS,
+            "USERS_JSON_PATH": USERS_JSON_PATH,
             "REPO_DIR": REPO_DIR,
             "current_artist": current_artist,
             "is_current_admin": is_admin(current_artist) if current_artist else None,
@@ -2062,7 +2046,78 @@ def admin():
         admin_tools=admin_tools,
         download_scripts=get_download_scripts(),
         custom_nodes=get_custom_nodes(),
+        users_data=USERS_DATA,
+        superadmin_name=SUPERADMIN_NAME,
     )
+
+
+@app.route("/api/users", methods=["GET"])
+def api_get_users():
+    """Get all users with admin status"""
+    if not is_admin(current_artist):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    reload_users()
+    return jsonify({"success": True, "users": USERS_DATA})
+
+
+@app.route("/api/users", methods=["POST"])
+def api_add_users():
+    """Add users from text (one name per line)"""
+    global USERS_DATA, ADMINS
+
+    if not is_admin(current_artist):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    data = request.get_json()
+    names_text = data.get("names", "")
+
+    if not names_text.strip():
+        return jsonify({"success": False, "message": "No names provided"})
+
+    USERS_DATA = add_users_bulk(names_text, USERS_JSON_PATH, USERS_OUTPUT_DIR)
+    ADMINS = get_admins_list(USERS_DATA)
+
+    return jsonify({"success": True, "users": USERS_DATA})
+
+
+@app.route("/api/users/<path:user_name>/admin", methods=["POST"])
+def api_set_user_admin(user_name):
+    """Set admin status for a user"""
+    global USERS_DATA, ADMINS
+
+    if not is_admin(current_artist):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    data = request.get_json()
+    is_admin_status = data.get("is_admin", False)
+
+    USERS_DATA = set_user_admin(user_name, is_admin_status, USERS_JSON_PATH)
+    ADMINS = get_admins_list(USERS_DATA)
+
+    return jsonify({"success": True, "users": USERS_DATA})
+
+
+@app.route("/api/users/<path:user_name>", methods=["DELETE"])
+def api_delete_user(user_name):
+    """Delete a user (cannot delete superadmin)"""
+    global USERS_DATA, ADMINS
+
+    if not is_admin(current_artist):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    if user_name.strip().lower() == SUPERADMIN_NAME.lower():
+        return jsonify({"success": False, "message": "Cannot delete superadmin"})
+
+    data = request.get_json() or {}
+    delete_folder = data.get("delete_folder", False)
+
+    USERS_DATA = delete_user(
+        user_name, USERS_JSON_PATH, delete_folder, USERS_OUTPUT_DIR
+    )
+    ADMINS = get_admins_list(USERS_DATA)
+
+    return jsonify({"success": True, "users": USERS_DATA})
 
 
 @app.route("/old")
