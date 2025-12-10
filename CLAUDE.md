@@ -320,3 +320,33 @@ SF AI Workbench (formerly ComfyStudio) is a multi-user web platform for AI image
 - Uses aria2c (16 parallel connections) with wget fallback
 - Format: `download "<url>" "/workspace/path/to/file.safetensors"`
 - HF_TOKEN env var used automatically for authenticated downloads
+
+### UI Design System (RunPod-inspired)
+- **Style Guide**: `docs/STYLE_GUIDE.md` - comprehensive reference for colors, typography, components
+- **Primary accent**: Purple (`#7C3AED`) instead of blue
+- **Backgrounds**: Dark theme (`#121212`, `#181818`, `#1f1f1f`)
+- **Borders**: Subtle RGBA (`rgba(255,255,255,0.08)`)
+- **CSS Variables**: All design tokens defined in `:root` in `style.css`
+
+### Sidebar Structure
+- **Header**: Logo + "SF AI Workbench" title (left-aligned)
+- **Sections**: Collapsible groups with chevron icons
+  - Home (standalone)
+  - Tools (collapsible): ComfyUI, SwarmUI, AI-Toolkit, LoRA Tool, Jupyter
+  - Assets (standalone)
+  - Admin (collapsible, admin-only)
+- **Bottom**: Help button
+- **Active state**: Purple left border accent + subtle background
+- **Section states**: Saved to localStorage
+
+### Header Structure
+- **Left**: Dynamic page title (passed via `page_title` in render_template)
+- **Right**: User full name + avatar
+- Each route must pass `page_title` to template
+
+### Key CSS Classes
+- `.btn-primary`, `.btn-secondary`, `.btn-danger` - Button variants
+- `.badge`, `.badge-success`, `.badge-danger` - Status badges
+- `.nav-section`, `.nav-section-header`, `.nav-section-content` - Collapsible sidebar sections
+- `.empty-state` - Centered empty state pattern
+- Utility classes: `.text-muted`, `.mt-4`, `.mb-4`, `.flex`, `.gap-4`, etc.
