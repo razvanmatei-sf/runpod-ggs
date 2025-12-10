@@ -1,7 +1,6 @@
 {% extends "base.html" %} {% block title %}{{ tool.name }} - SF AI Workbench{%
 endblock %} {% block content %}
 <div class="tool-header">
-    <h1 class="tool-title">{{ tool.name }}</h1>
     <span
         id="status-dot"
         class="status-dot {% if tool_status == 'running' %}running{% elif tool_status == 'starting' %}starting{% else %}stopped{% endif %}"
