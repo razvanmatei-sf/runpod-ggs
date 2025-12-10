@@ -455,7 +455,7 @@
     function downloadModels() {
         const selected = Array.from(
             document.querySelectorAll(".model-checkbox:checked"),
-        ).map((cb) => cb.value);
+        ).map((cb) => cb.value + ".sh");
         if (selected.length === 0) {
             alert("Please select at least one model pack to download.");
             return;
@@ -470,9 +470,9 @@
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                scripts: selected,
+                models: selected,
                 hf_token: hfToken,
-                civitai_token: civitaiToken,
+                civit_token: civitaiToken,
             }),
         })
             .then((response) => response.json())
