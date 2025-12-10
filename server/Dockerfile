@@ -10,6 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies (includes AI-Toolkit requirements)
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    aria2 \
     git \
     wget \
     curl \
