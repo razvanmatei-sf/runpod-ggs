@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tool.name }} - SF AI Workbench{% endblock %}
+
+{% block content %}
+<div class="tool-header">
+    <h1 class="tool-title">{{ tool.name }}</h1>
+    <span class="status-dot {% if tool_status == 'running' %}running{% elif tool_status == 'starting' %}starting{% else %}stopped{% endif %}"></span>
+    <div class="tool-controls">
+        {% if tool_status == 'running' %}
+        <button type="button" class="tool-btn tool-btn-open" onclick="openTool('{{ tool_id }}')">Open</button>
+        <button type="button" class="tool-btn tool-btn-restart" onclick="restartTool('{{ tool_id }}')">Restart</button>
+        <button type="button" class="tool-btn tool-btn-stop" onclick="stopTool('{{ tool_id }}')">Stop</button>
+        {% elif tool_status == 'starting' %}
+        <button type="button" class="tool-btn tool-btn-start" disabled>Starting...</button>
+        <button type="button" class="tool-btn tool-btn-stop" onclick="stopTool('{{ tool_id }}')">Stop</button>
+        {% else %}
+        <button type="button" class="tool-btn tool-btn-start" onclick="startTool('{{ tool_id }}')">Start</button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="terminal">
+    <div class="terminal-header">
+        <span class="terminal-title">Terminal</span>
+        <div class="terminal-actions">
+            <button type="button" class="terminal-action" onclick="copyTerminal()">Copy</button>
+            <button type="button" class="terminal-action" onclick="clearTerminal()">Clear</button>
+        </div>
+    </div>
+    <div class="terminal-body" id="terminal-output">
+        {% if logs %}
+        {{ logs }}
+        {% else %}
+        <span class="terminal-line">Ready. Click Start to launch {{ tool.name }}.</span>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const toolId = '{{ tool_id }}';
+    const toolPort = {{ tool.port }};
+    let logPollInterval = null;
+
+    function startTool(id) {
+        fetch('/start/' + id, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'started' || data.status === 'already_running') {
+                    location.reload();
+                }
+            });
+    }
+
+    function stopTool(id) {
+        fetch('/stop/' + id, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                location.reload();
+            });
+    }
+
+    function restartTool(id) {
+        stopTool(id);
+        setTimeout(() => startTool(id), 1000);
+    }
+
+    function openTool(id) {
+        const runpodId = '{{ runpod_id }}';
+        if (runpodId) {
+            window.open('https://' + runpodId + '-' + toolPort + '.proxy.runpod.net/', '_blank');
+        } else {
+            window.open('http://localhost:' + toolPort, '_blank');
+        }
+    }
+
+    function copyTerminal() {
+        const output = document.getElementById('terminal-output');
+        navigator.clipboard.writeText(output.textContent);
+    }
+
+    function clearTerminal() {
+        fetch('/clear_logs/' + toolId, { method: 'POST' })
+            .then(() => {
+                document.getElementById('terminal-output').innerHTML = '';
+            });
+    }
+
+    function pollLogs() {
+        fetch('/logs/' + toolId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.logs) {
+                    const output = document.getElementById('terminal-output');
+                    output.textContent = data.logs;
+                    output.scrollTop = output.scrollHeight;
+                }
+            });
+    }
+
+    function pollStatus() {
+        fetch('/tool_status/' + toolId)
+            .then(response => response.json())
+            .then(data => {
+                const currentStatus = '{{ tool_status }}';
+                if (data.status !== currentStatus) {
+                    location.reload();
+                }
+            });
+    }
+
+    // Start polling if tool is running or starting
+    {% if tool_status in ['running', 'starting'] %}
+    logPollInterval = setInterval(pollLogs, 1000);
+    setInterval(pollStatus, 3000);
+    {% endif %}
+</script>
+{% endblock %}

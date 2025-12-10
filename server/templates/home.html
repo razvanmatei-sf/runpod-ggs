@@ -1,0 +1,284 @@
+{% extends "base.html" %} {% block title %}Home - SF AI Workbench{% endblock %}
+{% block content %}
+<div class="home-hero">
+    <h1>What would you like to create today?</h1>
+
+    <div class="home-tabs">
+        <button class="home-tab active">
+            <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+            </svg>
+            Image
+        </button>
+        <button class="home-tab">
+            <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <polygon points="23 7 16 12 23 17 23 7" />
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+            </svg>
+            Video
+        </button>
+        <button class="home-tab">
+            <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path
+                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+                />
+            </svg>
+            3D
+        </button>
+        <button class="home-tab">
+            <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path
+                    d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
+                />
+            </svg>
+            Train LoRA
+        </button>
+        <button class="home-tab">
+            <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+            </svg>
+            Learn
+        </button>
+    </div>
+</div>
+
+<section>
+    <div class="section-header">
+        <h2 class="section-title">Creative Workflows</h2>
+        <a href="#" class="section-more">More ></a>
+    </div>
+
+    <div class="workflow-grid">
+        <div class="workflow-card">
+            <div class="workflow-card-image">
+                <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1"
+                >
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                </svg>
+            </div>
+            <div class="workflow-card-body">
+                <h3 class="workflow-card-title">Logo</h3>
+                <button class="workflow-card-btn">Create</button>
+            </div>
+        </div>
+
+        <div class="workflow-card">
+            <div class="workflow-card-image">
+                <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1"
+                >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                </svg>
+            </div>
+            <div class="workflow-card-body">
+                <h3 class="workflow-card-title">Character Dataset</h3>
+                <button class="workflow-card-btn">Create</button>
+            </div>
+        </div>
+
+        <div class="workflow-card">
+            <div class="workflow-card-image">
+                <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1"
+                >
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <line x1="3" y1="9" x2="21" y2="9" />
+                    <line x1="9" y1="21" x2="9" y2="9" />
+                </svg>
+            </div>
+            <div class="workflow-card-body">
+                <h3 class="workflow-card-title">Buildings</h3>
+                <button class="workflow-card-btn">Create</button>
+            </div>
+        </div>
+
+        <div class="workflow-card">
+            <div class="workflow-card-image">
+                <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1"
+                >
+                    <polygon points="23 7 16 12 23 17 23 7" />
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                </svg>
+            </div>
+            <div class="workflow-card-body">
+                <h3 class="workflow-card-title">Video</h3>
+                <button class="workflow-card-btn">Create</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section>
+    <div class="section-header">
+        <h2 class="section-title">Tutorials</h2>
+        <a href="#" class="section-more">More ></a>
+    </div>
+
+    <div class="tutorial-list">
+        <div class="tutorial-item">
+            <div class="tutorial-icon">
+                <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <polygon points="23 7 16 12 23 17 23 7" />
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                </svg>
+            </div>
+            <div class="tutorial-content">
+                <h3 class="tutorial-title">
+                    Lip-Sync Video<span class="tutorial-badge">New</span>
+                </h3>
+                <p class="tutorial-desc">
+                    Make any video, image, or character talk.
+                </p>
+            </div>
+            <button class="tutorial-btn">Start</button>
+        </div>
+
+        <div class="tutorial-item">
+            <div class="tutorial-icon">
+                <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+            </div>
+            <div class="tutorial-content">
+                <h3 class="tutorial-title">
+                    Motion-Sync Video<span class="tutorial-badge">New</span>
+                </h3>
+                <p class="tutorial-desc">
+                    Turn any video, image, or character into a motion-driven
+                    animation.
+                </p>
+            </div>
+            <button class="tutorial-btn">Start</button>
+        </div>
+
+        <div class="tutorial-item">
+            <div class="tutorial-icon">
+                <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                    />
+                    <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                    />
+                </svg>
+            </div>
+            <div class="tutorial-content">
+                <h3 class="tutorial-title">Chat to Edit</h3>
+                <p class="tutorial-desc">
+                    Make any video, image, or character.
+                </p>
+            </div>
+            <button class="tutorial-btn">Start</button>
+        </div>
+
+        <div class="tutorial-item">
+            <div class="tutorial-icon">
+                <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                </svg>
+            </div>
+            <div class="tutorial-content">
+                <h3 class="tutorial-title">Edit Image</h3>
+                <p class="tutorial-desc">
+                    Turn any video, image, or character into a motion-driven
+                    animation.
+                </p>
+            </div>
+            <button class="tutorial-btn">Start</button>
+        </div>
+    </div>
+</section>
+{% endblock %}

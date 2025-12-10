@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}LoRA Tool - SF AI Workbench{% endblock %}
+
+{% block content %}
+<div class="tool-header">
+    <h1 class="tool-title">LoRA Tool</h1>
+    <span class="status-dot {% if tool_status == 'running' %}running{% else %}stopped{% endif %}"></span>
+</div>
+
+<div class="lora-tool-page">
+    <p class="lora-tool-desc">
+        Dataset helper tool with AI-powered captioning for preparing LoRA training data.
+    </p>
+
+    <div class="tool-controls">
+        {% if tool_status == 'running' %}
+        <button type="button" class="tool-btn tool-btn-open" onclick="openTool()">Open LoRA Tool</button>
+        <button type="button" class="tool-btn tool-btn-stop" onclick="stopTool()">Stop</button>
+        {% else %}
+        <button type="button" class="tool-btn tool-btn-start" onclick="launchTool()">Launch LoRA Tool</button>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const toolId = 'lora-tool';
+    const toolPort = {{ tool.port }};
+
+    function launchTool() {
+        fetch('/start/' + toolId, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'started' || data.status === 'already_running') {
+                    location.reload();
+                }
+            });
+    }
+
+    function stopTool() {
+        fetch('/stop/' + toolId, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                location.reload();
+            });
+    }
+
+    function openTool() {
+        const runpodId = '{{ runpod_id }}';
+        if (runpodId) {
+            window.open('https://' + runpodId + '-' + toolPort + '.proxy.runpod.net/', '_blank');
+        } else {
+            window.open('http://localhost:' + toolPort, '_blank');
+        }
+    }
+
+    // Poll status to detect when tool starts/stops
+    setInterval(() => {
+        fetch('/tool_status/' + toolId)
+            .then(response => response.json())
+            .then(data => {
+                const currentStatus = '{{ tool_status }}';
+                if (data.status !== currentStatus) {
+                    location.reload();
+                }
+            });
+    }, 3000);
+</script>
+{% endblock %}

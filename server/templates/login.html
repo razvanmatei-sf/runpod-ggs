@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SF AI Workbench - Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-logo"></div>
+            <h1 class="login-title">SF AI Workbench</h1>
+            <p class="login-subtitle">Select your profile to continue</p>
+
+            <form action="{{ url_for('set_artist') }}" method="POST">
+                <select name="artist" class="login-select" required>
+                    <option value="" disabled selected>Choose your profile...</option>
+                    {% for artist in artists %}
+                    <option value="{{ artist }}">{{ artist }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit" class="login-btn">Start</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

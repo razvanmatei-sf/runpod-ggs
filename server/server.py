@@ -9,9 +9,17 @@ import threading
 import time
 from datetime import datetime
 
-from flask import Flask, jsonify, render_template_string, request
+from flask import (
+    Flask,
+    jsonify,
+    redirect,
+    render_template,
+    render_template_string,
+    request,
+    url_for,
+)
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static", template_folder="templates")
 
 # Repository path (set by start_server.sh)
 REPO_DIR = os.environ.get("REPO_DIR", "/workspace/runpod-ggs")
@@ -1924,6 +1932,115 @@ def debug():
 
 @app.route("/")
 def index():
+    # Redirect to login if no user selected, otherwise show home
+    if not current_artist:
+        return redirect(url_for("login"))
+    return redirect(url_for("home"))
+
+
+@app.route("/login")
+def login():
+    artists = get_all_users()
+    return render_template("login.html", artists=artists)
+
+
+@app.route("/home")
+def home():
+    if not current_artist:
+        return redirect(url_for("login"))
+    return render_template(
+        "home.html",
+        current_user=current_artist,
+        is_admin=is_admin(current_artist),
+        active_page="home",
+        runpod_id=get_runpod_id(),
+    )
+
+
+@app.route("/assets")
+def assets():
+    if not current_artist:
+        return redirect(url_for("login"))
+    return render_template(
+        "assets.html",
+        current_user=current_artist,
+        is_admin=is_admin(current_artist),
+        active_page="assets",
+        runpod_id=get_runpod_id(),
+    )
+
+
+@app.route("/tool/<tool_id>")
+def tool_page(tool_id):
+    if not current_artist:
+        return redirect(url_for("login"))
+
+    if tool_id not in TOOLS:
+        return redirect(url_for("home"))
+
+    tool = TOOLS[tool_id]
+
+    # Get tool status
+    status = "stopped"
+    if tool_id in active_sessions:
+        if check_port_open(tool["port"]):
+            status = "running"
+        else:
+            status = "starting"
+
+    # Get logs for this tool
+    logs = ""
+    if os.path.exists(USER_LOG_FILE):
+        try:
+            with open(USER_LOG_FILE, "r") as f:
+                logs = f.read()
+        except:
+            pass
+
+    # Use special template for LoRA Tool (no terminal)
+    if tool_id == "lora-tool":
+        return render_template(
+            "lora_tool.html",
+            current_user=current_artist,
+            is_admin=is_admin(current_artist),
+            active_page=tool_id,
+            tool=tool,
+            tool_id=tool_id,
+            tool_status=status,
+            runpod_id=get_runpod_id(),
+        )
+
+    return render_template(
+        "tool.html",
+        current_user=current_artist,
+        is_admin=is_admin(current_artist),
+        active_page=tool_id,
+        tool=tool,
+        tool_id=tool_id,
+        tool_status=status,
+        logs=logs,
+        runpod_id=get_runpod_id(),
+    )
+
+
+@app.route("/admin")
+def admin():
+    if not current_artist:
+        return redirect(url_for("login"))
+    if not is_admin(current_artist):
+        return redirect(url_for("home"))
+    return render_template(
+        "admin.html",
+        current_user=current_artist,
+        is_admin=True,
+        active_page="admin",
+        runpod_id=get_runpod_id(),
+    )
+
+
+@app.route("/old")
+def old_index():
+    """Legacy UI - keep for reference during migration"""
     artists = get_all_users()
     return render_template_string(
         HTML_TEMPLATE,
@@ -1946,12 +2063,21 @@ def index():
 @app.route("/set_artist", methods=["POST"])
 def set_artist():
     global current_artist, admin_mode
-    data = request.get_json()
-    current_artist = data.get("artist", "")
+
+    # Handle both form submission and JSON
+    if request.is_json:
+        data = request.get_json()
+        current_artist = data.get("artist", "")
+    else:
+        current_artist = request.form.get("artist", "")
 
     # Reset admin mode if not an admin
     if not is_admin(current_artist):
         admin_mode = False
+
+    # If form submission, redirect to home
+    if not request.is_json:
+        return redirect(url_for("home"))
 
     return jsonify({"success": True})
 
@@ -1968,19 +2094,15 @@ def set_admin_mode():
     return jsonify({"success": True})
 
 
-@app.route("/start_session", methods=["POST"])
-def start_session():
+def start_session_internal(tool_id, artist):
+    """Internal function to start a tool session"""
     global active_sessions, user_process_running
 
-    data = request.get_json()
-    tool_id = data.get("tool_id")
-    artist = data.get("artist")
-
     if not tool_id or tool_id not in TOOLS:
-        return jsonify({"success": False, "message": "Invalid tool"})
+        return {"status": "error", "message": "Invalid tool"}
 
     if not artist:
-        return jsonify({"success": False, "message": "No artist selected"})
+        return {"status": "error", "message": "No artist selected"}
 
     tool = TOOLS[tool_id]
     process = None
@@ -2068,9 +2190,7 @@ def start_session():
 
                 threading.Thread(target=monitor_process, daemon=True).start()
             else:
-                return jsonify(
-                    {"success": False, "message": "ComfyUI start script not found"}
-                )
+                return {"status": "error", "message": "ComfyUI start script not found"}
 
         elif tool_id == "ai-toolkit":
             # Kill any existing ai-toolkit on the port
@@ -2161,7 +2281,7 @@ def start_session():
                 raise Exception("LoRA-Tool start script not found")
 
     except Exception as e:
-        return jsonify({"success": False, "message": f"Failed to start: {str(e)}"})
+        return {"status": "error", "message": f"Failed to start: {str(e)}"}
 
     active_sessions[tool_id] = {
         "process": process,
@@ -2169,13 +2289,32 @@ def start_session():
         "artist": artist,
     }
 
-    return jsonify(
-        {
-            "success": True,
-            "tool_name": tool["name"],
-            "message": f"{tool['name']} session started",
-        }
-    )
+    return {"status": "started", "tool_name": tool["name"]}
+
+
+@app.route("/start_session", methods=["POST"])
+def start_session():
+    global active_sessions, user_process_running
+
+    data = request.get_json()
+    tool_id = data.get("tool_id")
+    artist = data.get("artist")
+
+    result = start_session_internal(tool_id, artist)
+
+    # Convert to old format for compatibility
+    if result.get("status") == "started":
+        return jsonify(
+            {
+                "success": True,
+                "tool_name": result.get("tool_name"),
+                "message": f"{result.get('tool_name')} session started",
+            }
+        )
+    else:
+        return jsonify(
+            {"success": False, "message": result.get("message", "Unknown error")}
+        )
 
 
 @app.route("/stop_session", methods=["POST"])
@@ -2235,6 +2374,77 @@ def check_port_open(port, timeout=1):
         return result == 0
     except:
         return False
+
+
+@app.route("/start/<tool_id>", methods=["POST"])
+def start_tool(tool_id):
+    """Simplified start endpoint for new UI"""
+    global active_sessions, user_process_running
+
+    if tool_id not in TOOLS:
+        return jsonify({"status": "error", "message": "Invalid tool"})
+
+    if tool_id in active_sessions:
+        return jsonify({"status": "already_running"})
+
+    # Use existing start_session logic
+    data = {"tool_id": tool_id, "artist": current_artist}
+
+    # Simulate the request
+    with app.test_request_context(json=data):
+        from flask import request as req
+
+        result = start_session_internal(tool_id, current_artist)
+        return jsonify(result)
+
+
+@app.route("/stop/<tool_id>", methods=["POST"])
+def stop_tool(tool_id):
+    """Simplified stop endpoint for new UI"""
+    global active_sessions
+
+    if tool_id not in TOOLS:
+        return jsonify({"status": "error", "message": "Invalid tool"})
+
+    tool = TOOLS[tool_id]
+
+    # Kill the process if running
+    if tool_id in active_sessions:
+        session = active_sessions[tool_id]
+        if session.get("process"):
+            session["process"].terminate()
+
+        # Kill by port
+        port = tool["port"]
+        subprocess.run(["fuser", "-k", f"{port}/tcp"], capture_output=True)
+
+        del active_sessions[tool_id]
+
+    return jsonify({"status": "stopped"})
+
+
+@app.route("/logs/<tool_id>")
+def get_tool_logs(tool_id):
+    """Get logs for a specific tool"""
+    logs = ""
+    if os.path.exists(USER_LOG_FILE):
+        try:
+            with open(USER_LOG_FILE, "r") as f:
+                logs = f.read()
+        except:
+            pass
+    return jsonify({"logs": logs})
+
+
+@app.route("/clear_logs/<tool_id>", methods=["POST"])
+def clear_tool_logs(tool_id):
+    """Clear logs for a specific tool"""
+    try:
+        with open(USER_LOG_FILE, "w") as f:
+            f.write("")
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
 
 
 @app.route("/tool_status/<tool_id>")
