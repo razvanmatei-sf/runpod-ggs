@@ -55,15 +55,16 @@
     --font-semibold: 600;
     --font-bold: 700;
 
-    /* Spacing - Tighter like RunPod */
-    --space-1: 4px;
-    --space-2: 6px;
-    --space-3: 10px;
-    --space-4: 14px;
-    --space-5: 18px;
-    --space-6: 22px;
-    --space-8: 28px;
-    --space-10: 36px;
+    /* Spacing - Matching RunPod Tailwind */
+    --space-0-5: 2px; /* gap-0.5 */
+    --space-1: 4px; /* gap-1, p-1 */
+    --space-2: 8px; /* gap-2, p-2 */
+    --space-3: 12px; /* gap-3, p-3 */
+    --space-4: 16px; /* gap-4, p-4 */
+    --space-5: 20px; /* gap-5, p-5, px-5 */
+    --space-6: 24px; /* gap-6, p-6, pb-6 */
+    --space-8: 32px; /* gap-8, p-8 */
+    --space-10: 40px; /* gap-10, pt-10 */
 
     /* Border Radius */
     --radius-sm: 4px;
@@ -77,9 +78,9 @@
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
 
-    /* Layout */
-    --sidebar-width: 200px;
-    --header-height: 52px;
+    /* Layout - RunPod sidebar is 232px */
+    --sidebar-width: 232px;
+    --header-height: 56px;
 
     /* Transitions */
     --transition-fast: 0.15s ease;
@@ -254,10 +255,10 @@ a:hover {
 }
 
 .sidebar-header {
-    padding: var(--space-3) var(--space-4);
+    padding: var(--space-4) var(--space-5);
     display: flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--space-3);
     height: var(--header-height);
 }
 
@@ -284,14 +285,17 @@ a:hover {
     flex: 1;
     padding: var(--space-2) 0;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2); /* gap-2 = 8px between sections */
 }
 
 .nav-item {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
-    margin: 1px var(--space-2);
+    gap: var(--space-0-5); /* gap-0.5 = 2px between icon and text */
+    padding: var(--space-2) var(--space-5); /* px-5 = 20px horizontal */
+    margin: 0;
     color: var(--text-secondary);
     text-decoration: none;
     font-size: var(--text-sm);
@@ -300,10 +304,11 @@ a:hover {
     cursor: pointer;
     border: none;
     background: none;
-    width: calc(100% - var(--space-4));
-    border-radius: var(--radius-md);
+    width: 100%;
+    border-radius: 0;
     text-align: left;
     position: relative;
+    min-height: 32px; /* ~31.5px from RunPod */
 }
 
 .nav-item:hover {
@@ -314,6 +319,9 @@ a:hover {
 .nav-item.active {
     color: var(--text-primary);
     background: var(--bg-active);
+    border-radius: var(--radius-md);
+    margin: 0 var(--space-2);
+    width: calc(100% - var(--space-4));
 }
 
 .nav-item.active::before {
@@ -323,23 +331,25 @@ a:hover {
     top: 50%;
     transform: translateY(-50%);
     width: 3px;
-    height: 18px;
+    height: 20px;
     background: var(--accent-primary);
     border-radius: 0 2px 2px 0;
 }
 
 .nav-item svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     stroke-width: 1.5;
     flex-shrink: 0;
+    margin-right: var(--space-2); /* extra spacing after icon */
 }
 
 .nav-item img {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border-radius: var(--radius-sm);
     flex-shrink: 0;
+    margin-right: var(--space-2); /* extra spacing after icon */
 }
 
 .nav-item span {
@@ -355,7 +365,7 @@ a:hover {
    SIDEBAR COLLAPSIBLE SECTIONS
    ============================================ */
 .nav-section {
-    margin-top: var(--space-1);
+    margin-top: 0;
 }
 
 .nav-section-header {
@@ -363,9 +373,8 @@ a:hover {
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: var(--space-1) var(--space-3);
-    margin: 0 var(--space-2);
-    width: calc(100% - var(--space-4));
+    padding: var(--space-2) var(--space-5); /* px-5 = 20px to match nav items */
+    margin: 0;
     background: none;
     border: none;
     color: var(--text-muted);
@@ -401,7 +410,7 @@ a:hover {
 }
 
 .nav-section-content .nav-item {
-    padding-left: var(--space-3);
+    padding-left: var(--space-5); /* same px-5 as other items */
 }
 
 /* ============================================
@@ -496,7 +505,8 @@ a:hover {
    ============================================ */
 .page-content {
     flex: 1;
-    padding: var(--space-6) var(--space-8);
+    padding: var(--space-10) var(--space-6); /* pt-10 pb-6 from RunPod */
+    padding-bottom: var(--space-6);
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
@@ -514,8 +524,8 @@ a:hover {
 .card {
     background: var(--bg-card);
     border: 1px solid var(--border-card);
-    border-radius: var(--radius-lg);
-    padding: var(--space-4);
+    border-radius: var(--radius-sm); /* rounded = 4px */
+    padding: var(--space-4); /* p-4 = 16px */
     margin-bottom: var(--space-4);
 }
 
