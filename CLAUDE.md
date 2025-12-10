@@ -253,3 +253,54 @@ rg "<text>" -l                     # Filter by content (fast)
 - Any complex search operation
 
 **For open-ended codebase exploration requiring multiple search rounds, use the Plan agent (Task tool with subagent_type=Plan) instead of sequential tool calls.**
+
+---
+
+## SF AI Workbench Project Context
+
+### Project Overview
+SF AI Workbench (formerly ComfyStudio) is a multi-user web platform for AI image generation and model training on RunPod cloud infrastructure. It provides access to ComfyUI, SwarmUI, AI-Toolkit, LoRA Tool, and JupyterLab.
+
+### Architecture
+- **Backend**: Flask server (`server/server.py`)
+- **Frontend**: Jinja2 templates (`server/templates/`) + vanilla JS (`server/static/js/`)
+- **Styling**: CSS (`server/static/css/style.css`)
+- **Docker**: Image built and pushed to `ghcr.io/razvanmatei-sf/runpod-ggs:v2`
+
+### Key File Locations
+- `server/server.py` - Main Flask application with all routes and API endpoints
+- `server/templates/` - HTML templates (base.html, login.html, home.html, tool.html, admin.html, etc.)
+- `server/static/css/style.css` - All CSS styling (dark theme)
+- `server/static/js/app.js` - Shared JavaScript (modals, navigation)
+- `server/static/images/` - Tool logos (comfyui.png, swarmui.png, ai-toolkit.png, stillfront.png)
+- `server/start_server.sh` - Docker entrypoint script
+- `server/build_server.sh` - Build and push Docker image
+
+### Build & Deploy Process
+1. Make changes to code
+2. Commit and push to git: `git add -A && git commit -m "message" && git push`
+3. Build and push Docker: `cd server && ./build_server.sh`
+4. Restart RunPod pod to pull new image
+
+### Important Notes
+- Currently on branch `feature/sf-ai-workbench` (not main)
+- Docker image tag is `:v2` (not `:latest`)
+- `start_server.sh` pulls from `origin/feature/sf-ai-workbench` and runs server from Docker image (`/usr/local/bin/server.py`)
+- Templates and static files must be in Docker image at `/usr/local/bin/templates/` and `/usr/local/bin/static/`
+
+### API Endpoints
+- `/login` - Profile selection page
+- `/home` - Main dashboard
+- `/tool/<tool_id>` - Tool pages (comfy-ui, swarm-ui, ai-toolkit, lora-tool, jupyter-lab)
+- `/admin` - Admin page (tool management, models, custom nodes)
+- `/start/<tool_id>` - Start a tool
+- `/stop/<tool_id>` - Stop a tool
+- `/logs/<tool_id>` - Get tool logs
+- `/admin_action` - Tool install/update/reinstall/remove
+- `/download_models` - Download model packs (expects `models` array with `.sh` filenames)
+- `/custom_nodes_action` - Install/update custom nodes
+
+### Known Issues & Solutions
+- **Terminal scroll jumping**: Fixed by only auto-scrolling when user is at bottom + setTimeout delay
+- **Docker image not updating**: Use unique tag (v2) or delete workspace repo folder
+- **Templates not found**: Ensure `SCRIPT_DIR` is used for absolute paths in Flask app init
