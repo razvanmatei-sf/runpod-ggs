@@ -1,30 +1,30 @@
 {% extends "base.html" %} {% block title %}Admin - SF AI Workbench{% endblock %}
 {% block content %}
-<h1 class="page-title">Admin</h1>
 
 <!-- User Profiles Section -->
 <section class="admin-section">
-    <div class="section-header">
-        <h2 class="section-title">User Profiles</h2>
-        <button
-            type="button"
-            class="admin-toggle-btn"
-            onclick="toggleSection('users-section')"
-        >
-            <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h2 class="admin-card-title">User Profiles</h2>
+            <button
+                type="button"
+                class="admin-toggle-btn"
+                onclick="toggleSection('users-section')"
             >
-                <polyline points="6 9 12 15 18 9" />
-            </svg>
-        </button>
-    </div>
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </button>
+        </div>
 
-    <div id="users-section" class="admin-collapsible">
+        <div id="users-section" class="admin-card-content">
         <!-- Add New Users -->
         <div class="admin-input-group" style="margin-bottom: 12px">
             <label for="new-users-text">Add Users (one name per line)</label>
@@ -108,9 +108,9 @@
 </section>
 
 <section class="admin-section">
-    <!-- Tool Management Section -->
-    <h2 class="section-title">Tool Management</h2>
-    <div class="admin-collapsible">
+    <div class="admin-card">
+        <h2 class="admin-card-title">Tool Management</h2>
+        <div class="admin-card-content">
         <div class="admin-list">
             <label class="admin-checkbox-item">
                 <input
@@ -176,32 +176,33 @@
                 Remove Selected
             </button>
         </div>
+        </div>
     </div>
 </section>
 
-<!-- Models Download Section -->
 <section class="admin-section">
-    <div class="section-header">
-        <h2 class="section-title">Models Download</h2>
-        <button
-            type="button"
-            class="admin-toggle-btn"
-            onclick="toggleSection('models-section')"
-        >
-            <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h2 class="admin-card-title">Custom Nodes</h2>
+            <button
+                type="button"
+                class="admin-toggle-btn"
+                onclick="toggleSection('nodes-section')"
             >
-                <polyline points="6 9 12 15 18 9" />
-            </svg>
-        </button>
-    </div>
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </button>
+        </div>
 
-    <div id="models-section" class="admin-collapsible">
+        <div id="nodes-section" class="admin-card-content">
         <div class="admin-tokens">
             <div class="admin-input-group">
                 <label for="hf-token">HuggingFace Token</label>
@@ -275,32 +276,33 @@
                 Remove Selected
             </button>
         </div>
+        </div>
     </div>
 </section>
 
-<!-- Custom Nodes Section -->
 <section class="admin-section">
-    <div class="section-header">
-        <h2 class="section-title">Custom Nodes</h2>
-        <button
-            type="button"
-            class="admin-toggle-btn"
-            onclick="toggleSection('nodes-section')"
-        >
-            <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h2 class="admin-card-title">Download Models</h2>
+            <button
+                type="button"
+                class="admin-toggle-btn"
+                onclick="toggleSection('models-section')"
             >
-                <polyline points="6 9 12 15 18 9" />
-            </svg>
-        </button>
-    </div>
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </button>
+        </div>
 
-    <div id="nodes-section" class="admin-collapsible">
+        <div id="models-section" class="admin-card-content">
         <div class="admin-list">
             <label class="admin-checkbox-item">
                 <input
@@ -387,12 +389,38 @@
                 >Ready for admin commands.</span
             >{% endif %}
         </div>
+        </div>
     </div>
 </section>
 
 <style>
     .admin-section {
         margin-bottom: 16px;
+    }
+
+    .admin-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-card);
+        border-radius: 4px;
+        padding: 16px;
+    }
+
+    .admin-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+
+    .admin-card-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .admin-card-content {
+        /* content styles */
     }
 
     .admin-tools {
@@ -452,10 +480,7 @@
     }
 
     .admin-collapsible {
-        background: var(--bg-card);
-        border: 1px solid var(--border-card);
-        border-radius: 8px;
-        padding: 14px;
+        /* legacy - now using admin-card */
     }
 
     .admin-tokens {

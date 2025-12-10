@@ -305,7 +305,7 @@ a:hover {
     border: none;
     background: none;
     width: 100%;
-    border-radius: 0;
+    border-radius: 0; /* hover is full width, no radius */
     text-align: left;
     position: relative;
     min-height: 32px; /* ~31.5px from RunPod */
@@ -314,20 +314,20 @@ a:hover {
 .nav-item:hover {
     color: var(--text-primary);
     background: var(--bg-hover);
-    /* hover stays square (no border-radius) */
+    border-radius: 0; /* hover stays full width, no radius */
 }
 
 .nav-item.active {
     color: var(--text-primary);
     background: var(--bg-active);
-    border-radius: var(--radius-md); /* active is rounded */
-    margin: 0 var(--space-2);
-    width: calc(100% - var(--space-4));
+    border-radius: 4px; /* active is rounded 4px */
+    margin-left: var(--space-2);
+    margin-right: var(--space-2);
+    width: calc(100% - 16px); /* inset from edges */
 }
 
 .nav-item.active:hover {
-    /* keep rounded on hover when active */
-    border-radius: var(--radius-md);
+    border-radius: 4px; /* keep rounded on hover when active */
 }
 
 .nav-item.active::before {
