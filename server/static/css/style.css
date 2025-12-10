@@ -562,7 +562,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     margin-top: 40px;
 }
 
@@ -570,6 +570,17 @@ body {
     font-size: 18px;
     font-weight: 600;
     color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+/* Remove top margin for section headers inside admin sections */
+.admin-section .section-header {
+    margin-top: 0;
+}
+
+/* Section title inside section-header shouldn't have bottom margin */
+.section-header .section-title {
+    margin-bottom: 0;
 }
 
 .section-more {

@@ -4,7 +4,7 @@
 
 <!-- User Profiles Section -->
 <section class="admin-section">
-    <div class="section-header" style="margin-top: 0">
+    <div class="section-header">
         <h2 class="section-title">User Profiles</h2>
         <button
             type="button"
@@ -46,6 +46,7 @@
         </div>
 
         <!-- Current Users List -->
+        <!-- Current Users List -->
         <div class="admin-input-group">
             <label>Current Users</label>
         </div>
@@ -57,7 +58,6 @@
                     {% if user.name == superadmin_name %}
                     <span class="admin-badge installed">Superadmin</span>
                     {% endif %}
-                </div>
                 <div class="admin-user-actions">
                     <label class="admin-toggle-label">
                         <input type="checkbox" class="admin-toggle-checkbox" {% if user.is_admin %}checked{% endif %} {% if user.name == superadmin_name %}disabled{% endif %} onchange="toggleUserAdmin('{{ user.name }}', this.checked)" />
@@ -78,64 +78,82 @@
         </div>
     </div>
 </section>
-<section class="admin-section">
-    <h2 class="section-title">Tool Management</h2>
 
-    <div class="admin-tools">
-        {% for tool_id, tool in admin_tools.items() %}
-        <div class="admin-tool-row">
-            <div class="admin-tool-info">
-                <span class="admin-tool-name">{{ tool.name }}</span>
-                <span
-                    class="status-dot {% if tool.installed %}running{% else %}stopped{% endif %}"
-                ></span>
-                {% if tool.installed %}
-                <span class="admin-status-text installed">Installed</span>
-                {% else %}
-                <span class="admin-status-text">Not installed</span>
-                {% endif %}
-            </div>
-            <div class="admin-tool-actions">
-                {% if tool.installed %}
-                <button
-                    type="button"
-                    class="tool-btn tool-btn-open"
-                    onclick="adminAction('{{ tool_id }}', 'update')"
+<section class="admin-section">
+    <!-- Tool Management Section -->
+    <h2 class="section-title">Tool Management</h2>
+    <div class="admin-collapsible">
+        <div class="admin-list">
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    id="select-all-tools"
+                    onchange="toggleAllTools(this)"
+                />
+                <span class="admin-checkbox-label"
+                    ><strong>Select All</strong></span
                 >
-                    Update
-                </button>
-                <button
-                    type="button"
-                    class="tool-btn tool-btn-restart"
-                    onclick="adminAction('{{ tool_id }}', 'reinstall')"
-                >
-                    Reinstall
-                </button>
-                <button
-                    type="button"
-                    class="tool-btn tool-btn-stop"
-                    onclick="adminAction('{{ tool_id }}', 'kill')"
-                >
-                    Remove
-                </button>
-                {% else %}
-                <button
-                    type="button"
-                    class="tool-btn tool-btn-start"
-                    onclick="adminAction('{{ tool_id }}', 'install')"
-                >
-                    Install
-                </button>
-                {% endif %}
-            </div>
+            </label>
+
+            {% for tool_id, tool in admin_tools.items() %}
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    name="tool"
+                    value="{{ tool_id }}"
+                    class="tool-checkbox"
+                />
+                <span class="admin-checkbox-label">
+                    {{ tool.name }} {% if tool.installed %}
+                    <span class="admin-badge installed">Installed</span>
+                    {% else %}
+                    <span class="admin-badge new">Not installed</span>
+                    {% endif %}
+                </span>
+            </label>
+            {% endfor %}
         </div>
-        {% endfor %}
+
+        <div class="admin-actions">
+            <button
+                type="button"
+                id="btn-tools-install"
+                class="tool-btn tool-btn-start"
+                onclick="bulkToolAction('install')"
+            >
+                Install Selected
+            </button>
+            <button
+                type="button"
+                id="btn-tools-update"
+                class="tool-btn tool-btn-open"
+                onclick="bulkToolAction('update')"
+            >
+                Update Selected
+            </button>
+            <button
+                type="button"
+                id="btn-tools-reinstall"
+                class="tool-btn tool-btn-restart"
+                onclick="bulkToolAction('reinstall')"
+            >
+                Reinstall Selected
+            </button>
+            <button
+                type="button"
+                id="btn-tools-remove"
+                class="tool-btn tool-btn-stop"
+                onclick="bulkToolAction('kill')"
+            >
+                Remove Selected
+            </button>
+        </div>
     </div>
 </section>
 
 <!-- Models Download Section -->
 <section class="admin-section">
-    <div class="section-header" style="margin-top: 0">
+    <div class="section-header">
         <h2 class="section-title">Models Download</h2>
         <button
             type="button"
@@ -234,7 +252,7 @@
 
 <!-- Custom Nodes Section -->
 <section class="admin-section">
-    <div class="section-header" style="margin-top: 0">
+    <div class="section-header">
         <h2 class="section-title">Custom Nodes</h2>
         <button
             type="button"
@@ -407,7 +425,6 @@
         border: 1px solid var(--border-color);
         border-radius: 12px;
         padding: 20px;
-        margin-top: 12px;
     }
 
     .admin-tokens {
@@ -580,14 +597,164 @@
         padding: 6px 12px;
         font-size: 12px;
     }
+
+    .tool-btn-disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
 </style>
 {% endblock %} {% block scripts %}
 <script>
     let pollInterval = null;
+    let activeButton = null;
+    let originalButtonText = null;
 
-    function adminAction(toolId, action) {
+    let toolActionQueue = [];
+    let isProcessingQueue = false;
+
+    function toggleAllTools(checkbox) {
+        document
+            .querySelectorAll(".tool-checkbox")
+            .forEach((cb) => (cb.checked = checkbox.checked));
+    }
+
+    function bulkToolAction(action) {
+        const selected = Array.from(
+            document.querySelectorAll(".tool-checkbox:checked"),
+        ).map((cb) => cb.value);
+
+        if (selected.length === 0) {
+            alert("Please select at least one tool.");
+            return;
+        }
+
+        const actionText = {
+            install: "Install",
+            update: "Update",
+            reinstall: "Reinstall",
+            kill: "Remove",
+        };
+
+        if (
+            action === "kill" &&
+            !confirm(
+                `Are you sure you want to remove ${selected.length} tool(s)?`,
+            )
+        ) {
+            return;
+        }
+
+        // Queue up all selected tools
+        toolActionQueue = selected.map((toolId) => ({ toolId, action }));
+        isProcessingQueue = true;
+
+        // Disable all tool action buttons
+        disableToolButtons(action);
+
+        // Start processing queue
+        processNextToolAction();
+    }
+
+    function disableToolButtons(action) {
+        const buttons = document.querySelectorAll('[id^="btn-tools-"]');
+        buttons.forEach((btn) => {
+            btn.disabled = true;
+            btn.classList.add("tool-btn-disabled");
+        });
+
+        const actionText = {
+            install: "Installing...",
+            update: "Updating...",
+            reinstall: "Reinstalling...",
+            kill: "Removing...",
+        };
+
+        const activeBtn = document.getElementById(
+            `btn-tools-${action === "kill" ? "remove" : action}`,
+        );
+        if (activeBtn) {
+            activeBtn.textContent = actionText[action] || "Processing...";
+        }
+    }
+
+    function resetToolButtons() {
+        const buttonDefaults = {
+            "btn-tools-install": "Install Selected",
+            "btn-tools-update": "Update Selected",
+            "btn-tools-reinstall": "Reinstall Selected",
+            "btn-tools-remove": "Remove Selected",
+        };
+
+        Object.entries(buttonDefaults).forEach(([id, text]) => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove("tool-btn-disabled");
+                btn.textContent = text;
+            }
+        });
+
+        isProcessingQueue = false;
+    }
+
+    function processNextToolAction() {
+        if (toolActionQueue.length === 0) {
+            // All done - buttons will reset when polling stops
+            return;
+        }
+
+        const { toolId, action } = toolActionQueue.shift();
+        const terminal = document.getElementById("admin-terminal");
+        const remaining = toolActionQueue.length;
+
+        terminal.textContent += `\n${"=".repeat(50)}\n`;
+        terminal.textContent += `Starting ${action} for ${toolId}... (${remaining} remaining)\n`;
+        terminal.textContent += `${"=".repeat(50)}\n`;
+
+        fetch("/admin_action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tool_id: toolId, action: action }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    // Start polling and wait for this action to complete
+                    startPollingLogsWithCallback(() => {
+                        // When this action completes, process next
+                        processNextToolAction();
+                    });
+                } else {
+                    terminal.textContent += `Error: ${data.message}\n`;
+                    // Continue with next tool even on error
+                    processNextToolAction();
+                }
+            })
+            .catch((err) => {
+                terminal.textContent += `Error: ${err}\n`;
+                processNextToolAction();
+            });
+    }
+
+    function adminAction(toolId, action, button) {
         const terminal = document.getElementById("admin-terminal");
         terminal.textContent = `Starting ${action} for ${toolId}...\n`;
+
+        // Disable button and show "Installing..." / "Updating..." etc
+        if (button) {
+            activeButton = button;
+            originalButtonText = button.textContent;
+            button.disabled = true;
+            button.classList.add("tool-btn-disabled");
+
+            const actionText = {
+                install: "Installing...",
+                update: "Updating...",
+                reinstall: "Reinstalling...",
+                kill: "Removing...",
+            };
+            button.textContent = actionText[action] || "Processing...";
+        }
 
         fetch("/admin_action", {
             method: "POST",
@@ -600,8 +767,23 @@
                     startPollingLogs();
                 } else {
                     terminal.textContent += `Error: ${data.message}\n`;
+                    resetActiveButton();
                 }
+            })
+            .catch((err) => {
+                terminal.textContent += `Error: ${err}\n`;
+                resetActiveButton();
             });
+    }
+
+    function resetActiveButton() {
+        if (activeButton) {
+            activeButton.disabled = false;
+            activeButton.classList.remove("tool-btn-disabled");
+            activeButton.textContent = originalButtonText;
+            activeButton = null;
+            originalButtonText = null;
+        }
     }
 
     function downloadModels() {
@@ -727,7 +909,16 @@
         terminal.textContent += `Note: Node removal is not yet implemented.\n`;
     }
 
+    let onPollingComplete = null;
+
     function startPollingLogs() {
+        onPollingComplete = null;
+        if (pollInterval) clearInterval(pollInterval);
+        pollInterval = setInterval(pollLogs, 500);
+    }
+
+    function startPollingLogsWithCallback(callback) {
+        onPollingComplete = callback;
         if (pollInterval) clearInterval(pollInterval);
         pollInterval = setInterval(pollLogs, 500);
     }
@@ -749,6 +940,20 @@
                 if (!data.running && pollInterval) {
                     clearInterval(pollInterval);
                     pollInterval = null;
+                    resetActiveButton();
+
+                    // If we have a callback (bulk action), call it
+                    if (onPollingComplete) {
+                        const callback = onPollingComplete;
+                        onPollingComplete = null;
+                        callback();
+                    } else if (
+                        isProcessingQueue &&
+                        toolActionQueue.length === 0
+                    ) {
+                        // All bulk actions complete
+                        resetToolButtons();
+                    }
                 }
             });
     }

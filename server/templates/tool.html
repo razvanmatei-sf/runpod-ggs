@@ -3,9 +3,10 @@ endblock %} {% block content %}
 <div class="tool-header">
     <h1 class="tool-title">{{ tool.name }}</h1>
     <span
+        id="status-dot"
         class="status-dot {% if tool_status == 'running' %}running{% elif tool_status == 'starting' %}starting{% else %}stopped{% endif %}"
     ></span>
-    <div class="tool-controls">
+    <div id="tool-controls" class="tool-controls">
         {% if tool_status == 'running' %}
         <button
             type="button"
@@ -92,14 +93,21 @@ endblock %} {% block content %}
 <script>
     const toolId = '{{ tool_id }}';
     const toolPort = {{ tool.port }};
+    const isSwarmUI = toolId === 'swarm-ui';
     let logPollInterval = null;
+    let statusPollInterval = null;
+    let currentStatus = '{{ tool_status }}';
 
     function startTool(id) {
+        // Update UI immediately to show starting state
+        updateUIForStatus('starting');
+
         fetch('/start/' + id, { method: 'POST' })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'started' || data.status === 'already_running') {
-                    location.reload();
+                    currentStatus = 'starting';
+                    startPolling();
                 }
             });
     }
@@ -108,13 +116,25 @@ endblock %} {% block content %}
         fetch('/stop/' + id, { method: 'POST' })
             .then(response => response.json())
             .then(data => {
-                location.reload();
+                currentStatus = 'stopped';
+                updateUIForStatus('stopped');
+                stopPolling();
             });
     }
 
     function restartTool(id) {
-        stopTool(id);
-        setTimeout(() => startTool(id), 1000);
+        updateUIForStatus('starting');
+        fetch('/stop/' + id, { method: 'POST' })
+            .then(() => {
+                setTimeout(() => {
+                    fetch('/start/' + id, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            currentStatus = 'starting';
+                            startPolling();
+                        });
+                }, 1000);
+            });
     }
 
     function openTool(id) {
@@ -167,17 +187,70 @@ endblock %} {% block content %}
         fetch('/tool_status/' + toolId)
             .then(response => response.json())
             .then(data => {
-                const currentStatus = '{{ tool_status }}';
                 if (data.status !== currentStatus) {
-                    location.reload();
+                    currentStatus = data.status;
+                    updateUIForStatus(data.status);
                 }
             });
     }
 
+    function updateUIForStatus(status) {
+        const statusDot = document.getElementById('status-dot');
+        const controls = document.getElementById('tool-controls');
+
+        // Update status dot
+        statusDot.className = 'status-dot ' + status;
+
+        // Update controls based on status
+        if (status === 'running') {
+            controls.innerHTML = `
+                <button type="button" class="tool-btn tool-btn-open" onclick="openTool('${toolId}')">Open</button>
+                <button type="button" class="tool-btn tool-btn-restart" onclick="restartTool('${toolId}')">Restart</button>
+                <button type="button" class="tool-btn tool-btn-stop" onclick="stopTool('${toolId}')">Stop</button>
+            `;
+        } else if (status === 'starting') {
+            controls.innerHTML = `
+                <button type="button" class="tool-btn tool-btn-start" disabled>Starting...</button>
+                <button type="button" class="tool-btn tool-btn-stop" onclick="stopTool('${toolId}')">Stop</button>
+            `;
+            startPolling();
+        } else {
+            // stopped
+            if (isSwarmUI) {
+                controls.innerHTML = `
+                    <button type="button" class="tool-btn tool-btn-start" disabled style="opacity: 0.5; cursor: not-allowed">Coming Soon</button>
+                `;
+            } else {
+                controls.innerHTML = `
+                    <button type="button" class="tool-btn tool-btn-start" onclick="startTool('${toolId}')">Start</button>
+                `;
+            }
+        }
+    }
+
+    function startPolling() {
+        if (!logPollInterval) {
+            logPollInterval = setInterval(pollLogs, 1000);
+        }
+        if (!statusPollInterval) {
+            statusPollInterval = setInterval(pollStatus, 3000);
+        }
+    }
+
+    function stopPolling() {
+        if (logPollInterval) {
+            clearInterval(logPollInterval);
+            logPollInterval = null;
+        }
+        if (statusPollInterval) {
+            clearInterval(statusPollInterval);
+            statusPollInterval = null;
+        }
+    }
+
     // Start polling if tool is running or starting
     {% if tool_status in ['running', 'starting'] %}
-    logPollInterval = setInterval(pollLogs, 1000);
-    setInterval(pollStatus, 3000);
+    startPolling();
     {% endif %}
 </script>
 {% endblock %}

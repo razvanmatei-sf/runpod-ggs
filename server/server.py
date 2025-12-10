@@ -34,9 +34,14 @@ app = Flask(
 # Repository path (set by start_server.sh)
 REPO_DIR = os.environ.get("REPO_DIR", "/workspace/runpod-ggs")
 
-# User process log file for streaming tool startup logs
+# User process log file for streaming tool startup logs (legacy, kept for admin actions)
 USER_LOG_FILE = "/tmp/comfystudio_user_log.txt"
 user_process_running = False
+
+
+def get_tool_log_file(tool_id):
+    """Get the log file path for a specific tool"""
+    return f"/tmp/comfystudio_{tool_id}.log"
 
 
 # Import user management module
@@ -1981,9 +1986,10 @@ def tool_page(tool_id):
 
     # Get logs for this tool
     logs = ""
-    if os.path.exists(USER_LOG_FILE):
+    tool_log_file = get_tool_log_file(tool_id)
+    if os.path.exists(tool_log_file):
         try:
-            with open(USER_LOG_FILE, "r") as f:
+            with open(tool_log_file, "r") as f:
                 logs = f.read()
         except:
             pass
@@ -2202,13 +2208,14 @@ def start_session_internal(tool_id, artist):
             time.sleep(1)
 
             # Setup log capture
+            tool_log_file = get_tool_log_file(tool_id)
             user_process_running = True
-            with open(USER_LOG_FILE, "w") as f:
+            with open(tool_log_file, "w") as f:
                 f.write(f"=== Starting JupyterLab ===\n")
                 f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
                 f.write("=" * 40 + "\n\n")
 
-            log_file = open(USER_LOG_FILE, "a")
+            log_file = open(tool_log_file, "a")
             process = subprocess.Popen(
                 [
                     "jupyter",
@@ -2228,7 +2235,7 @@ def start_session_internal(tool_id, artist):
             def monitor_process():
                 global user_process_running
                 process.wait()
-                with open(USER_LOG_FILE, "a") as f:
+                with open(tool_log_file, "a") as f:
                     f.write(
                         f"\n=== Process exited with code: {process.returncode} ===\n"
                     )
@@ -2241,14 +2248,15 @@ def start_session_internal(tool_id, artist):
             start_script = get_setup_script("comfy-ui", "start")
             if start_script:
                 # Setup log capture
+                tool_log_file = get_tool_log_file(tool_id)
                 user_process_running = True
-                with open(USER_LOG_FILE, "w") as f:
+                with open(tool_log_file, "w") as f:
                     f.write(f"=== Starting ComfyUI ===\n")
                     f.write(f"Script: {start_script}\n")
                     f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
                     f.write("=" * 40 + "\n\n")
 
-                log_file = open(USER_LOG_FILE, "a")
+                log_file = open(tool_log_file, "a")
                 env = os.environ.copy()
                 env["HF_HOME"] = "/workspace"
                 env["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
@@ -2264,7 +2272,7 @@ def start_session_internal(tool_id, artist):
                 def monitor_process():
                     global user_process_running
                     process.wait()
-                    with open(USER_LOG_FILE, "a") as f:
+                    with open(tool_log_file, "a") as f:
                         f.write(
                             f"\n=== Process exited with code: {process.returncode} ===\n"
                         )
@@ -2282,14 +2290,15 @@ def start_session_internal(tool_id, artist):
             start_script = get_setup_script("ai-toolkit", "start")
             if start_script:
                 # Clear and open log file
+                tool_log_file = get_tool_log_file(tool_id)
                 user_process_running = True
-                with open(USER_LOG_FILE, "w") as f:
+                with open(tool_log_file, "w") as f:
                     f.write(f"=== Starting AI-Toolkit ===\n")
                     f.write(f"Script: {start_script}\n")
                     f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
                     f.write("=" * 40 + "\n\n")
 
-                log_file = open(USER_LOG_FILE, "a")
+                log_file = open(tool_log_file, "a")
                 process = subprocess.Popen(
                     ["bash", start_script],
                     cwd="/workspace/ai-toolkit",
@@ -2301,7 +2310,7 @@ def start_session_internal(tool_id, artist):
                 def monitor_process():
                     global user_process_running
                     process.wait()
-                    with open(USER_LOG_FILE, "a") as f:
+                    with open(tool_log_file, "a") as f:
                         f.write(
                             f"\n=== Process exited with code: {process.returncode} ===\n"
                         )
@@ -2319,14 +2328,15 @@ def start_session_internal(tool_id, artist):
             start_script = get_setup_script("swarm-ui", "start")
             if start_script:
                 # Clear and open log file
+                tool_log_file = get_tool_log_file(tool_id)
                 user_process_running = True
-                with open(USER_LOG_FILE, "w") as f:
+                with open(tool_log_file, "w") as f:
                     f.write(f"=== Starting SwarmUI ===\n")
                     f.write(f"Script: {start_script}\n")
                     f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
                     f.write("=" * 40 + "\n\n")
 
-                log_file = open(USER_LOG_FILE, "a")
+                log_file = open(tool_log_file, "a")
                 process = subprocess.Popen(
                     ["bash", start_script],
                     cwd="/workspace/SwarmUI",
@@ -2338,7 +2348,7 @@ def start_session_internal(tool_id, artist):
                 def monitor_process():
                     global user_process_running
                     process.wait()
-                    with open(USER_LOG_FILE, "a") as f:
+                    with open(tool_log_file, "a") as f:
                         f.write(
                             f"\n=== Process exited with code: {process.returncode} ===\n"
                         )
@@ -2509,9 +2519,10 @@ def stop_tool(tool_id):
 def get_tool_logs(tool_id):
     """Get logs for a specific tool"""
     logs = ""
-    if os.path.exists(USER_LOG_FILE):
+    tool_log_file = get_tool_log_file(tool_id)
+    if os.path.exists(tool_log_file):
         try:
-            with open(USER_LOG_FILE, "r") as f:
+            with open(tool_log_file, "r") as f:
                 logs = f.read()
         except:
             pass
@@ -2521,8 +2532,9 @@ def get_tool_logs(tool_id):
 @app.route("/clear_logs/<tool_id>", methods=["POST"])
 def clear_tool_logs(tool_id):
     """Clear logs for a specific tool"""
+    tool_log_file = get_tool_log_file(tool_id)
     try:
-        with open(USER_LOG_FILE, "w") as f:
+        with open(tool_log_file, "w") as f:
             f.write("")
         return jsonify({"success": True})
     except Exception as e:
