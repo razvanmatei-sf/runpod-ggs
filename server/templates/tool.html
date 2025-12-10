@@ -146,13 +146,19 @@ endblock %} {% block content %}
             .then(data => {
                 if (data.logs !== undefined && data.logs !== lastLogContent) {
                     const output = document.getElementById('terminal-output');
+
+                    // Check if user is scrolled to bottom before updating
+                    const isAtBottom = output.scrollHeight - output.scrollTop <= output.clientHeight + 50;
+
                     lastLogContent = data.logs;
                     output.textContent = data.logs;
 
-                    // Use requestAnimationFrame to scroll after DOM update
-                    requestAnimationFrame(() => {
-                        output.scrollTop = output.scrollHeight;
-                    });
+                    // Only auto-scroll if user was already at bottom
+                    if (isAtBottom) {
+                        setTimeout(() => {
+                            output.scrollTop = output.scrollHeight;
+                        }, 10);
+                    }
                 }
             });
     }
