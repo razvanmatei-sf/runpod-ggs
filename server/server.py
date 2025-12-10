@@ -1949,6 +1949,7 @@ def home():
         current_user=current_artist,
         is_admin=is_admin(current_artist),
         active_page="home",
+        page_title="Home",
         runpod_id=get_runpod_id(),
     )
 
@@ -1962,6 +1963,7 @@ def assets():
         current_user=current_artist,
         is_admin=is_admin(current_artist),
         active_page="assets",
+        page_title="Assets",
         runpod_id=get_runpod_id(),
     )
 
@@ -2001,6 +2003,7 @@ def tool_page(tool_id):
             current_user=current_artist,
             is_admin=is_admin(current_artist),
             active_page=tool_id,
+            page_title=tool["name"],
             tool=tool,
             tool_id=tool_id,
             tool_status=status,
@@ -2012,6 +2015,7 @@ def tool_page(tool_id):
         current_user=current_artist,
         is_admin=is_admin(current_artist),
         active_page=tool_id,
+        page_title=tool["name"],
         tool=tool,
         tool_id=tool_id,
         tool_status=status,
@@ -2060,6 +2064,7 @@ def admin():
         current_user=current_artist,
         is_admin=True,
         active_page="admin",
+        page_title="Settings",
         runpod_id=get_runpod_id(),
         admin_tools=admin_tools,
         download_scripts=get_download_scripts(),
