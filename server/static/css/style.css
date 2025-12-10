@@ -565,11 +565,12 @@ a:hover {
 
 .tool-controls {
     display: flex;
-    gap: 30px;
+    gap: 15px;
 }
 
 .tool-btn {
-    padding: 4px 14px;
+    height: 30px;
+    padding: 0 14px;
     border-radius: 4px;
     font-size: var(--text-sm);
     font-weight: var(--font-medium);
