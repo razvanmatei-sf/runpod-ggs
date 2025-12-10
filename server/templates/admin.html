@@ -1,6 +1,6 @@
 {% extends "base.html" %} {% block title %}Admin - SF AI Workbench{% endblock %}
 {% block content %}
-<div class="page-title">Admin</div>
+<h1 class="page-title">Admin</h1>
 
 <!-- User Profiles Section -->
 <section class="admin-section">
@@ -26,7 +26,7 @@
 
     <div id="users-section" class="admin-collapsible">
         <!-- Add New Users -->
-        <div class="admin-input-group" style="margin-bottom: 16px">
+        <div class="admin-input-group" style="margin-bottom: 12px">
             <label for="new-users-text">Add Users (one name per line)</label>
             <textarea
                 id="new-users-text"
@@ -35,7 +35,7 @@
                 placeholder="John Doe&#10;Jane Smith&#10;..."
             ></textarea>
         </div>
-        <div style="margin-bottom: 20px">
+        <div style="margin-bottom: 14px">
             <button
                 type="button"
                 class="tool-btn tool-btn-start"
@@ -63,10 +63,15 @@
 
             {% for user in users_data %}
             <label class="admin-checkbox-item">
-                <input type="checkbox" name="user" value="{{ user.name }}" class="user-checkbox" {% if user.name == superadmin_name %}disabled{% endif %} />
+                <input
+                    type="checkbox"
+                    name="user"
+                    value="{{ user.name }}"
+                    class="user-checkbox"
+                    {% if user.name == superadmin_name %}disabled{% endif %}
+                />
                 <span class="admin-checkbox-label">
-                    {{ user.name }}
-                    {% if user.name == superadmin_name %}
+                    {{ user.name }} {% if user.name == superadmin_name %}
                     <span class="admin-badge installed">Superadmin</span>
                     {% elif user.is_admin %}
                     <span class="admin-badge installed">Admin</span>
@@ -387,39 +392,39 @@
 
 <style>
     .admin-section {
-        margin-bottom: 32px;
+        margin-bottom: 16px;
     }
 
     .admin-tools {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 6px;
     }
 
     .admin-tool-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 16px 20px;
+        padding: 10px 14px;
         background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
+        border: 1px solid var(--border-card);
+        border-radius: 8px;
     }
 
     .admin-tool-info {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 8px;
     }
 
     .admin-tool-name {
-        font-size: 16px;
+        font-size: 13px;
         font-weight: 500;
-        min-width: 120px;
+        min-width: 100px;
     }
 
     .admin-status-text {
-        font-size: 13px;
+        font-size: 11px;
         color: var(--text-muted);
     }
 
@@ -429,14 +434,14 @@
 
     .admin-tool-actions {
         display: flex;
-        gap: 8px;
+        gap: 6px;
     }
 
     .admin-toggle-btn {
         background: var(--bg-tertiary);
-        border: 1px solid var(--border-color);
-        border-radius: 6px;
-        padding: 6px 10px;
+        border: 1px solid var(--border-card);
+        border-radius: 4px;
+        padding: 4px 8px;
         color: var(--text-secondary);
         cursor: pointer;
         transition: background 0.2s;
@@ -448,15 +453,15 @@
 
     .admin-collapsible {
         background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 20px;
+        border: 1px solid var(--border-card);
+        border-radius: 8px;
+        padding: 14px;
     }
 
     .admin-tokens {
         display: flex;
-        gap: 16px;
-        margin-bottom: 20px;
+        gap: 12px;
+        margin-bottom: 14px;
     }
 
     .admin-input-group {
@@ -465,19 +470,19 @@
 
     .admin-input-group label {
         display: block;
-        font-size: 13px;
+        font-size: 11px;
         color: var(--text-secondary);
-        margin-bottom: 6px;
+        margin-bottom: 4px;
     }
 
     .admin-input {
         width: 100%;
-        padding: 10px 14px;
+        padding: 8px 10px;
         background: var(--bg-tertiary);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
+        border: 1px solid var(--border-card);
+        border-radius: 6px;
         color: var(--text-primary);
-        font-size: 14px;
+        font-size: 13px;
     }
 
     .admin-input:focus {
@@ -492,18 +497,18 @@
     .admin-list {
         display: flex;
         flex-direction: column;
-        gap: 4px;
-        max-height: 300px;
+        gap: 2px;
+        max-height: 240px;
         overflow-y: auto;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
     }
 
     .admin-checkbox-item {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 10px 12px;
-        border-radius: 6px;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 4px;
         cursor: pointer;
         transition: background 0.2s;
     }
@@ -513,25 +518,25 @@
     }
 
     .admin-checkbox-item input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
+        width: 16px;
+        height: 16px;
         accent-color: var(--accent-blue);
         cursor: pointer;
     }
 
     .admin-checkbox-label {
         flex: 1;
-        font-size: 14px;
+        font-size: 13px;
         color: var(--text-primary);
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
     }
 
     .admin-badge {
-        font-size: 10px;
-        padding: 2px 8px;
-        border-radius: 10px;
+        font-size: 9px;
+        padding: 2px 6px;
+        border-radius: 8px;
         font-weight: 500;
     }
 
@@ -552,19 +557,19 @@
 
     .admin-actions {
         display: flex;
-        gap: 8px;
-        padding-top: 12px;
-        border-top: 1px solid var(--border-color);
+        gap: 6px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border-card);
     }
 
     .terminal {
-        height: 250px;
+        height: 200px;
     }
 
     /* User Profiles Styles */
     .admin-textarea {
         resize: vertical;
-        min-height: 80px;
+        min-height: 60px;
         font-family: inherit;
     }
 
@@ -572,20 +577,20 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 12px 16px;
+        padding: 8px 12px;
         background: var(--bg-tertiary);
-        border-radius: 8px;
-        margin-bottom: 8px;
+        border-radius: 6px;
+        margin-bottom: 4px;
     }
 
     .admin-user-info {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 8px;
     }
 
     .admin-user-name {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 500;
         color: var(--text-primary);
     }
@@ -593,19 +598,19 @@
     .admin-user-actions {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 8px;
     }
 
     .admin-toggle-label {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         cursor: pointer;
     }
 
     .admin-toggle-checkbox {
-        width: 16px;
-        height: 16px;
+        width: 14px;
+        height: 14px;
         accent-color: var(--accent-blue);
     }
 
@@ -615,18 +620,28 @@
     }
 
     .admin-toggle-text {
-        font-size: 13px;
+        font-size: 11px;
         color: var(--text-secondary);
     }
 
     .tool-btn-small {
-        padding: 6px 12px;
-        font-size: 12px;
+        padding: 4px 10px;
+        font-size: 11px;
     }
 
     .tool-btn-disabled {
         opacity: 0.6;
         cursor: not-allowed;
+    }
+
+    /* Section header styling */
+    .section-header {
+        margin-bottom: 10px;
+    }
+
+    .section-title {
+        font-size: 14px;
+        font-weight: 600;
     }
 </style>
 {% endblock %} {% block scripts %}

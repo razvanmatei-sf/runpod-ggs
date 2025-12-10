@@ -2573,10 +2573,20 @@ def tool_status(tool_id):
     if is_running and tool.get("port"):
         port_ready = check_port_open(tool["port"])
 
+    # Determine status string for frontend
+    if is_running:
+        if port_ready:
+            status = "running"
+        else:
+            status = "starting"
+    else:
+        status = "stopped"
+
     return jsonify(
         {
             "tool_id": tool_id,
             "name": tool["name"],
+            "status": status,
             "running": is_running,
             "port_ready": port_ready,
             "installed": is_installed(tool.get("install_path")),
