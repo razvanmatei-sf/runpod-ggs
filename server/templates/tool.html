@@ -1,21 +1,52 @@
-{% extends "base.html" %}
-
-{% block title %}{{ tool.name }} - SF AI Workbench{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}{{ tool.name }} - SF AI Workbench{%
+endblock %} {% block content %}
 <div class="tool-header">
     <h1 class="tool-title">{{ tool.name }}</h1>
-    <span class="status-dot {% if tool_status == 'running' %}running{% elif tool_status == 'starting' %}starting{% else %}stopped{% endif %}"></span>
+    <span
+        class="status-dot {% if tool_status == 'running' %}running{% elif tool_status == 'starting' %}starting{% else %}stopped{% endif %}"
+    ></span>
     <div class="tool-controls">
         {% if tool_status == 'running' %}
-        <button type="button" class="tool-btn tool-btn-open" onclick="openTool('{{ tool_id }}')">Open</button>
-        <button type="button" class="tool-btn tool-btn-restart" onclick="restartTool('{{ tool_id }}')">Restart</button>
-        <button type="button" class="tool-btn tool-btn-stop" onclick="stopTool('{{ tool_id }}')">Stop</button>
+        <button
+            type="button"
+            class="tool-btn tool-btn-open"
+            onclick="openTool('{{ tool_id }}')"
+        >
+            Open
+        </button>
+        <button
+            type="button"
+            class="tool-btn tool-btn-restart"
+            onclick="restartTool('{{ tool_id }}')"
+        >
+            Restart
+        </button>
+        <button
+            type="button"
+            class="tool-btn tool-btn-stop"
+            onclick="stopTool('{{ tool_id }}')"
+        >
+            Stop
+        </button>
         {% elif tool_status == 'starting' %}
-        <button type="button" class="tool-btn tool-btn-start" disabled>Starting...</button>
-        <button type="button" class="tool-btn tool-btn-stop" onclick="stopTool('{{ tool_id }}')">Stop</button>
+        <button type="button" class="tool-btn tool-btn-start" disabled>
+            Starting...
+        </button>
+        <button
+            type="button"
+            class="tool-btn tool-btn-stop"
+            onclick="stopTool('{{ tool_id }}')"
+        >
+            Stop
+        </button>
         {% else %}
-        <button type="button" class="tool-btn tool-btn-start" onclick="startTool('{{ tool_id }}')">Start</button>
+        <button
+            type="button"
+            class="tool-btn tool-btn-start"
+            onclick="startTool('{{ tool_id }}')"
+        >
+            Start
+        </button>
         {% endif %}
     </div>
 </div>
@@ -24,21 +55,31 @@
     <div class="terminal-header">
         <span class="terminal-title">Terminal</span>
         <div class="terminal-actions">
-            <button type="button" class="terminal-action" onclick="copyTerminal()">Copy</button>
-            <button type="button" class="terminal-action" onclick="clearTerminal()">Clear</button>
+            <button
+                type="button"
+                class="terminal-action"
+                onclick="copyTerminal()"
+            >
+                Copy
+            </button>
+            <button
+                type="button"
+                class="terminal-action"
+                onclick="clearTerminal()"
+            >
+                Clear
+            </button>
         </div>
     </div>
     <div class="terminal-body" id="terminal-output">
-        {% if logs %}
-        {{ logs }}
-        {% else %}
-        <span class="terminal-line">Ready. Click Start to launch {{ tool.name }}.</span>
+        {% if logs %} {{ logs }} {% else %}
+        <span class="terminal-line"
+            >Ready. Click Start to launch {{ tool.name }}.</span
+        >
         {% endif %}
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
     const toolId = '{{ tool_id }}';
     const toolPort = {{ tool.port }};
@@ -88,14 +129,22 @@
             });
     }
 
+    let lastLogLength = 0;
+
     function pollLogs() {
         fetch('/logs/' + toolId)
             .then(response => response.json())
             .then(data => {
-                if (data.logs) {
+                if (data.logs !== undefined) {
                     const output = document.getElementById('terminal-output');
-                    output.textContent = data.logs;
-                    output.scrollTop = output.scrollHeight;
+                    const newLength = data.logs.length;
+
+                    // Only update and scroll if content changed
+                    if (newLength !== lastLogLength) {
+                        output.textContent = data.logs;
+                        output.scrollTop = output.scrollHeight;
+                        lastLogLength = newLength;
+                    }
                 }
             });
     }
