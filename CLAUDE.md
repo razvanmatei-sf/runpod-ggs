@@ -304,3 +304,19 @@ SF AI Workbench (formerly ComfyStudio) is a multi-user web platform for AI image
 - **Terminal scroll jumping**: Fixed by only auto-scrolling when user is at bottom + setTimeout delay
 - **Docker image not updating**: Use unique tag (v2) or delete workspace repo folder
 - **Templates not found**: Ensure `SCRIPT_DIR` is used for absolute paths in Flask app init
+
+### User Management
+- Users stored in `/workspace/users.json`, not hardcoded in `artist_names.sh`
+- User folders in `/workspace/ComfyUI/output/{username}`
+- "Razvan Matei" is hardcoded superadmin (cannot be deleted/demoted)
+- `server/user_management.py` contains all user logic
+
+### Logging
+- Admin actions (install/update): `/tmp/comfystudio.log`
+- Tool startup logs: `/tmp/comfystudio_<tool-id>.log` (per-tool)
+
+### Download Scripts
+- All scripts in `setup/download-models/` use shared `download_helper.sh`
+- Uses aria2c (16 parallel connections) with wget fallback
+- Format: `download "<url>" "/workspace/path/to/file.safetensors"`
+- HF_TOKEN env var used automatically for authenticated downloads
