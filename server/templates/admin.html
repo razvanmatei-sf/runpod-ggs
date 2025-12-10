@@ -46,35 +46,58 @@
         </div>
 
         <!-- Current Users List -->
-        <!-- Current Users List -->
         <div class="admin-input-group">
             <label>Current Users</label>
         </div>
         <div class="admin-list" id="users-list">
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    id="select-all-users"
+                    onchange="toggleAllUsers(this)"
+                />
+                <span class="admin-checkbox-label"
+                    ><strong>Select All</strong></span
+                >
+            </label>
+
             {% for user in users_data %}
-            <div class="admin-user-item" data-username="{{ user.name }}">
-                <div class="admin-user-info">
-                    <span class="admin-user-name">{{ user.name }}</span>
+            <label class="admin-checkbox-item">
+                <input type="checkbox" name="user" value="{{ user.name }}" class="user-checkbox" {% if user.name == superadmin_name %}disabled{% endif %} />
+                <span class="admin-checkbox-label">
+                    {{ user.name }}
                     {% if user.name == superadmin_name %}
                     <span class="admin-badge installed">Superadmin</span>
+                    {% elif user.is_admin %}
+                    <span class="admin-badge installed">Admin</span>
                     {% endif %}
-                <div class="admin-user-actions">
-                    <label class="admin-toggle-label">
-                        <input type="checkbox" class="admin-toggle-checkbox" {% if user.is_admin %}checked{% endif %} {% if user.name == superadmin_name %}disabled{% endif %} onchange="toggleUserAdmin('{{ user.name }}', this.checked)" />
-                        <span class="admin-toggle-text">Admin</span>
-                    </label>
-                    {% if user.name != superadmin_name %}
-                    <button
-                        type="button"
-                        class="tool-btn tool-btn-stop tool-btn-small"
-                        onclick="deleteUser('{{ user.name }}')"
-                    >
-                        Delete
-                    </button>
-                    {% endif %}
-                </div>
-            </div>
+                </span>
+            </label>
             {% endfor %}
+        </div>
+
+        <div class="admin-actions">
+            <button
+                type="button"
+                class="tool-btn tool-btn-start"
+                onclick="bulkUserAction('make_admin')"
+            >
+                Make Admin
+            </button>
+            <button
+                type="button"
+                class="tool-btn tool-btn-open"
+                onclick="bulkUserAction('remove_admin')"
+            >
+                Remove Admin
+            </button>
+            <button
+                type="button"
+                class="tool-btn tool-btn-stop"
+                onclick="bulkUserAction('delete')"
+            >
+                Delete Selected
+            </button>
         </div>
     </div>
 </section>
@@ -354,7 +377,10 @@
             </div>
         </div>
         <div class="terminal-body" id="admin-terminal">
-            <span class="terminal-line">Ready for admin commands.</span>
+            {% if admin_logs %}{{ admin_logs }}{% else %}<span
+                class="terminal-line"
+                >Ready for admin commands.</span
+            >{% endif %}
         </div>
     </div>
 </section>
@@ -988,6 +1014,10 @@
     }
 
     // User Profile Management Functions
+    function toggleAllUsers(checkbox) {
+        document.querySelectorAll(".user-checkbox:not(:disabled)").forEach((cb) => (cb.checked = checkbox.checked));
+    }
+
     function addUsers() {
         const textarea = document.getElementById("new-users-text");
         const namesText = textarea.value.trim();
@@ -1007,7 +1037,6 @@
                 if (data.success) {
                     textarea.value = "";
                     refreshUsersList(data.users);
-                    alert("Users added successfully!");
                 } else {
                     alert("Error: " + data.message);
                 }
@@ -1015,93 +1044,113 @@
             .catch((err) => alert("Error adding users: " + err));
     }
 
-    function toggleUserAdmin(userName, isAdmin) {
-        fetch("/api/users/" + encodeURIComponent(userName) + "/admin", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ is_admin: isAdmin }),
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                if (!data.success) {
-                    alert("Error: " + data.message);
-                    // Revert checkbox
-                    location.reload();
-                }
-            })
-            .catch((err) => {
-                alert("Error updating admin status: " + err);
-                location.reload();
-            });
-    }
+    function bulkUserAction(action) {
+        const selected = Array.from(
+            document.querySelectorAll(".user-checkbox:checked"),
+        ).map((cb) => cb.value);
 
-    function deleteUser(userName) {
-        if (
-            !confirm("Are you sure you want to delete user '" + userName + "'?")
-        ) {
+        if (selected.length === 0) {
+            alert("Please select at least one user.");
             return;
         }
 
-        const deleteFolder = confirm(
-            "Also delete the user's output folder?\n\nClick OK to delete folder, Cancel to keep it.",
-        );
+        if (action === "delete") {
+            if (!confirm(`Are you sure you want to delete ${selected.length} user(s)?`)) {
+                return;
+            }
+            const deleteFolder = confirm(
+                "Also delete the users' output folders?\n\nClick OK to delete folders, Cancel to keep them.",
+            );
 
-        fetch("/api/users/" + encodeURIComponent(userName), {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ delete_folder: deleteFolder }),
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                if (data.success) {
-                    refreshUsersList(data.users);
+            // Delete users one by one
+            Promise.all(
+                selected.map((userName) =>
+                    fetch("/api/users/" + encodeURIComponent(userName), {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ delete_folder: deleteFolder }),
+                    }).then((r) => r.json())
+                )
+            ).then((results) => {
+                const lastResult = results[results.length - 1];
+                if (lastResult && lastResult.users) {
+                    refreshUsersList(lastResult.users);
                 } else {
-                    alert("Error: " + data.message);
+                    location.reload();
                 }
-            })
-            .catch((err) => alert("Error deleting user: " + err));
+            }).catch((err) => {
+                alert("Error deleting users: " + err);
+                location.reload();
+            });
+        } else {
+            // make_admin or remove_admin
+            const isAdmin = action === "make_admin";
+            Promise.all(
+                selected.map((userName) =>
+                    fetch("/api/users/" + encodeURIComponent(userName) + "/admin", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ is_admin: isAdmin }),
+                    }).then((r) => r.json())
+                )
+            ).then((results) => {
+                const lastResult = results[results.length - 1];
+                if (lastResult && lastResult.users) {
+                    refreshUsersList(lastResult.users);
+                } else {
+                    location.reload();
+                }
+            }).catch((err) => {
+                alert("Error updating users: " + err);
+                location.reload();
+            });
+        }
     }
 
     function refreshUsersList(users) {
         const listEl = document.getElementById("users-list");
         const superadminName = "{{ superadmin_name }}";
 
-        listEl.innerHTML = users
+        listEl.innerHTML = `
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    id="select-all-users"
+                    onchange="toggleAllUsers(this)"
+                />
+                <span class="admin-checkbox-label"><strong>Select All</strong></span>
+            </label>
+        ` + users
             .map((user) => {
                 const isSuperadmin = user.name === superadminName;
                 return `
-                <div class="admin-user-item" data-username="${user.name}">
-                    <div class="admin-user-info">
-                        <span class="admin-user-name">${user.name}</span>
-                        ${isSuperadmin ? '<span class="admin-badge installed">Superadmin</span>' : ""}
-                    </div>
-                    <div class="admin-user-actions">
-                        <label class="admin-toggle-label">
-                            <input
-                                type="checkbox"
-                                class="admin-toggle-checkbox"
-                                ${user.is_admin ? "checked" : ""}
-                                ${isSuperadmin ? "disabled" : ""}
-                                onchange="toggleUserAdmin('${user.name}', this.checked)"
-                            />
-                            <span class="admin-toggle-text">Admin</span>
-                        </label>
-                        ${
-                            !isSuperadmin
-                                ? `<button
-                                type="button"
-                                class="tool-btn tool-btn-stop tool-btn-small"
-                                onclick="deleteUser('${user.name}')"
-                            >
-                                Delete
-                            </button>`
-                                : ""
-                        }
-                    </div>
-                </div>
+                <label class="admin-checkbox-item">
+                    <input
+                        type="checkbox"
+                        name="user"
+                        value="${user.name}"
+                        class="user-checkbox"
+                        ${isSuperadmin ? "disabled" : ""}
+                    />
+                    <span class="admin-checkbox-label">
+                        ${user.name}
+                        ${isSuperadmin ? '<span class="admin-badge installed">Superadmin</span>' : (user.is_admin ? '<span class="admin-badge installed">Admin</span>' : '')}
+                    </span>
+                </label>
             `;
             })
             .join("");
     }
+
+    // On page load: scroll terminal to bottom and resume polling if process is running
+    document.addEventListener('DOMContentLoaded', function() {
+        const terminal = document.getElementById('admin-terminal');
+        terminal.scrollTop = terminal.scrollHeight;
+
+        {% if admin_process_running %}
+        // Resume polling since an admin process is still running
+        startPollingLogs();
+        {% endif %}
+    });
 </script>
 {% endblock %}

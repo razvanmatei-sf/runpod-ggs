@@ -2043,6 +2043,18 @@ def admin():
         },
     }
 
+    # Get current admin logs and running status
+    admin_logs = ""
+    admin_process_running = False
+    if os.path.exists(LOG_FILE):
+        try:
+            with open(LOG_FILE, "r") as f:
+                admin_logs = f.read()
+        except:
+            pass
+    if running_process is not None:
+        admin_process_running = running_process.poll() is None
+
     return render_template(
         "admin.html",
         current_user=current_artist,
@@ -2054,6 +2066,8 @@ def admin():
         custom_nodes=get_custom_nodes(),
         users_data=USERS_DATA,
         superadmin_name=SUPERADMIN_NAME,
+        admin_logs=admin_logs,
+        admin_process_running=admin_process_running,
     )
 
 
