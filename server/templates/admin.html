@@ -183,7 +183,7 @@
 <section class="admin-section">
     <div class="admin-card">
         <div class="admin-card-header">
-            <h2 class="admin-card-title">Custom Nodes</h2>
+            <h2 class="admin-card-title">Download Models</h2>
             <button
                 type="button"
                 class="admin-toggle-btn"
@@ -283,7 +283,7 @@
 <section class="admin-section">
     <div class="admin-card">
         <div class="admin-card-header">
-            <h2 class="admin-card-title">Download Models</h2>
+            <h2 class="admin-card-title">Custom Nodes</h2>
             <button
                 type="button"
                 class="admin-toggle-btn"
@@ -366,6 +366,7 @@
     <div class="terminal">
         <div class="terminal-header">
             <span class="terminal-title">Terminal</span>
+            <span id="elapsed-time" class="terminal-elapsed" style="display: none;">00:00</span>
             <div class="terminal-actions">
                 <button
                     type="button"
@@ -394,6 +395,14 @@
 </section>
 
 <style>
+    .terminal-elapsed {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-left: auto;
+        margin-right: 16px;
+    }
+
     .admin-section {
         margin-bottom: 16px;
     }
@@ -977,10 +986,36 @@
 
     let onPollingComplete = null;
 
+    let elapsedTimerInterval = null;
+    let elapsedStartTime = null;
+
+    function startElapsedTimer() {
+        elapsedStartTime = Date.now();
+        const elapsedEl = document.getElementById('elapsed-time');
+        elapsedEl.style.display = 'inline';
+        elapsedEl.textContent = '00:00';
+
+        if (elapsedTimerInterval) clearInterval(elapsedTimerInterval);
+        elapsedTimerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - elapsedStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            elapsedEl.textContent = `${minutes}:${seconds}`;
+        }, 1000);
+    }
+
+    function stopElapsedTimer() {
+        if (elapsedTimerInterval) {
+            clearInterval(elapsedTimerInterval);
+            elapsedTimerInterval = null;
+        }
+    }
+
     function startPollingLogs() {
         onPollingComplete = null;
         if (pollInterval) clearInterval(pollInterval);
         pollInterval = setInterval(pollLogs, 500);
+        startElapsedTimer();
     }
 
     function startPollingLogsWithCallback(callback) {
@@ -1006,6 +1041,7 @@
                 if (!data.running && pollInterval) {
                     clearInterval(pollInterval);
                     pollInterval = null;
+                    stopElapsedTimer();
                     resetActiveButton();
 
                     // If we have a callback (bulk action), call it

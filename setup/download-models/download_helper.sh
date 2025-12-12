@@ -20,11 +20,11 @@ download() {
 
     if command -v aria2c &> /dev/null; then
         if [ -n "$token" ]; then
-            aria2c -x 16 -s 16 -k 1M -q --file-allocation=none \
+            aria2c -x 16 -s 16 -k 1M --summary-interval=1 --file-allocation=none \
                 --header="Authorization: Bearer $token" \
                 -d "$(dirname "$dest")" -o "$(basename "$dest")" "$url"
         else
-            aria2c -x 16 -s 16 -k 1M -q --file-allocation=none \
+            aria2c -x 16 -s 16 -k 1M --summary-interval=1 --file-allocation=none \
                 -d "$(dirname "$dest")" -o "$(basename "$dest")" "$url"
         fi
     elif [ -n "$token" ]; then
