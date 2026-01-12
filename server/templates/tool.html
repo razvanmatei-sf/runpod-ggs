@@ -1,0 +1,255 @@
+{% extends "base.html" %} {% block title %}{{ tool.name }} - SF AI Workbench{%
+endblock %} {% block content %}
+<div class="tool-header">
+    <span
+        id="status-dot"
+        class="status-dot {% if tool_status == 'running' %}running{% elif tool_status == 'starting' %}starting{% else %}stopped{% endif %}"
+    ></span>
+    <div id="tool-controls" class="tool-controls">
+        {% if tool_status == 'running' %}
+        <button
+            type="button"
+            class="tool-btn tool-btn-open"
+            onclick="openTool('{{ tool_id }}')"
+        >
+            Open
+        </button>
+        <button
+            type="button"
+            class="tool-btn tool-btn-restart"
+            onclick="restartTool('{{ tool_id }}')"
+        >
+            Restart
+        </button>
+        <button
+            type="button"
+            class="tool-btn tool-btn-stop"
+            onclick="stopTool('{{ tool_id }}')"
+        >
+            Stop
+        </button>
+        {% elif tool_status == 'starting' %}
+        <button type="button" class="tool-btn tool-btn-start" disabled>
+            Starting...
+        </button>
+        <button
+            type="button"
+            class="tool-btn tool-btn-stop"
+            onclick="stopTool('{{ tool_id }}')"
+        >
+            Stop
+        </button>
+        {% else %} {% if tool_id == 'swarm-ui' %}
+        <button
+            type="button"
+            class="tool-btn tool-btn-start"
+            disabled
+            style="opacity: 0.5; cursor: not-allowed"
+        >
+            Coming Soon
+        </button>
+        {% else %}
+        <button
+            type="button"
+            class="tool-btn tool-btn-start"
+            onclick="startTool('{{ tool_id }}')"
+        >
+            Start
+        </button>
+        {% endif %} {% endif %}
+    </div>
+</div>
+
+<div class="terminal">
+    <div class="terminal-header">
+        <span class="terminal-title">Terminal</span>
+        <div class="terminal-actions">
+            <button
+                type="button"
+                class="terminal-action"
+                onclick="copyTerminal()"
+            >
+                Copy
+            </button>
+            <button
+                type="button"
+                class="terminal-action"
+                onclick="clearTerminal()"
+            >
+                Clear
+            </button>
+        </div>
+    </div>
+    <div class="terminal-body" id="terminal-output">
+        {% if logs %} {{ logs }} {% else %}
+        <span class="terminal-line"
+            >Ready. Click Start to launch {{ tool.name }}.</span
+        >
+        {% endif %}
+    </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+    const toolId = '{{ tool_id }}';
+    const toolPort = {{ tool.port }};
+    const isSwarmUI = toolId === 'swarm-ui';
+    let logPollInterval = null;
+    let statusPollInterval = null;
+    let currentStatus = '{{ tool_status }}';
+
+    function startTool(id) {
+        // Update UI immediately to show starting state
+        updateUIForStatus('starting');
+
+        fetch('/start/' + id, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'started' || data.status === 'already_running') {
+                    currentStatus = 'starting';
+                    startPolling();
+                }
+            });
+    }
+
+    function stopTool(id) {
+        fetch('/stop/' + id, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                currentStatus = 'stopped';
+                updateUIForStatus('stopped');
+                stopPolling();
+            });
+    }
+
+    function restartTool(id) {
+        updateUIForStatus('starting');
+        fetch('/stop/' + id, { method: 'POST' })
+            .then(() => {
+                setTimeout(() => {
+                    fetch('/start/' + id, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            currentStatus = 'starting';
+                            startPolling();
+                        });
+                }, 1000);
+            });
+    }
+
+    function openTool(id) {
+        const runpodId = '{{ runpod_id }}';
+        if (runpodId) {
+            window.open('https://' + runpodId + '-' + toolPort + '.proxy.runpod.net/', '_blank');
+        } else {
+            window.open('http://localhost:' + toolPort, '_blank');
+        }
+    }
+
+    function copyTerminal() {
+        const output = document.getElementById('terminal-output');
+        navigator.clipboard.writeText(output.textContent);
+    }
+
+    function clearTerminal() {
+        fetch('/clear_logs/' + toolId, { method: 'POST' })
+            .then(() => {
+                document.getElementById('terminal-output').innerHTML = '';
+            });
+    }
+
+    let lastLogContent = '';
+
+    function pollLogs() {
+        fetch('/logs/' + toolId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.logs !== undefined && data.logs !== lastLogContent) {
+                    const output = document.getElementById('terminal-output');
+
+                    // Check if user is scrolled to bottom before updating
+                    const isAtBottom = output.scrollHeight - output.scrollTop <= output.clientHeight + 50;
+
+                    lastLogContent = data.logs;
+                    output.textContent = data.logs;
+
+                    // Only auto-scroll if user was already at bottom
+                    if (isAtBottom) {
+                        setTimeout(() => {
+                            output.scrollTop = output.scrollHeight;
+                        }, 10);
+                    }
+                }
+            });
+    }
+
+    function pollStatus() {
+        fetch('/tool_status/' + toolId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status !== currentStatus) {
+                    currentStatus = data.status;
+                    updateUIForStatus(data.status);
+                }
+            });
+    }
+
+    function updateUIForStatus(status) {
+        const statusDot = document.getElementById('status-dot');
+        const controls = document.getElementById('tool-controls');
+
+        // Update status dot
+        statusDot.className = 'status-dot ' + status;
+
+        // Update controls based on status
+        if (status === 'running') {
+            controls.innerHTML = `
+                <button type="button" class="tool-btn tool-btn-open" onclick="openTool('${toolId}')">Open</button>
+                <button type="button" class="tool-btn tool-btn-restart" onclick="restartTool('${toolId}')">Restart</button>
+                <button type="button" class="tool-btn tool-btn-stop" onclick="stopTool('${toolId}')">Stop</button>
+            `;
+        } else if (status === 'starting') {
+            controls.innerHTML = `
+                <button type="button" class="tool-btn tool-btn-start" disabled>Starting...</button>
+                <button type="button" class="tool-btn tool-btn-stop" onclick="stopTool('${toolId}')">Stop</button>
+            `;
+            startPolling();
+        } else {
+            // stopped
+            if (isSwarmUI) {
+                controls.innerHTML = `
+                    <button type="button" class="tool-btn tool-btn-start" disabled style="opacity: 0.5; cursor: not-allowed">Coming Soon</button>
+                `;
+            } else {
+                controls.innerHTML = `
+                    <button type="button" class="tool-btn tool-btn-start" onclick="startTool('${toolId}')">Start</button>
+                `;
+            }
+        }
+    }
+
+    function startPolling() {
+        if (!logPollInterval) {
+            logPollInterval = setInterval(pollLogs, 1000);
+        }
+        if (!statusPollInterval) {
+            statusPollInterval = setInterval(pollStatus, 3000);
+        }
+    }
+
+    function stopPolling() {
+        if (logPollInterval) {
+            clearInterval(logPollInterval);
+            logPollInterval = null;
+        }
+        if (statusPollInterval) {
+            clearInterval(statusPollInterval);
+            statusPollInterval = null;
+        }
+    }
+
+    // Start polling if tool is running or starting
+    {% if tool_status in ['running', 'starting'] %}
+    startPolling();
+    {% endif %}
+</script>
+{% endblock %}

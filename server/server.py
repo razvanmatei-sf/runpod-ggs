@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
+# ABOUTME: Main Flask server for SF AI Workbench
+# ABOUTME: Handles routes, tool management, and user profiles
 
+import json
 import os
 import signal
 import socket
@@ -9,70 +12,70 @@ import threading
 import time
 from datetime import datetime
 
-from flask import Flask, jsonify, render_template_string, request
+from flask import (
+    Flask,
+    jsonify,
+    redirect,
+    render_template,
+    render_template_string,
+    request,
+    url_for,
+)
 
-app = Flask(__name__)
+# Get the directory where server.py is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+app = Flask(
+    __name__,
+    static_folder=os.path.join(SCRIPT_DIR, "static"),
+    template_folder=os.path.join(SCRIPT_DIR, "templates"),
+)
 
 # Repository path (set by start_server.sh)
 REPO_DIR = os.environ.get("REPO_DIR", "/workspace/runpod-ggs")
 
-# User process log file for streaming tool startup logs
+# User process log file for streaming tool startup logs (legacy, kept for admin actions)
 USER_LOG_FILE = "/tmp/comfystudio_user_log.txt"
 user_process_running = False
 
 
-def parse_users_from_script():
-    """
-    Parse users from artist_names.sh USERS array.
-    Returns tuple: (all_users, admins)
-    Users with ':admin' suffix are added to admins list.
-    """
-    script_paths = [
-        os.path.join(REPO_DIR, "server", "artist_names.sh"),  # Repo path (preferred)
-        "/usr/local/bin/artist_names.sh",  # Docker container path
-        "/workspace/artist_names.sh",  # Workspace path
-        os.path.join(os.path.dirname(__file__), "artist_names.sh"),  # Same directory
-    ]
-
-    users = []
-    admins = []
-
-    for script_path in script_paths:
-        if os.path.exists(script_path):
-            try:
-                with open(script_path, "r") as f:
-                    content = f.read()
-                    import re
-
-                    match = re.search(r"USERS=\((.*?)\)", content, re.DOTALL)
-                    if match:
-                        block = match.group(1)
-                        # Extract quoted strings
-                        entries = re.findall(r'"([^"]+)"', block)
-                        for entry in entries:
-                            if entry.endswith(":admin"):
-                                name = entry[:-6]  # Remove ':admin' suffix
-                                users.append(name)
-                                admins.append(name)
-                            else:
-                                users.append(entry)
-                        break
-            except:
-                pass
-
-    return users, admins
+def get_tool_log_file(tool_id):
+    """Get the log file path for a specific tool"""
+    return f"/tmp/comfystudio_{tool_id}.log"
 
 
-# Load users and admins from script (single source of truth)
-USERS, ADMINS = parse_users_from_script()
+# Import user management module
+from user_management import (
+    SUPERADMIN_NAME,
+    add_users_bulk,
+    delete_user,
+    ensure_razvan_exists,
+    get_admins_list,
+    get_all_user_names,
+    initialize_users,
+    is_admin_check,
+    load_users_from_file,
+    save_users_to_file,
+    set_user_admin,
+)
+
+# Paths for user management
+USERS_JSON_PATH = "/workspace/users.json"
+USERS_OUTPUT_DIR = "/workspace/ComfyUI/output"
+
+# Initialize users and admins from JSON/folders
+USERS_DATA, ADMINS = initialize_users(USERS_JSON_PATH, USERS_OUTPUT_DIR)
 
 
 def is_admin(user_name):
-    """Check if user is an admin (case-insensitive)"""
-    if not user_name:
-        return False
-    user_lower = user_name.strip().lower()
-    return any(admin.strip().lower() == user_lower for admin in ADMINS)
+    """Check if user is an admin (case-insensitive). Razvan is always admin."""
+    return is_admin_check(user_name, ADMINS)
+
+
+def reload_users():
+    """Reload users and admins from storage"""
+    global USERS_DATA, ADMINS
+    USERS_DATA, ADMINS = initialize_users(USERS_JSON_PATH, USERS_OUTPUT_DIR)
 
 
 def get_setup_script(tool_id, script_type):
@@ -1904,8 +1907,8 @@ def is_installed(path):
 
 
 def get_all_users():
-    """Get list of users for dropdown from artist_names.sh"""
-    return sorted(USERS)
+    """Get list of users for dropdown from users.json"""
+    return get_all_user_names(USERS_JSON_PATH)
 
 
 @app.route("/debug")
@@ -1913,8 +1916,9 @@ def debug():
     """Debug endpoint to check parsed users and admins"""
     return jsonify(
         {
-            "USERS": USERS,
+            "USERS_DATA": USERS_DATA,
             "ADMINS": ADMINS,
+            "USERS_JSON_PATH": USERS_JSON_PATH,
             "REPO_DIR": REPO_DIR,
             "current_artist": current_artist,
             "is_current_admin": is_admin(current_artist) if current_artist else None,
@@ -1924,6 +1928,226 @@ def debug():
 
 @app.route("/")
 def index():
+    # Redirect to login if no user selected, otherwise show home
+    if not current_artist:
+        return redirect(url_for("login"))
+    return redirect(url_for("home"))
+
+
+@app.route("/login")
+def login():
+    artists = get_all_users()
+    return render_template("login.html", artists=artists)
+
+
+@app.route("/home")
+def home():
+    if not current_artist:
+        return redirect(url_for("login"))
+    return render_template(
+        "home.html",
+        current_user=current_artist,
+        is_admin=is_admin(current_artist),
+        active_page="home",
+        page_title="Home",
+        runpod_id=get_runpod_id(),
+    )
+
+
+@app.route("/assets")
+def assets():
+    if not current_artist:
+        return redirect(url_for("login"))
+    return render_template(
+        "assets.html",
+        current_user=current_artist,
+        is_admin=is_admin(current_artist),
+        active_page="assets",
+        page_title="Assets",
+        runpod_id=get_runpod_id(),
+    )
+
+
+@app.route("/tool/<tool_id>")
+def tool_page(tool_id):
+    if not current_artist:
+        return redirect(url_for("login"))
+
+    if tool_id not in TOOLS:
+        return redirect(url_for("home"))
+
+    tool = TOOLS[tool_id]
+
+    # Get tool status
+    status = "stopped"
+    if tool_id in active_sessions:
+        if check_port_open(tool["port"]):
+            status = "running"
+        else:
+            status = "starting"
+
+    # Get logs for this tool
+    logs = ""
+    tool_log_file = get_tool_log_file(tool_id)
+    if os.path.exists(tool_log_file):
+        try:
+            with open(tool_log_file, "r") as f:
+                logs = f.read()
+        except:
+            pass
+
+    # Use special template for LoRA Tool (no terminal)
+    if tool_id == "lora-tool":
+        return render_template(
+            "lora_tool.html",
+            current_user=current_artist,
+            is_admin=is_admin(current_artist),
+            active_page=tool_id,
+            page_title=tool["name"],
+            tool=tool,
+            tool_id=tool_id,
+            tool_status=status,
+            runpod_id=get_runpod_id(),
+        )
+
+    return render_template(
+        "tool.html",
+        current_user=current_artist,
+        is_admin=is_admin(current_artist),
+        active_page=tool_id,
+        page_title=tool["name"],
+        tool=tool,
+        tool_id=tool_id,
+        tool_status=status,
+        logs=logs,
+        runpod_id=get_runpod_id(),
+    )
+
+
+@app.route("/admin")
+def admin():
+    if not current_artist:
+        return redirect(url_for("login"))
+    if not is_admin(current_artist):
+        return redirect(url_for("home"))
+
+    # Get tool installation status
+    admin_tools = {
+        "comfy-ui": {
+            "name": "ComfyUI",
+            "installed": is_installed(TOOLS["comfy-ui"]["install_path"]),
+        },
+        "swarm-ui": {
+            "name": "SwarmUI",
+            "installed": is_installed(TOOLS["swarm-ui"]["install_path"]),
+        },
+        "ai-toolkit": {
+            "name": "AI-Toolkit",
+            "installed": is_installed(TOOLS["ai-toolkit"]["install_path"]),
+        },
+    }
+
+    # Get current admin logs and running status
+    admin_logs = ""
+    admin_process_running = False
+    if os.path.exists(LOG_FILE):
+        try:
+            with open(LOG_FILE, "r") as f:
+                admin_logs = f.read()
+        except:
+            pass
+    if running_process is not None:
+        admin_process_running = running_process.poll() is None
+
+    return render_template(
+        "admin.html",
+        current_user=current_artist,
+        is_admin=True,
+        active_page="admin",
+        page_title="Settings",
+        runpod_id=get_runpod_id(),
+        admin_tools=admin_tools,
+        download_scripts=get_download_scripts(),
+        custom_nodes=get_custom_nodes(),
+        users_data=USERS_DATA,
+        superadmin_name=SUPERADMIN_NAME,
+        admin_logs=admin_logs,
+        admin_process_running=admin_process_running,
+    )
+
+
+@app.route("/api/users", methods=["GET"])
+def api_get_users():
+    """Get all users with admin status"""
+    if not is_admin(current_artist):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    reload_users()
+    return jsonify({"success": True, "users": USERS_DATA})
+
+
+@app.route("/api/users", methods=["POST"])
+def api_add_users():
+    """Add users from text (one name per line)"""
+    global USERS_DATA, ADMINS
+
+    if not is_admin(current_artist):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    data = request.get_json()
+    names_text = data.get("names", "")
+
+    if not names_text.strip():
+        return jsonify({"success": False, "message": "No names provided"})
+
+    USERS_DATA = add_users_bulk(names_text, USERS_JSON_PATH, USERS_OUTPUT_DIR)
+    ADMINS = get_admins_list(USERS_DATA)
+
+    return jsonify({"success": True, "users": USERS_DATA})
+
+
+@app.route("/api/users/<path:user_name>/admin", methods=["POST"])
+def api_set_user_admin(user_name):
+    """Set admin status for a user"""
+    global USERS_DATA, ADMINS
+
+    if not is_admin(current_artist):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    data = request.get_json()
+    is_admin_status = data.get("is_admin", False)
+
+    USERS_DATA = set_user_admin(user_name, is_admin_status, USERS_JSON_PATH)
+    ADMINS = get_admins_list(USERS_DATA)
+
+    return jsonify({"success": True, "users": USERS_DATA})
+
+
+@app.route("/api/users/<path:user_name>", methods=["DELETE"])
+def api_delete_user(user_name):
+    """Delete a user (cannot delete superadmin)"""
+    global USERS_DATA, ADMINS
+
+    if not is_admin(current_artist):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    if user_name.strip().lower() == SUPERADMIN_NAME.lower():
+        return jsonify({"success": False, "message": "Cannot delete superadmin"})
+
+    data = request.get_json() or {}
+    delete_folder = data.get("delete_folder", False)
+
+    USERS_DATA = delete_user(
+        user_name, USERS_JSON_PATH, delete_folder, USERS_OUTPUT_DIR
+    )
+    ADMINS = get_admins_list(USERS_DATA)
+
+    return jsonify({"success": True, "users": USERS_DATA})
+
+
+@app.route("/old")
+def old_index():
+    """Legacy UI - keep for reference during migration"""
     artists = get_all_users()
     return render_template_string(
         HTML_TEMPLATE,
@@ -1946,12 +2170,21 @@ def index():
 @app.route("/set_artist", methods=["POST"])
 def set_artist():
     global current_artist, admin_mode
-    data = request.get_json()
-    current_artist = data.get("artist", "")
+
+    # Handle both form submission and JSON
+    if request.is_json:
+        data = request.get_json()
+        current_artist = data.get("artist", "")
+    else:
+        current_artist = request.form.get("artist", "")
 
     # Reset admin mode if not an admin
     if not is_admin(current_artist):
         admin_mode = False
+
+    # If form submission, redirect to home
+    if not request.is_json:
+        return redirect(url_for("home"))
 
     return jsonify({"success": True})
 
@@ -1968,19 +2201,15 @@ def set_admin_mode():
     return jsonify({"success": True})
 
 
-@app.route("/start_session", methods=["POST"])
-def start_session():
+def start_session_internal(tool_id, artist):
+    """Internal function to start a tool session"""
     global active_sessions, user_process_running
 
-    data = request.get_json()
-    tool_id = data.get("tool_id")
-    artist = data.get("artist")
-
     if not tool_id or tool_id not in TOOLS:
-        return jsonify({"success": False, "message": "Invalid tool"})
+        return {"status": "error", "message": "Invalid tool"}
 
     if not artist:
-        return jsonify({"success": False, "message": "No artist selected"})
+        return {"status": "error", "message": "No artist selected"}
 
     tool = TOOLS[tool_id]
     process = None
@@ -1998,13 +2227,14 @@ def start_session():
             time.sleep(1)
 
             # Setup log capture
+            tool_log_file = get_tool_log_file(tool_id)
             user_process_running = True
-            with open(USER_LOG_FILE, "w") as f:
+            with open(tool_log_file, "w") as f:
                 f.write(f"=== Starting JupyterLab ===\n")
                 f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
                 f.write("=" * 40 + "\n\n")
 
-            log_file = open(USER_LOG_FILE, "a")
+            log_file = open(tool_log_file, "a")
             process = subprocess.Popen(
                 [
                     "jupyter",
@@ -2024,7 +2254,7 @@ def start_session():
             def monitor_process():
                 global user_process_running
                 process.wait()
-                with open(USER_LOG_FILE, "a") as f:
+                with open(tool_log_file, "a") as f:
                     f.write(
                         f"\n=== Process exited with code: {process.returncode} ===\n"
                     )
@@ -2037,14 +2267,15 @@ def start_session():
             start_script = get_setup_script("comfy-ui", "start")
             if start_script:
                 # Setup log capture
+                tool_log_file = get_tool_log_file(tool_id)
                 user_process_running = True
-                with open(USER_LOG_FILE, "w") as f:
+                with open(tool_log_file, "w") as f:
                     f.write(f"=== Starting ComfyUI ===\n")
                     f.write(f"Script: {start_script}\n")
                     f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
                     f.write("=" * 40 + "\n\n")
 
-                log_file = open(USER_LOG_FILE, "a")
+                log_file = open(tool_log_file, "a")
                 env = os.environ.copy()
                 env["HF_HOME"] = "/workspace"
                 env["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
@@ -2060,7 +2291,7 @@ def start_session():
                 def monitor_process():
                     global user_process_running
                     process.wait()
-                    with open(USER_LOG_FILE, "a") as f:
+                    with open(tool_log_file, "a") as f:
                         f.write(
                             f"\n=== Process exited with code: {process.returncode} ===\n"
                         )
@@ -2068,9 +2299,7 @@ def start_session():
 
                 threading.Thread(target=monitor_process, daemon=True).start()
             else:
-                return jsonify(
-                    {"success": False, "message": "ComfyUI start script not found"}
-                )
+                return {"status": "error", "message": "ComfyUI start script not found"}
 
         elif tool_id == "ai-toolkit":
             # Kill any existing ai-toolkit on the port
@@ -2080,14 +2309,15 @@ def start_session():
             start_script = get_setup_script("ai-toolkit", "start")
             if start_script:
                 # Clear and open log file
+                tool_log_file = get_tool_log_file(tool_id)
                 user_process_running = True
-                with open(USER_LOG_FILE, "w") as f:
+                with open(tool_log_file, "w") as f:
                     f.write(f"=== Starting AI-Toolkit ===\n")
                     f.write(f"Script: {start_script}\n")
                     f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
                     f.write("=" * 40 + "\n\n")
 
-                log_file = open(USER_LOG_FILE, "a")
+                log_file = open(tool_log_file, "a")
                 process = subprocess.Popen(
                     ["bash", start_script],
                     cwd="/workspace/ai-toolkit",
@@ -2099,7 +2329,7 @@ def start_session():
                 def monitor_process():
                     global user_process_running
                     process.wait()
-                    with open(USER_LOG_FILE, "a") as f:
+                    with open(tool_log_file, "a") as f:
                         f.write(
                             f"\n=== Process exited with code: {process.returncode} ===\n"
                         )
@@ -2117,14 +2347,15 @@ def start_session():
             start_script = get_setup_script("swarm-ui", "start")
             if start_script:
                 # Clear and open log file
+                tool_log_file = get_tool_log_file(tool_id)
                 user_process_running = True
-                with open(USER_LOG_FILE, "w") as f:
+                with open(tool_log_file, "w") as f:
                     f.write(f"=== Starting SwarmUI ===\n")
                     f.write(f"Script: {start_script}\n")
                     f.write(f"Started at: {datetime.utcnow().isoformat()}Z\n")
                     f.write("=" * 40 + "\n\n")
 
-                log_file = open(USER_LOG_FILE, "a")
+                log_file = open(tool_log_file, "a")
                 process = subprocess.Popen(
                     ["bash", start_script],
                     cwd="/workspace/SwarmUI",
@@ -2136,7 +2367,7 @@ def start_session():
                 def monitor_process():
                     global user_process_running
                     process.wait()
-                    with open(USER_LOG_FILE, "a") as f:
+                    with open(tool_log_file, "a") as f:
                         f.write(
                             f"\n=== Process exited with code: {process.returncode} ===\n"
                         )
@@ -2161,7 +2392,7 @@ def start_session():
                 raise Exception("LoRA-Tool start script not found")
 
     except Exception as e:
-        return jsonify({"success": False, "message": f"Failed to start: {str(e)}"})
+        return {"status": "error", "message": f"Failed to start: {str(e)}"}
 
     active_sessions[tool_id] = {
         "process": process,
@@ -2169,13 +2400,32 @@ def start_session():
         "artist": artist,
     }
 
-    return jsonify(
-        {
-            "success": True,
-            "tool_name": tool["name"],
-            "message": f"{tool['name']} session started",
-        }
-    )
+    return {"status": "started", "tool_name": tool["name"]}
+
+
+@app.route("/start_session", methods=["POST"])
+def start_session():
+    global active_sessions, user_process_running
+
+    data = request.get_json()
+    tool_id = data.get("tool_id")
+    artist = data.get("artist")
+
+    result = start_session_internal(tool_id, artist)
+
+    # Convert to old format for compatibility
+    if result.get("status") == "started":
+        return jsonify(
+            {
+                "success": True,
+                "tool_name": result.get("tool_name"),
+                "message": f"{result.get('tool_name')} session started",
+            }
+        )
+    else:
+        return jsonify(
+            {"success": False, "message": result.get("message", "Unknown error")}
+        )
 
 
 @app.route("/stop_session", methods=["POST"])
@@ -2237,6 +2487,79 @@ def check_port_open(port, timeout=1):
         return False
 
 
+@app.route("/start/<tool_id>", methods=["POST"])
+def start_tool(tool_id):
+    """Simplified start endpoint for new UI"""
+    global active_sessions, user_process_running
+
+    if tool_id not in TOOLS:
+        return jsonify({"status": "error", "message": "Invalid tool"})
+
+    if tool_id in active_sessions:
+        return jsonify({"status": "already_running"})
+
+    # Use existing start_session logic
+    data = {"tool_id": tool_id, "artist": current_artist}
+
+    # Simulate the request
+    with app.test_request_context(json=data):
+        from flask import request as req
+
+        result = start_session_internal(tool_id, current_artist)
+        return jsonify(result)
+
+
+@app.route("/stop/<tool_id>", methods=["POST"])
+def stop_tool(tool_id):
+    """Simplified stop endpoint for new UI"""
+    global active_sessions
+
+    if tool_id not in TOOLS:
+        return jsonify({"status": "error", "message": "Invalid tool"})
+
+    tool = TOOLS[tool_id]
+
+    # Kill the process if running
+    if tool_id in active_sessions:
+        session = active_sessions[tool_id]
+        if session.get("process"):
+            session["process"].terminate()
+
+        # Kill by port
+        port = tool["port"]
+        subprocess.run(["fuser", "-k", f"{port}/tcp"], capture_output=True)
+
+        del active_sessions[tool_id]
+
+    return jsonify({"status": "stopped"})
+
+
+@app.route("/logs/<tool_id>")
+def get_tool_logs(tool_id):
+    """Get logs for a specific tool"""
+    logs = ""
+    tool_log_file = get_tool_log_file(tool_id)
+    if os.path.exists(tool_log_file):
+        try:
+            with open(tool_log_file, "r") as f:
+                logs = f.read()
+        except:
+            pass
+    return jsonify({"logs": logs})
+
+
+@app.route("/clear_logs/<tool_id>", methods=["POST"])
+def clear_tool_logs(tool_id):
+    """Clear logs for a specific tool"""
+    tool_log_file = get_tool_log_file(tool_id)
+    try:
+        with open(tool_log_file, "w") as f:
+            f.write("")
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+
 @app.route("/tool_status/<tool_id>")
 def tool_status(tool_id):
     if tool_id not in TOOLS:
@@ -2250,10 +2573,20 @@ def tool_status(tool_id):
     if is_running and tool.get("port"):
         port_ready = check_port_open(tool["port"])
 
+    # Determine status string for frontend
+    if is_running:
+        if port_ready:
+            status = "running"
+        else:
+            status = "starting"
+    else:
+        status = "stopped"
+
     return jsonify(
         {
             "tool_id": tool_id,
             "name": tool["name"],
+            "status": status,
             "running": is_running,
             "port_ready": port_ready,
             "installed": is_installed(tool.get("install_path")),

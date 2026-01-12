@@ -10,6 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies (includes AI-Toolkit requirements)
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    aria2 \
     git \
     wget \
     curl \
@@ -56,7 +57,10 @@ ENV TORCH_CUDA_ARCH_LIST="8.0 8.6 8.9 9.0 10.0 12.0"
 # Copy startup scripts and config
 COPY start_server.sh /usr/local/bin/start_server.sh
 COPY server.py /usr/local/bin/server.py
+COPY user_management.py /usr/local/bin/user_management.py
 COPY artist_names.sh /usr/local/bin/artist_names.sh
+COPY templates /usr/local/bin/templates
+COPY static /usr/local/bin/static
 RUN chmod +x /usr/local/bin/start_server.sh
 RUN chmod +x /usr/local/bin/server.py
 RUN chmod +x /usr/local/bin/artist_names.sh

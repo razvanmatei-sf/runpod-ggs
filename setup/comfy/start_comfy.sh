@@ -8,9 +8,9 @@ if [ -d "/workspace/.ssh" ]; then
 fi
 ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts 2>/dev/null
 
-# Sync workflows from private repo
-cd /workspace/ComfyUI/user/default/workflows
-git pull
+# Sync workflows from GitHub
+SCRIPT_DIR="$(dirname "$0")"
+"$SCRIPT_DIR/sync_workflows.sh" || echo "[Warning] Workflow sync failed, continuing with existing workflows"
 
 apt update
 apt install -y psmisc

@@ -1,21 +1,12 @@
 #!/bin/bash
+# ABOUTME: Downloads Z Image Turbo models
+# ABOUTME: Includes text encoder, diffusion model, VAE, and ControlNet
 
-cd "$(dirname "$0")"
+set -e
+cd /workspace
+source "$(dirname "$0")/download_helper.sh"
 
-export HF_HUB_ENABLE_HF_TRANSFER=1
-export HF_XET_CHUNK_CACHE_SIZE_BYTES=90737418240
-
-download() {
-    url="$1"
-    dest="$2"
-    mkdir -p "$(dirname "$dest")"
-    if [ -f "$dest" ]; then
-        echo "Skip: $(basename "$dest") exists"
-        return
-    fi
-    echo "Downloading $(basename "$dest")..."
-    curl -L -s -o "$dest" "$url"
-}
+echo "Downloading Z Image Turbo models..."
 
 download "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/text_encoders/qwen_3_4b.safetensors" \
     "/workspace/ComfyUI/models/text_encoders/qwen_3_4b.safetensors"
@@ -29,4 +20,4 @@ download "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_file
 download "https://huggingface.co/alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union/resolve/main/Z-Image-Turbo-Fun-Controlnet-Union.safetensors" \
     "/workspace/ComfyUI/models/controlnet/Z-Image-Turbo-Fun-Controlnet-Union.safetensors"
 
-echo "Z Image Turbo download complete"
+echo "Download finished"

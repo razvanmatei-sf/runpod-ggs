@@ -1,3 +1,4 @@
+Sun 4 Jan 17:00
 # Claude Code Instructions
 
 You are an experienced, pragmatic software engineer. You don't over-engineer a solution when a simple one is possible.
@@ -13,11 +14,11 @@ Rule #1: If you want exception to ANY rule, YOU MUST STOP and get explicit permi
 - Doing it right is better than doing it fast. You are not in a rush. NEVER skip steps or take shortcuts.
 - Tedious, systematic work is often the correct solution. Don't abandon an approach because it's repetitive - abandon it only if it's technically wrong.
 - Honesty is a core value. If you lie, you'll be replaced.
-- You MUST think of and address your human partner as "$(HOST_USER)" at all times
+- You MUST think of and address your human partner as Razvan at all times
 
 ## Our relationship
 
-- We're colleagues working together as "$(HOST_USER)" and "Claude" - no formal hierarchy.
+- We're colleagues working together as Razvan and "Claude" - no formal hierarchy.
 - Don't glaze me. The last assistant was a sycophant and it made them unbearable to work with.
 - YOU MUST speak up immediately when you don't know something or we're in over our heads
 - YOU MUST call out bad ideas, unreasonable expectations, and mistakes - I depend on this
@@ -187,7 +188,7 @@ YOU MUST follow this debugging framework for ANY technical issue:
 - YOU MUST NEVER display, print, or expose API keys, tokens, credentials, or secrets
 - When asked to show configuration files containing sensitive data, YOU MUST redact the sensitive values
 - If asked directly to show an API key or credential, YOU MUST refuse and explain why
-- YOU MUST warn "$(HOST_USER)" if you detect exposed credentials in code or configuration files
+- YOU MUST warn Razvan if you detect exposed credentials in code or configuration files
 
 ## Recommended Shell Tools
 
@@ -253,3 +254,100 @@ rg "<text>" -l                     # Filter by content (fast)
 - Any complex search operation
 
 **For open-ended codebase exploration requiring multiple search rounds, use the Plan agent (Task tool with subagent_type=Plan) instead of sequential tool calls.**
+
+---
+
+## SF AI Workbench Project Context
+
+### Project Overview
+SF AI Workbench (formerly ComfyStudio) is a multi-user web platform for AI image generation and model training on RunPod cloud infrastructure. It provides access to ComfyUI, SwarmUI, AI-Toolkit, LoRA Tool, and JupyterLab.
+
+### Architecture
+- **Backend**: Flask server (`server/server.py`)
+- **Frontend**: Jinja2 templates (`server/templates/`) + vanilla JS (`server/static/js/`)
+- **Styling**: CSS (`server/static/css/style.css`)
+- **Docker**: Image built and pushed to `ghcr.io/razvanmatei-sf/runpod-ggs:v2`
+
+### Key File Locations
+- `server/server.py` - Main Flask application with all routes and API endpoints
+- `server/templates/` - HTML templates (base.html, login.html, home.html, tool.html, admin.html, etc.)
+- `server/static/css/style.css` - All CSS styling (dark theme)
+- `server/static/js/app.js` - Shared JavaScript (modals, navigation)
+- `server/static/images/` - Tool logos (comfyui.png, swarmui.png, ai-toolkit.png, stillfront.png)
+- `server/start_server.sh` - Docker entrypoint script
+- `server/build_server.sh` - Build and push Docker image
+
+### Build & Deploy Process
+1. Make changes to code
+2. Commit and push to git: `git add -A && git commit -m "message" && git push`
+3. Build and push Docker: `cd server && ./build_server.sh`
+4. Restart RunPod pod to pull new image
+
+### Important Notes
+- Currently on branch `feature/sf-ai-workbench` (not main)
+- Docker image tag is `:v2` (not `:latest`)
+- `start_server.sh` pulls from `origin/feature/sf-ai-workbench` and runs server from Docker image (`/usr/local/bin/server.py`)
+- Templates and static files must be in Docker image at `/usr/local/bin/templates/` and `/usr/local/bin/static/`
+
+### API Endpoints
+- `/login` - Profile selection page
+- `/home` - Main dashboard
+- `/tool/<tool_id>` - Tool pages (comfy-ui, swarm-ui, ai-toolkit, lora-tool, jupyter-lab)
+- `/admin` - Admin page (tool management, models, custom nodes)
+- `/start/<tool_id>` - Start a tool
+- `/stop/<tool_id>` - Stop a tool
+- `/logs/<tool_id>` - Get tool logs
+- `/admin_action` - Tool install/update/reinstall/remove
+- `/download_models` - Download model packs (expects `models` array with `.sh` filenames)
+- `/custom_nodes_action` - Install/update custom nodes
+
+### Known Issues & Solutions
+- **Terminal scroll jumping**: Fixed by only auto-scrolling when user is at bottom + setTimeout delay
+- **Docker image not updating**: Use unique tag (v2) or delete workspace repo folder
+- **Templates not found**: Ensure `SCRIPT_DIR` is used for absolute paths in Flask app init
+
+### User Management
+- Users stored in `/workspace/users.json`, not hardcoded in `artist_names.sh`
+- User folders in `/workspace/ComfyUI/output/{username}`
+- "Razvan Matei" is hardcoded superadmin (cannot be deleted/demoted)
+- `server/user_management.py` contains all user logic
+
+### Logging
+- Admin actions (install/update): `/tmp/comfystudio.log`
+- Tool startup logs: `/tmp/comfystudio_<tool-id>.log` (per-tool)
+
+### Download Scripts
+- All scripts in `setup/download-models/` use shared `download_helper.sh`
+- Uses aria2c (16 parallel connections) with wget fallback
+- Format: `download "<url>" "/workspace/path/to/file.safetensors"`
+- HF_TOKEN env var used automatically for authenticated downloads
+
+### UI Design System (RunPod-inspired)
+- **Style Guide**: `docs/STYLE_GUIDE.md` - comprehensive reference for colors, typography, components
+- **Primary accent**: Purple (`#7C3AED`) instead of blue
+- **Backgrounds**: Dark theme (`#121212`, `#181818`, `#1f1f1f`)
+- **Borders**: Subtle RGBA (`rgba(255,255,255,0.08)`)
+- **CSS Variables**: All design tokens defined in `:root` in `style.css`
+
+### Sidebar Structure
+- **Header**: Logo + "SF AI Workbench" title (left-aligned)
+- **Sections**: Collapsible groups with chevron icons
+  - Home (standalone)
+  - Tools (collapsible): ComfyUI, SwarmUI, AI-Toolkit, LoRA Tool, Jupyter
+  - Assets (standalone)
+  - Admin (collapsible, admin-only)
+- **Bottom**: Help button
+- **Active state**: Purple left border accent + subtle background
+- **Section states**: Saved to localStorage
+
+### Header Structure
+- **Left**: Dynamic page title (passed via `page_title` in render_template)
+- **Right**: User full name + avatar
+- Each route must pass `page_title` to template
+
+### Key CSS Classes
+- `.btn-primary`, `.btn-secondary`, `.btn-danger` - Button variants
+- `.badge`, `.badge-success`, `.badge-danger` - Status badges
+- `.nav-section`, `.nav-section-header`, `.nav-section-content` - Collapsible sidebar sections
+- `.empty-state` - Centered empty state pattern
+- Utility classes: `.text-muted`, `.mt-4`, `.mb-4`, `.flex`, `.gap-4`, etc.

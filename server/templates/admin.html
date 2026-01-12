@@ -1,0 +1,1232 @@
+{% extends "base.html" %} {% block title %}Admin - SF AI Workbench{% endblock %}
+{% block content %}
+
+<!-- User Profiles Section -->
+<section class="admin-section">
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h2 class="admin-card-title">User Profiles</h2>
+            <button
+                type="button"
+                class="admin-toggle-btn"
+                onclick="toggleSection('users-section')"
+            >
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </button>
+        </div>
+
+        <div id="users-section" class="admin-card-content">
+        <!-- Add New Users -->
+        <div class="admin-input-group" style="margin-bottom: 12px">
+            <label for="new-users-text">Add Users (one name per line)</label>
+            <textarea
+                id="new-users-text"
+                class="admin-input admin-textarea"
+                rows="4"
+                placeholder="John Doe&#10;Jane Smith&#10;..."
+            ></textarea>
+        </div>
+        <div style="margin-bottom: 14px">
+            <button
+                type="button"
+                class="tool-btn tool-btn-start"
+                onclick="addUsers()"
+            >
+                Add Users
+            </button>
+        </div>
+
+        <!-- Current Users List -->
+        <div class="admin-input-group">
+            <label>Current Users</label>
+        </div>
+        <div class="admin-list" id="users-list">
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    id="select-all-users"
+                    onchange="toggleAllUsers(this)"
+                />
+                <span class="admin-checkbox-label"
+                    ><strong>Select All</strong></span
+                >
+            </label>
+
+            {% for user in users_data %}
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    name="user"
+                    value="{{ user.name }}"
+                    class="user-checkbox"
+                    {% if user.name == superadmin_name %}disabled{% endif %}
+                />
+                <span class="admin-checkbox-label">
+                    {{ user.name }} {% if user.name == superadmin_name %}
+                    <span class="admin-badge installed">Superadmin</span>
+                    {% elif user.is_admin %}
+                    <span class="admin-badge installed">Admin</span>
+                    {% endif %}
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+
+        <div class="admin-actions">
+            <button
+                type="button"
+                class="tool-btn tool-btn-start"
+                onclick="bulkUserAction('make_admin')"
+            >
+                Make Admin
+            </button>
+            <button
+                type="button"
+                class="tool-btn tool-btn-open"
+                onclick="bulkUserAction('remove_admin')"
+            >
+                Remove Admin
+            </button>
+            <button
+                type="button"
+                class="tool-btn tool-btn-stop"
+                onclick="bulkUserAction('delete')"
+            >
+                Delete Selected
+            </button>
+        </div>
+    </div>
+</section>
+
+<section class="admin-section">
+    <div class="admin-card">
+        <h2 class="admin-card-title">Tool Management</h2>
+        <div class="admin-card-content">
+        <div class="admin-list">
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    id="select-all-tools"
+                    onchange="toggleAllTools(this)"
+                />
+                <span class="admin-checkbox-label"
+                    ><strong>Select All</strong></span
+                >
+            </label>
+
+            {% for tool_id, tool in admin_tools.items() %}
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    name="tool"
+                    value="{{ tool_id }}"
+                    class="tool-checkbox"
+                />
+                <span class="admin-checkbox-label">
+                    {{ tool.name }} {% if tool.installed %}
+                    <span class="admin-badge installed">Installed</span>
+                    {% else %}
+                    <span class="admin-badge new">Not installed</span>
+                    {% endif %}
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+
+        <div class="admin-actions">
+            <button
+                type="button"
+                id="btn-tools-install"
+                class="tool-btn tool-btn-start"
+                onclick="bulkToolAction('install')"
+            >
+                Install Selected
+            </button>
+            <button
+                type="button"
+                id="btn-tools-update"
+                class="tool-btn tool-btn-open"
+                onclick="bulkToolAction('update')"
+            >
+                Update Selected
+            </button>
+            <button
+                type="button"
+                id="btn-tools-reinstall"
+                class="tool-btn tool-btn-restart"
+                onclick="bulkToolAction('reinstall')"
+            >
+                Reinstall Selected
+            </button>
+            <button
+                type="button"
+                id="btn-tools-remove"
+                class="tool-btn tool-btn-stop"
+                onclick="bulkToolAction('kill')"
+            >
+                Remove Selected
+            </button>
+        </div>
+        </div>
+    </div>
+</section>
+
+<section class="admin-section">
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h2 class="admin-card-title">Download Models</h2>
+            <button
+                type="button"
+                class="admin-toggle-btn"
+                onclick="toggleSection('nodes-section')"
+            >
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </button>
+        </div>
+
+        <div id="nodes-section" class="admin-card-content">
+        <div class="admin-tokens">
+            <div class="admin-input-group">
+                <label for="hf-token">HuggingFace Token</label>
+                <input
+                    type="password"
+                    id="hf-token"
+                    class="admin-input"
+                    placeholder="hf_xxxxxxxxxxxx"
+                />
+            </div>
+            <div class="admin-input-group">
+                <label for="civitai-token">CivitAI Token</label>
+                <input
+                    type="password"
+                    id="civitai-token"
+                    class="admin-input"
+                    placeholder="xxxxxxxxxxxxxxxx"
+                />
+            </div>
+        </div>
+
+        <div class="admin-list">
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    id="select-all-models"
+                    onchange="toggleAllModels(this)"
+                />
+                <span class="admin-checkbox-label"
+                    ><strong>Select All</strong></span
+                >
+            </label>
+
+            {% for script in download_scripts %}
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    name="model"
+                    value="{{ script.id }}"
+                    class="model-checkbox"
+                />
+                <span class="admin-checkbox-label">
+                    {{ script.name }} {% if script.installed == script.total and
+                    script.total > 0 %}
+                    <span class="admin-badge installed">Installed</span>
+                    {% elif script.installed > 0 %}
+                    <span class="admin-badge partial"
+                        >{{ script.installed }}/{{ script.total }}</span
+                    >
+                    {% else %}
+                    <span class="admin-badge new">new</span>
+                    {% endif %}
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+
+        <div class="admin-actions">
+            <button
+                type="button"
+                class="tool-btn tool-btn-start"
+                onclick="downloadModels()"
+            >
+                Download Selected
+            </button>
+            <button
+                type="button"
+                class="tool-btn tool-btn-stop"
+                onclick="removeModels()"
+            >
+                Remove Selected
+            </button>
+        </div>
+        </div>
+    </div>
+</section>
+
+<section class="admin-section">
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h2 class="admin-card-title">Custom Nodes</h2>
+            <button
+                type="button"
+                class="admin-toggle-btn"
+                onclick="toggleSection('models-section')"
+            >
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </button>
+        </div>
+
+        <div id="models-section" class="admin-card-content">
+        <div class="admin-list">
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    id="select-all-nodes"
+                    onchange="toggleAllNodes(this)"
+                />
+                <span class="admin-checkbox-label"
+                    ><strong>Select All</strong></span
+                >
+            </label>
+
+            {% for node in custom_nodes %}
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    name="node"
+                    value="{{ node.repo_url }}"
+                    class="node-checkbox"
+                />
+                <span class="admin-checkbox-label">
+                    {{ node.name }} {% if node.installed %}
+                    <span class="admin-badge installed">Installed</span>
+                    {% else %}
+                    <span class="admin-badge new">new</span>
+                    {% endif %}
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+
+        <div class="admin-actions">
+            <button
+                type="button"
+                class="tool-btn tool-btn-start"
+                onclick="installNodes()"
+            >
+                Install Selected
+            </button>
+            <button
+                type="button"
+                class="tool-btn tool-btn-open"
+                onclick="updateAllNodes()"
+            >
+                Update All
+            </button>
+            <button
+                type="button"
+                class="tool-btn tool-btn-stop"
+                onclick="removeNodes()"
+            >
+                Remove Selected
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Terminal Output -->
+<section class="admin-section">
+    <h2 class="section-title">Output</h2>
+    <div class="terminal">
+        <div class="terminal-header">
+            <span class="terminal-title">Terminal</span>
+            <span id="elapsed-time" class="terminal-elapsed" style="display: none;">00:00</span>
+            <div class="terminal-actions">
+                <button
+                    type="button"
+                    class="terminal-action"
+                    onclick="copyTerminal()"
+                >
+                    Copy
+                </button>
+                <button
+                    type="button"
+                    class="terminal-action"
+                    onclick="clearTerminal()"
+                >
+                    Clear
+                </button>
+            </div>
+        </div>
+        <div class="terminal-body" id="admin-terminal">
+            {% if admin_logs %}{{ admin_logs }}{% else %}<span
+                class="terminal-line"
+                >Ready for admin commands.</span
+            >{% endif %}
+        </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .terminal-elapsed {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-left: auto;
+        margin-right: 16px;
+    }
+
+    .admin-section {
+        margin-bottom: 16px;
+    }
+
+    .admin-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-card);
+        border-radius: 4px;
+        padding: 16px;
+    }
+
+    .admin-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+
+    .admin-card-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .admin-card-content {
+        /* content styles */
+    }
+
+    .admin-tools {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .admin-tool-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-card);
+        border-radius: 8px;
+    }
+
+    .admin-tool-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .admin-tool-name {
+        font-size: 13px;
+        font-weight: 500;
+        min-width: 100px;
+    }
+
+    .admin-status-text {
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+
+    .admin-status-text.installed {
+        color: var(--accent-green);
+    }
+
+    .admin-tool-actions {
+        display: flex;
+        gap: 6px;
+    }
+
+    .admin-toggle-btn {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-card);
+        border-radius: 4px;
+        padding: 4px 8px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .admin-toggle-btn:hover {
+        background: var(--bg-card);
+    }
+
+    .admin-collapsible {
+        /* legacy - now using admin-card */
+    }
+
+    .admin-tokens {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .admin-input-group {
+        flex: 1;
+    }
+
+    .admin-input-group label {
+        display: block;
+        font-size: 11px;
+        color: var(--text-secondary);
+        margin-bottom: 4px;
+    }
+
+    .admin-input {
+        width: 100%;
+        padding: 8px 10px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-card);
+        border-radius: 6px;
+        color: var(--text-primary);
+        font-size: 13px;
+    }
+
+    .admin-input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+    }
+
+    .admin-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .admin-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        max-height: 240px;
+        overflow-y: auto;
+        margin-bottom: 12px;
+    }
+
+    .admin-checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .admin-checkbox-item:hover {
+        background: var(--bg-tertiary);
+    }
+
+    .admin-checkbox-item input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--accent-blue);
+        cursor: pointer;
+    }
+
+    .admin-checkbox-label {
+        flex: 1;
+        font-size: 13px;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .admin-badge {
+        font-size: 9px;
+        padding: 2px 6px;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+
+    .admin-badge.new {
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+    }
+
+    .admin-badge.installed {
+        background: rgba(34, 197, 94, 0.2);
+        color: var(--accent-green);
+    }
+
+    .admin-badge.partial {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--accent-orange);
+    }
+
+    .admin-actions {
+        display: flex;
+        gap: 6px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border-card);
+    }
+
+    .terminal {
+        height: 200px;
+    }
+
+    /* User Profiles Styles */
+    .admin-textarea {
+        resize: vertical;
+        min-height: 60px;
+        font-family: inherit;
+    }
+
+    .admin-user-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background: var(--bg-tertiary);
+        border-radius: 6px;
+        margin-bottom: 4px;
+    }
+
+    .admin-user-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .admin-user-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .admin-user-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .admin-toggle-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+    }
+
+    .admin-toggle-checkbox {
+        width: 14px;
+        height: 14px;
+        accent-color: var(--accent-blue);
+    }
+
+    .admin-toggle-checkbox:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .admin-toggle-text {
+        font-size: 11px;
+        color: var(--text-secondary);
+    }
+
+    .tool-btn-small {
+        padding: 4px 10px;
+        font-size: 11px;
+    }
+
+    .tool-btn-disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* Section header styling */
+    .section-header {
+        margin-bottom: 10px;
+    }
+
+    .section-title {
+        font-size: 14px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %} {% block scripts %}
+<script>
+    let pollInterval = null;
+    let activeButton = null;
+    let originalButtonText = null;
+
+    let toolActionQueue = [];
+    let isProcessingQueue = false;
+
+    function toggleAllTools(checkbox) {
+        document
+            .querySelectorAll(".tool-checkbox")
+            .forEach((cb) => (cb.checked = checkbox.checked));
+    }
+
+    function bulkToolAction(action) {
+        const selected = Array.from(
+            document.querySelectorAll(".tool-checkbox:checked"),
+        ).map((cb) => cb.value);
+
+        if (selected.length === 0) {
+            alert("Please select at least one tool.");
+            return;
+        }
+
+        const actionText = {
+            install: "Install",
+            update: "Update",
+            reinstall: "Reinstall",
+            kill: "Remove",
+        };
+
+        if (
+            action === "kill" &&
+            !confirm(
+                `Are you sure you want to remove ${selected.length} tool(s)?`,
+            )
+        ) {
+            return;
+        }
+
+        // Queue up all selected tools
+        toolActionQueue = selected.map((toolId) => ({ toolId, action }));
+        isProcessingQueue = true;
+
+        // Disable all tool action buttons
+        disableToolButtons(action);
+
+        // Start processing queue
+        processNextToolAction();
+    }
+
+    function disableToolButtons(action) {
+        const buttons = document.querySelectorAll('[id^="btn-tools-"]');
+        buttons.forEach((btn) => {
+            btn.disabled = true;
+            btn.classList.add("tool-btn-disabled");
+        });
+
+        const actionText = {
+            install: "Installing...",
+            update: "Updating...",
+            reinstall: "Reinstalling...",
+            kill: "Removing...",
+        };
+
+        const activeBtn = document.getElementById(
+            `btn-tools-${action === "kill" ? "remove" : action}`,
+        );
+        if (activeBtn) {
+            activeBtn.textContent = actionText[action] || "Processing...";
+        }
+    }
+
+    function resetToolButtons() {
+        const buttonDefaults = {
+            "btn-tools-install": "Install Selected",
+            "btn-tools-update": "Update Selected",
+            "btn-tools-reinstall": "Reinstall Selected",
+            "btn-tools-remove": "Remove Selected",
+        };
+
+        Object.entries(buttonDefaults).forEach(([id, text]) => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove("tool-btn-disabled");
+                btn.textContent = text;
+            }
+        });
+
+        isProcessingQueue = false;
+    }
+
+    function processNextToolAction() {
+        if (toolActionQueue.length === 0) {
+            // All done - buttons will reset when polling stops
+            return;
+        }
+
+        const { toolId, action } = toolActionQueue.shift();
+        const terminal = document.getElementById("admin-terminal");
+        const remaining = toolActionQueue.length;
+
+        terminal.textContent += `\n${"=".repeat(50)}\n`;
+        terminal.textContent += `Starting ${action} for ${toolId}... (${remaining} remaining)\n`;
+        terminal.textContent += `${"=".repeat(50)}\n`;
+
+        fetch("/admin_action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tool_id: toolId, action: action }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    // Start polling and wait for this action to complete
+                    startPollingLogsWithCallback(() => {
+                        // When this action completes, process next
+                        processNextToolAction();
+                    });
+                } else {
+                    terminal.textContent += `Error: ${data.message}\n`;
+                    // Continue with next tool even on error
+                    processNextToolAction();
+                }
+            })
+            .catch((err) => {
+                terminal.textContent += `Error: ${err}\n`;
+                processNextToolAction();
+            });
+    }
+
+    function adminAction(toolId, action, button) {
+        const terminal = document.getElementById("admin-terminal");
+        terminal.textContent = `Starting ${action} for ${toolId}...\n`;
+
+        // Disable button and show "Installing..." / "Updating..." etc
+        if (button) {
+            activeButton = button;
+            originalButtonText = button.textContent;
+            button.disabled = true;
+            button.classList.add("tool-btn-disabled");
+
+            const actionText = {
+                install: "Installing...",
+                update: "Updating...",
+                reinstall: "Reinstalling...",
+                kill: "Removing...",
+            };
+            button.textContent = actionText[action] || "Processing...";
+        }
+
+        fetch("/admin_action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tool_id: toolId, action: action }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    startPollingLogs();
+                } else {
+                    terminal.textContent += `Error: ${data.message}\n`;
+                    resetActiveButton();
+                }
+            })
+            .catch((err) => {
+                terminal.textContent += `Error: ${err}\n`;
+                resetActiveButton();
+            });
+    }
+
+    function resetActiveButton() {
+        if (activeButton) {
+            activeButton.disabled = false;
+            activeButton.classList.remove("tool-btn-disabled");
+            activeButton.textContent = originalButtonText;
+            activeButton = null;
+            originalButtonText = null;
+        }
+    }
+
+    function downloadModels() {
+        const selected = Array.from(
+            document.querySelectorAll(".model-checkbox:checked"),
+        ).map((cb) => cb.value + ".sh");
+        if (selected.length === 0) {
+            alert("Please select at least one model pack to download.");
+            return;
+        }
+
+        const hfToken = document.getElementById("hf-token").value;
+        const civitaiToken = document.getElementById("civitai-token").value;
+        const terminal = document.getElementById("admin-terminal");
+        terminal.textContent = `Starting download for: ${selected.join(", ")}...\n`;
+
+        fetch("/download_models", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                models: selected,
+                hf_token: hfToken,
+                civit_token: civitaiToken,
+            }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    startPollingLogs();
+                } else {
+                    terminal.textContent += `Error: ${data.message}\n`;
+                }
+            });
+    }
+
+    function installNodes() {
+        const selected = Array.from(
+            document.querySelectorAll(".node-checkbox:checked"),
+        ).map((cb) => cb.value);
+        if (selected.length === 0) {
+            alert("Please select at least one custom node to install.");
+            return;
+        }
+
+        const terminal = document.getElementById("admin-terminal");
+        terminal.textContent = `Installing ${selected.length} custom nodes...\n`;
+
+        fetch("/custom_nodes_action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "install" }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    startPollingLogs();
+                } else {
+                    terminal.textContent += `Error: ${data.message}\n`;
+                }
+            });
+    }
+
+    function updateAllNodes() {
+        const terminal = document.getElementById("admin-terminal");
+        terminal.textContent = `Updating all custom nodes...\n`;
+
+        fetch("/custom_nodes_action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "update" }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    startPollingLogs();
+                } else {
+                    terminal.textContent += `Error: ${data.message}\n`;
+                }
+            });
+    }
+
+    function removeModels() {
+        const selected = Array.from(
+            document.querySelectorAll(".model-checkbox:checked"),
+        ).map((cb) => cb.value);
+        if (selected.length === 0) {
+            alert("Please select at least one model pack to remove.");
+            return;
+        }
+
+        if (
+            !confirm(
+                `Are you sure you want to remove ${selected.length} model pack(s)?`,
+            )
+        ) {
+            return;
+        }
+
+        const terminal = document.getElementById("admin-terminal");
+        terminal.textContent = `Removing selected models...\n`;
+        terminal.textContent += `Note: Model removal is not yet implemented.\n`;
+    }
+
+    function removeNodes() {
+        const selected = Array.from(
+            document.querySelectorAll(".node-checkbox:checked"),
+        ).map((cb) => cb.value);
+        if (selected.length === 0) {
+            alert("Please select at least one custom node to remove.");
+            return;
+        }
+
+        if (
+            !confirm(
+                `Are you sure you want to remove ${selected.length} custom node(s)?`,
+            )
+        ) {
+            return;
+        }
+
+        const terminal = document.getElementById("admin-terminal");
+        terminal.textContent = `Removing selected custom nodes...\n`;
+        terminal.textContent += `Note: Node removal is not yet implemented.\n`;
+    }
+
+    let onPollingComplete = null;
+
+    let elapsedTimerInterval = null;
+    let elapsedStartTime = null;
+
+    function startElapsedTimer() {
+        elapsedStartTime = Date.now();
+        const elapsedEl = document.getElementById('elapsed-time');
+        elapsedEl.style.display = 'inline';
+        elapsedEl.textContent = '00:00';
+
+        if (elapsedTimerInterval) clearInterval(elapsedTimerInterval);
+        elapsedTimerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - elapsedStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            elapsedEl.textContent = `${minutes}:${seconds}`;
+        }, 1000);
+    }
+
+    function stopElapsedTimer() {
+        if (elapsedTimerInterval) {
+            clearInterval(elapsedTimerInterval);
+            elapsedTimerInterval = null;
+        }
+    }
+
+    function startPollingLogs() {
+        onPollingComplete = null;
+        if (pollInterval) clearInterval(pollInterval);
+        pollInterval = setInterval(pollLogs, 500);
+        startElapsedTimer();
+    }
+
+    function startPollingLogsWithCallback(callback) {
+        onPollingComplete = callback;
+        if (pollInterval) clearInterval(pollInterval);
+        pollInterval = setInterval(pollLogs, 500);
+    }
+
+    let lastLogContent = "";
+
+    function pollLogs() {
+        fetch("/logs")
+            .then((response) => response.json())
+            .then((data) => {
+                const terminal = document.getElementById("admin-terminal");
+                if (data.content && data.content !== lastLogContent) {
+                    lastLogContent = data.content;
+                    terminal.textContent = data.content;
+                    requestAnimationFrame(() => {
+                        terminal.scrollTop = terminal.scrollHeight;
+                    });
+                }
+                if (!data.running && pollInterval) {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    stopElapsedTimer();
+                    resetActiveButton();
+
+                    // If we have a callback (bulk action), call it
+                    if (onPollingComplete) {
+                        const callback = onPollingComplete;
+                        onPollingComplete = null;
+                        callback();
+                    } else if (
+                        isProcessingQueue &&
+                        toolActionQueue.length === 0
+                    ) {
+                        // All bulk actions complete
+                        resetToolButtons();
+                    }
+                }
+            });
+    }
+
+    function toggleSection(sectionId) {
+        const section = document.getElementById(sectionId);
+        section.style.display =
+            section.style.display === "none" ? "block" : "none";
+    }
+
+    function toggleAllModels(checkbox) {
+        document
+            .querySelectorAll(".model-checkbox")
+            .forEach((cb) => (cb.checked = checkbox.checked));
+    }
+
+    function toggleAllNodes(checkbox) {
+        document
+            .querySelectorAll(".node-checkbox")
+            .forEach((cb) => (cb.checked = checkbox.checked));
+    }
+
+    function copyTerminal() {
+        const terminal = document.getElementById("admin-terminal");
+        navigator.clipboard.writeText(terminal.textContent);
+    }
+
+    function clearTerminal() {
+        document.getElementById("admin-terminal").textContent =
+            "Ready for admin commands.";
+        lastLogContent = "";
+    }
+
+    // User Profile Management Functions
+    function toggleAllUsers(checkbox) {
+        document.querySelectorAll(".user-checkbox:not(:disabled)").forEach((cb) => (cb.checked = checkbox.checked));
+    }
+
+    function addUsers() {
+        const textarea = document.getElementById("new-users-text");
+        const namesText = textarea.value.trim();
+
+        if (!namesText) {
+            alert("Please enter at least one user name.");
+            return;
+        }
+
+        fetch("/api/users", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ names: namesText }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    textarea.value = "";
+                    refreshUsersList(data.users);
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch((err) => alert("Error adding users: " + err));
+    }
+
+    function bulkUserAction(action) {
+        const selected = Array.from(
+            document.querySelectorAll(".user-checkbox:checked"),
+        ).map((cb) => cb.value);
+
+        if (selected.length === 0) {
+            alert("Please select at least one user.");
+            return;
+        }
+
+        if (action === "delete") {
+            if (!confirm(`Are you sure you want to delete ${selected.length} user(s)?`)) {
+                return;
+            }
+            const deleteFolder = confirm(
+                "Also delete the users' output folders?\n\nClick OK to delete folders, Cancel to keep them.",
+            );
+
+            // Delete users one by one
+            Promise.all(
+                selected.map((userName) =>
+                    fetch("/api/users/" + encodeURIComponent(userName), {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ delete_folder: deleteFolder }),
+                    }).then((r) => r.json())
+                )
+            ).then((results) => {
+                const lastResult = results[results.length - 1];
+                if (lastResult && lastResult.users) {
+                    refreshUsersList(lastResult.users);
+                } else {
+                    location.reload();
+                }
+            }).catch((err) => {
+                alert("Error deleting users: " + err);
+                location.reload();
+            });
+        } else {
+            // make_admin or remove_admin
+            const isAdmin = action === "make_admin";
+            Promise.all(
+                selected.map((userName) =>
+                    fetch("/api/users/" + encodeURIComponent(userName) + "/admin", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ is_admin: isAdmin }),
+                    }).then((r) => r.json())
+                )
+            ).then((results) => {
+                const lastResult = results[results.length - 1];
+                if (lastResult && lastResult.users) {
+                    refreshUsersList(lastResult.users);
+                } else {
+                    location.reload();
+                }
+            }).catch((err) => {
+                alert("Error updating users: " + err);
+                location.reload();
+            });
+        }
+    }
+
+    function refreshUsersList(users) {
+        const listEl = document.getElementById("users-list");
+        const superadminName = "{{ superadmin_name }}";
+
+        listEl.innerHTML = `
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    id="select-all-users"
+                    onchange="toggleAllUsers(this)"
+                />
+                <span class="admin-checkbox-label"><strong>Select All</strong></span>
+            </label>
+        ` + users
+            .map((user) => {
+                const isSuperadmin = user.name === superadminName;
+                return `
+                <label class="admin-checkbox-item">
+                    <input
+                        type="checkbox"
+                        name="user"
+                        value="${user.name}"
+                        class="user-checkbox"
+                        ${isSuperadmin ? "disabled" : ""}
+                    />
+                    <span class="admin-checkbox-label">
+                        ${user.name}
+                        ${isSuperadmin ? '<span class="admin-badge installed">Superadmin</span>' : (user.is_admin ? '<span class="admin-badge installed">Admin</span>' : '')}
+                    </span>
+                </label>
+            `;
+            })
+            .join("");
+    }
+
+    // On page load: scroll terminal to bottom and resume polling if process is running
+    document.addEventListener('DOMContentLoaded', function() {
+        const terminal = document.getElementById('admin-terminal');
+        terminal.scrollTop = terminal.scrollHeight;
+
+        {% if admin_process_running %}
+        // Resume polling since an admin process is still running
+        startPollingLogs();
+        {% endif %}
+    });
+</script>
+{% endblock %}
