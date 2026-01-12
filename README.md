@@ -171,13 +171,28 @@ Repository automatically clones to `/workspace/runpod-ggs/` on startup with `git
 
 ```
 setup/
-├── comfy/           # install, start, reinstall, update, kill
+├── comfy/           # install, start, reinstall, update, kill, sync_workflows
 ├── ai-toolkit/      # install, start, reinstall, update, kill
 ├── swarm-ui/        # install, start, reinstall, update, kill
 ├── lora-tool/       # start, kill (bundled - no install)
 ├── custom-nodes/    # install, update, nodes.txt
 └── download-models/ # model download scripts
 ```
+
+### Workflow Sync
+
+Workflows are stored in the `workflows` branch and automatically synced to ComfyUI on startup.
+
+- **Source**: `workflows` branch in this repository
+- **Destination**: `/workspace/ComfyUI/user/default/workflows/`
+- **Behavior**: GitHub workflows overwrite local files with same name, local-only workflows are preserved
+
+To add new workflows:
+1. Switch to workflows branch: `git checkout workflows`
+2. Add your `.json` workflow files
+3. Commit and push: `git add . && git commit -m "Add workflow" && git push`
+
+To manually sync: `./setup/comfy/sync_workflows.sh`
 
 ### Environment Variables
 
