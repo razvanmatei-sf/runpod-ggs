@@ -37,3 +37,30 @@ https://www.patreon.com/posts/ultimate-image-2-120352012
 https://www.patreon.com/posts/mmaudio-1-click-117990364
 https://www.patreon.com/posts/how-to-install-141537068
 https://www.patreon.com/posts/trellis-2-app-1-147686623
+
+
+12. Add option to set the name of the Studio in the Admin pannel - name should appear next to SF AI Workbench so that it's easy for me to differentiate between runpods when more than one is open
+
+
+13. White-label / Rebrand Architecture
+Implement config-driven branding to support multiple branded versions of the workbench from a single codebase.
+
+Solution:
+- Brand config file (config/brand.json) containing:
+  - name: "SF AI Workbench" or other brand name
+  - logo: path to logo image
+  - theme_color: primary accent color
+  - features: array of enabled features for this brand
+- Feature flags - each feature checks if enabled before showing in UI
+- Environment variable (BRAND_CONFIG=sf or BRAND_CONFIG=other) to select config at startup
+
+Benefits:
+- Single codebase, single set of commits
+- Shared bug fixes automatically apply to both brands
+- Easy to add/remove features per brand via config
+- One repo to manage when going private
+- Extensible to more brands if needed
+
+Deployment:
+- Two Docker images (or one image with env var)
+- Two RunPod templates pointing to different configs
