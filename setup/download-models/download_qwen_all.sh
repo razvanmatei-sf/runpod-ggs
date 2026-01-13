@@ -33,6 +33,9 @@ download "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen
 download "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors" \
     "/workspace/ComfyUI/models/loras/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors"
 
+download "https://huggingface.co/Comfy-Org/Qwen-Image-DiffSynth-ControlNets/resolve/main/split_files/loras/qwen_image_union_diffsynth_lora.safetensors" \
+    "/workspace/ComfyUI/models/loras/qwen_image_union_diffsynth_lora.safetensors"
+
 # ControlNets
 download "https://huggingface.co/Comfy-Org/Qwen-Image-InstantX-ControlNets/resolve/main/split_files/controlnet/Qwen-Image-InstantX-ControlNet-Union.safetensors" \
     "/workspace/ComfyUI/models/controlnet/Qwen-Image-InstantX-ControlNet-Union.safetensors"
@@ -49,8 +52,5 @@ download "https://huggingface.co/Comfy-Org/Qwen-Image-DiffSynth-ControlNets/reso
 
 download "https://huggingface.co/Comfy-Org/Qwen-Image-DiffSynth-ControlNets/resolve/main/split_files/model_patches/qwen_image_inpaint_diffsynth_controlnet.safetensors" \
     "/workspace/ComfyUI/models/model_patches/qwen_image_inpaint_diffsynth_controlnet.safetensors"
-
-download "https://huggingface.co/Comfy-Org/Qwen-Image-DiffSynth-ControlNets/resolve/main/split_files/loras/qwen_image_union_diffsynth_lora.safetensors" \
-    "/workspace/ComfyUI/models/loras/qwen_image_union_diffsynth_lora.safetensors"
 
 echo "Download finished"
