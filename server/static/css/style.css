@@ -1606,6 +1606,7 @@ a:hover {
 }
 
 .template-card {
+    position: relative;
     background: var(--bg-card);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-lg);
@@ -1721,4 +1722,275 @@ a:hover {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+/* Template Card - Edit Button */
+.template-edit-btn {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: var(--space-2);
+    color: var(--text-primary);
+    cursor: pointer;
+    opacity: 0;
+    transition: var(--transition-fast);
+}
+
+.template-card:hover .template-edit-btn {
+    opacity: 1;
+}
+
+.template-edit-btn:hover {
+    background: var(--accent-primary);
+}
+
+/* Template Card - Add New */
+.template-card-add {
+    border: 2px dashed var(--border-default);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 280px;
+}
+
+.template-card-add:hover {
+    border-color: var(--accent-primary);
+    background: var(--bg-hover);
+}
+
+.template-card-add-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--text-muted);
+}
+
+.template-card-add:hover .template-card-add-content {
+    color: var(--accent-primary);
+}
+
+/* Template Image as actual image */
+.template-image img,
+img.template-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.template-image-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ============================================
+   TEMPLATE EDIT MODAL
+   ============================================ */
+.template-edit-modal {
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border-default);
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: var(--space-1);
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+#template-form {
+    padding: var(--space-5);
+}
+
+.form-group {
+    margin-bottom: var(--space-4);
+}
+
+.form-group label {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-2);
+}
+
+.form-input {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    font-family: var(--font-family);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.form-input::placeholder {
+    color: var(--text-muted);
+}
+
+textarea.form-input {
+    resize: vertical;
+    min-height: 60px;
+}
+
+select.form-input {
+    cursor: pointer;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+}
+
+.form-section-title {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-3);
+    margin-top: var(--space-2);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border-default);
+}
+
+.file-upload-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.file-status {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 150px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border-default);
+}
+
+.modal-actions-right {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.modal-footer {
+    padding: var(--space-4) var(--space-5);
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-default);
+}
+
+/* Buttons */
+.btn-primary {
+    background: var(--accent-primary);
+    color: var(--text-primary);
+    border: none;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-primary:hover {
+    background: var(--accent-primary-hover);
+}
+
+.btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-card);
+}
+
+.btn-danger {
+    background: var(--accent-red);
+    color: var(--text-primary);
+    border: none;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-danger:hover {
+    background: var(--accent-red-hover);
+}
+
+.btn-commit {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    background: var(--accent-green);
+    color: var(--text-primary);
+    border: none;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    width: 100%;
+    justify-content: center;
+}
+
+.btn-commit:hover {
+    background: var(--accent-green-hover);
+}
+
+/* Modal active state */
+.modal-overlay.active {
+    display: flex;
 }

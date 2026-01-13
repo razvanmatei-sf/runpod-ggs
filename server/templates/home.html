@@ -141,238 +141,363 @@
     </h2>
 
     <div class="template-grid">
-        <!-- Template Card 1 -->
-        <div class="template-card" data-type="image">
+        {% for template in templates %}
+        <!-- Template Card: {{ template.title }} -->
+        <div
+            class="template-card"
+            data-id="{{ template.id }}"
+            data-type="{{ template.category }}"
+            onclick="openWorkflow('{{ template.id }}', '{{ template.workflow_file }}')"
+        >
+            {% if is_admin %}
+            <button
+                type="button"
+                class="template-edit-btn"
+                onclick="event.stopPropagation(); openEditModal('{{ template.id }}')"
+            >
+                <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                    />
+                    <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                    />
+                </svg>
+            </button>
+            {% endif %}
             <div class="template-card-image">
                 <div class="template-image-slider">
-                    <div
+                    {% if template.preview_image_a %}
+                    <img
+                        src="/workflow/preview/{{ template.preview_image_a }}"
+                        alt="{{ template.title }}"
                         class="template-image template-image-before"
-                        style="background-color: #7c3aed"
-                    ></div>
+                    />
+                    {% else %}
                     <div
-                        class="template-image template-image-after"
-                        style="background-color: #3b82f6"
+                        class="template-image template-image-before template-image-placeholder"
+                        style="
+                            background: linear-gradient(
+                                135deg,
+                                #7c3aed 0%,
+                                #3b82f6 100%
+                            );
+                        "
                     ></div>
+                    {% endif %} {% if template.preview_image_b %}
+                    <img
+                        src="/workflow/preview/{{ template.preview_image_b }}"
+                        alt="{{ template.title }} - after"
+                        class="template-image template-image-after"
+                    />
+                    {% elif template.preview_image_a %}
+                    <img
+                        src="/workflow/preview/{{ template.preview_image_a }}"
+                        alt="{{ template.title }}"
+                        class="template-image template-image-after"
+                    />
+                    {% else %}
+                    <div
+                        class="template-image template-image-after template-image-placeholder"
+                        style="
+                            background: linear-gradient(
+                                135deg,
+                                #3b82f6 0%,
+                                #10b981 100%
+                            );
+                        "
+                    ></div>
+                    {% endif %}
                 </div>
+                {% if template.logo_text %}
+                <div class="template-logo">
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                    >
+                        <path
+                            d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+                        />
+                    </svg>
+                    <span>{{ template.logo_text }}</span>
+                </div>
+                {% endif %}
                 <div class="template-card-tags">
-                    <span class="template-tag">Text to Image</span>
-                    <span class="template-tag">Image</span>
+                    {% for tag in template.tags %}
+                    <span class="template-tag">{{ tag }}</span>
+                    {% endfor %}
                 </div>
             </div>
             <div class="template-card-content">
-                <h3 class="template-card-title">Qwen Image 2512</h3>
-                <p class="template-card-desc">
-                    Text to image model with enhanced human realism, finer
-                    natural details...
-                </p>
+                <h3 class="template-card-title">{{ template.title }}</h3>
+                <p class="template-card-desc">{{ template.description }}</p>
             </div>
         </div>
-
-        <!-- Template Card 2 -->
-        <div class="template-card" data-type="image">
-            <div class="template-card-image">
-                <div class="template-image-slider">
-                    <div
-                        class="template-image template-image-before"
-                        style="background-color: #10b981"
-                    ></div>
-                    <div
-                        class="template-image template-image-after"
-                        style="background-color: #f59e0b"
-                    ></div>
-                </div>
-                <div class="template-card-tags">
-                    <span class="template-tag">Image Edit</span>
-                    <span class="template-tag">Image</span>
-                </div>
-            </div>
-            <div class="template-card-content">
-                <h3 class="template-card-title">
-                    Qwen Image Edit 2511 - Material...
-                </h3>
-                <p class="template-card-desc">
-                    Replace materials in objects (e.g., furniture) by combining
-                    reference...
-                </p>
+        {% endfor %} {% if is_admin %}
+        <!-- Add New Template Card -->
+        <div
+            class="template-card template-card-add"
+            onclick="openEditModal(null)"
+        >
+            <div class="template-card-add-content">
+                <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                >
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                <span>Add New Template</span>
             </div>
         </div>
-
-        <!-- Template Card 3 -->
-        <div class="template-card" data-type="image">
-            <div class="template-card-image">
-                <div class="template-image-slider">
-                    <div
-                        class="template-image template-image-before"
-                        style="background-color: #ef4444"
-                    ></div>
-                    <div
-                        class="template-image template-image-after"
-                        style="background-color: #8b5cf6"
-                    ></div>
-                </div>
-                <div class="template-card-tags">
-                    <span class="template-tag">Layer Decompose</span>
-                </div>
-            </div>
-            <div class="template-card-content">
-                <h3 class="template-card-title">Qwen-Image-Layered...</h3>
-                <p class="template-card-desc">
-                    Decompose an image into editable RGBA layers for high
-                    fidelity recolor,...
-                </p>
-            </div>
-        </div>
-
-        <!-- Template Card 4 -->
-        <div class="template-card" data-type="image">
-            <div class="template-card-image">
-                <div class="template-image-slider has-logo">
-                    <div
-                        class="template-image template-image-before"
-                        style="background-color: #06b6d4"
-                    ></div>
-                    <div
-                        class="template-image template-image-after"
-                        style="background-color: #ec4899"
-                    ></div>
-                    <div class="template-logo">
-                        <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                        >
-                            <path
-                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
-                            />
-                        </svg>
-                        <span>Flux.2 [Max]</span>
-                    </div>
-                </div>
-                <div class="template-card-tags">
-                    <span class="template-tag">Image Edit</span>
-                    <span class="template-tag">Image</span>
-                    <span class="template-tag">API</span>
-                </div>
-            </div>
-            <div class="template-card-content">
-                <h3 class="template-card-title">FLUX.2 [max]: Object Swap</h3>
-                <p class="template-card-desc">
-                    Replace objects in images with unmatched quality using
-                    FLUX.2...
-                </p>
-            </div>
-        </div>
-
-        <!-- Template Card 5 - Video -->
-        <div class="template-card" data-type="video">
-            <div class="template-card-image">
-                <div class="template-image-slider">
-                    <div
-                        class="template-image template-image-before"
-                        style="background-color: #f97316"
-                    ></div>
-                    <div
-                        class="template-image template-image-after"
-                        style="background-color: #14b8a6"
-                    ></div>
-                </div>
-                <div class="template-card-tags">
-                    <span class="template-tag">Text to Video</span>
-                    <span class="template-tag">Video</span>
-                </div>
-            </div>
-            <div class="template-card-content">
-                <h3 class="template-card-title">LTX-Video 2.0</h3>
-                <p class="template-card-desc">
-                    Generate high-quality videos from text prompts with
-                    LTX-Video...
-                </p>
-            </div>
-        </div>
-
-        <!-- Template Card 6 -->
-        <div class="template-card" data-type="image">
-            <div class="template-card-image">
-                <div class="template-image-slider">
-                    <div
-                        class="template-image template-image-before"
-                        style="background-color: #6366f1"
-                    ></div>
-                    <div
-                        class="template-image template-image-after"
-                        style="background-color: #22c55e"
-                    ></div>
-                </div>
-                <div class="template-card-tags">
-                    <span class="template-tag">Image Edit</span>
-                    <span class="template-tag">Image</span>
-                </div>
-            </div>
-            <div class="template-card-content">
-                <h3 class="template-card-title">Fashion Style Transfer</h3>
-                <p class="template-card-desc">
-                    Transfer clothing styles between images with high
-                    fidelity...
-                </p>
-            </div>
-        </div>
-
-        <!-- Template Card 7 -->
-        <div class="template-card" data-type="image">
-            <div class="template-card-image">
-                <div class="template-image-slider">
-                    <div
-                        class="template-image template-image-before"
-                        style="background-color: #a855f7"
-                    ></div>
-                    <div
-                        class="template-image template-image-after"
-                        style="background-color: #f43f5e"
-                    ></div>
-                </div>
-                <div class="template-card-tags">
-                    <span class="template-tag">Image</span>
-                    <span class="template-tag">ControlNet</span>
-                </div>
-            </div>
-            <div class="template-card-content">
-                <h3 class="template-card-title">Portrait Enhancement</h3>
-                <p class="template-card-desc">
-                    Enhance portrait photos with AI-powered improvements...
-                </p>
-            </div>
-        </div>
-
-        <!-- Template Card 8 -->
-        <div class="template-card" data-type="video">
-            <div class="template-card-image">
-                <div class="template-image-slider">
-                    <div
-                        class="template-image template-image-before"
-                        style="background-color: #0ea5e9"
-                    ></div>
-                    <div
-                        class="template-image template-image-after"
-                        style="background-color: #d946ef"
-                    ></div>
-                </div>
-                <div class="template-card-tags">
-                    <span class="template-tag">Image to Video</span>
-                    <span class="template-tag">Video</span>
-                </div>
-            </div>
-            <div class="template-card-content">
-                <h3 class="template-card-title">Wan 2.2 Animate</h3>
-                <p class="template-card-desc">
-                    Animate still images into dynamic videos with Wan 2.2...
-                </p>
-            </div>
-        </div>
+        {% endif %}
     </div>
 </section>
+
+{% if is_admin %}
+<!-- Edit Template Modal -->
+<div class="modal-overlay" id="edit-template-modal">
+    <div class="modal template-edit-modal">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modal-title">Edit Template</h2>
+            <button
+                type="button"
+                class="modal-close"
+                onclick="closeEditModal()"
+            >
+                <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+            </button>
+        </div>
+        <form id="template-form" onsubmit="saveTemplate(event)">
+            <input type="hidden" id="template-id" name="id" />
+
+            <div class="form-group">
+                <label for="template-title">Title</label>
+                <input
+                    type="text"
+                    id="template-title"
+                    name="title"
+                    class="form-input"
+                    required
+                />
+            </div>
+
+            <div class="form-group">
+                <label for="template-description">Description</label>
+                <textarea
+                    id="template-description"
+                    name="description"
+                    class="form-input"
+                    rows="2"
+                ></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="template-category">Category</label>
+                    <select
+                        id="template-category"
+                        name="category"
+                        class="form-input"
+                    >
+                        <option value="image">Image</option>
+                        <option value="video">Video</option>
+                        <option value="audio">Audio</option>
+                        <option value="3d-model">3D Model</option>
+                        <option value="llm">LLM</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="template-tags">Tags (comma separated)</label>
+                    <input
+                        type="text"
+                        id="template-tags"
+                        name="tags"
+                        class="form-input"
+                        placeholder="Image Edit, ControlNet"
+                    />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="template-logo">Logo Text (optional)</label>
+                <input
+                    type="text"
+                    id="template-logo"
+                    name="logo_text"
+                    class="form-input"
+                    placeholder="Flux.2 [Max]"
+                />
+            </div>
+
+            <div class="form-section-title">Files</div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Workflow JSON</label>
+                    <div class="file-upload-row">
+                        <input
+                            type="file"
+                            id="workflow-file"
+                            accept=".json"
+                            onchange="uploadTemplateFile('workflow')"
+                            style="display: none"
+                        />
+                        <button
+                            type="button"
+                            class="btn-secondary"
+                            onclick="document.getElementById('workflow-file').click()"
+                        >
+                            Upload Workflow
+                        </button>
+                        <span
+                            id="workflow-file-status"
+                            class="file-status"
+                        ></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>API Workflow JSON (optional)</label>
+                    <div class="file-upload-row">
+                        <input
+                            type="file"
+                            id="workflow-api-file"
+                            accept=".json"
+                            onchange="uploadTemplateFile('workflow_api')"
+                            style="display: none"
+                        />
+                        <button
+                            type="button"
+                            class="btn-secondary"
+                            onclick="document.getElementById('workflow-api-file').click()"
+                        >
+                            Upload API Workflow
+                        </button>
+                        <span
+                            id="workflow-api-file-status"
+                            class="file-status"
+                        ></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Preview Image A (Before)</label>
+                    <div class="file-upload-row">
+                        <input
+                            type="file"
+                            id="preview-a-file"
+                            accept="image/*"
+                            onchange="uploadTemplateFile('preview_a')"
+                            style="display: none"
+                        />
+                        <button
+                            type="button"
+                            class="btn-secondary"
+                            onclick="document.getElementById('preview-a-file').click()"
+                        >
+                            Upload Image A
+                        </button>
+                        <span
+                            id="preview-a-file-status"
+                            class="file-status"
+                        ></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Preview Image B (After)</label>
+                    <div class="file-upload-row">
+                        <input
+                            type="file"
+                            id="preview-b-file"
+                            accept="image/*"
+                            onchange="uploadTemplateFile('preview_b')"
+                            style="display: none"
+                        />
+                        <button
+                            type="button"
+                            class="btn-secondary"
+                            onclick="document.getElementById('preview-b-file').click()"
+                        >
+                            Upload Image B
+                        </button>
+                        <span
+                            id="preview-b-file-status"
+                            class="file-status"
+                        ></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button
+                    type="button"
+                    class="btn-danger"
+                    id="delete-template-btn"
+                    onclick="deleteTemplate()"
+                    style="display: none"
+                >
+                    Delete
+                </button>
+                <div class="modal-actions-right">
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        onclick="closeEditModal()"
+                    >
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary">Save</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="modal-footer">
+            <button type="button" class="btn-commit" onclick="commitToGit()">
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <circle cx="12" cy="12" r="4" />
+                    <line x1="1.05" y1="12" x2="7" y2="12" />
+                    <line x1="17.01" y1="12" x2="22.96" y2="12" />
+                </svg>
+                Commit & Push to Git
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Tutorials Section (commented out for now)
 <section>
@@ -396,31 +521,38 @@
 
 {% endblock %} {% block scripts %}
 <script>
+    // Current template being edited
+    let currentTemplateId = null;
+    let templatesData = {};
+
+    // Load templates data on page load
+    fetch('/api/templates')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                data.templates.forEach(t => {
+                    templatesData[t.id] = t;
+                });
+            }
+        });
+
     // Search functionality
     const searchInput = document.getElementById("template-search");
     const searchClear = document.getElementById("search-clear");
-    const templateCards = document.querySelectorAll(".template-card");
+    const templateCards = document.querySelectorAll(".template-card:not(.template-card-add)");
 
     searchInput.addEventListener("input", function () {
         const query = this.value.toLowerCase();
         searchClear.style.display = query ? "flex" : "none";
 
         templateCards.forEach((card) => {
-            const title = card
-                .querySelector(".template-card-title")
-                .textContent.toLowerCase();
-            const desc = card
-                .querySelector(".template-card-desc")
-                .textContent.toLowerCase();
+            const title = card.querySelector(".template-card-title")?.textContent.toLowerCase() || "";
+            const desc = card.querySelector(".template-card-desc")?.textContent.toLowerCase() || "";
             const tags = Array.from(card.querySelectorAll(".template-tag"))
                 .map((t) => t.textContent.toLowerCase())
                 .join(" ");
 
-            if (
-                title.includes(query) ||
-                desc.includes(query) ||
-                tags.includes(query)
-            ) {
+            if (title.includes(query) || desc.includes(query) || tags.includes(query)) {
                 card.style.display = "";
             } else {
                 card.style.display = "none";
@@ -436,5 +568,233 @@
 
     // Initially hide clear button
     searchClear.style.display = "none";
+
+    // Open workflow in ComfyUI
+    function openWorkflow(templateId, workflowFile) {
+        if (!workflowFile) {
+            alert("No workflow file assigned to this template yet.");
+            return;
+        }
+        // Open ComfyUI with the workflow
+        // First check if ComfyUI is running, if not start it
+        window.open('/tool/comfy-ui?workflow=' + encodeURIComponent(workflowFile), '_blank');
+    }
+
+    {% if is_admin %}
+    // Open edit modal
+    function openEditModal(templateId) {
+        currentTemplateId = templateId;
+        const modal = document.getElementById("edit-template-modal");
+        const form = document.getElementById("template-form");
+        const title = document.getElementById("modal-title");
+        const deleteBtn = document.getElementById("delete-template-btn");
+
+        // Reset form
+        form.reset();
+        document.getElementById("workflow-file-status").textContent = "";
+        document.getElementById("workflow-api-file-status").textContent = "";
+        document.getElementById("preview-a-file-status").textContent = "";
+        document.getElementById("preview-b-file-status").textContent = "";
+
+        if (templateId && templatesData[templateId]) {
+            // Edit existing template
+            const t = templatesData[templateId];
+            title.textContent = "Edit Template";
+            document.getElementById("template-id").value = t.id;
+            document.getElementById("template-title").value = t.title || "";
+            document.getElementById("template-description").value = t.description || "";
+            document.getElementById("template-category").value = t.category || "image";
+            document.getElementById("template-tags").value = (t.tags || []).join(", ");
+            document.getElementById("template-logo").value = t.logo_text || "";
+
+            // Show file statuses
+            if (t.workflow_file) {
+                document.getElementById("workflow-file-status").textContent = t.workflow_file;
+            }
+            if (t.workflow_api_file) {
+                document.getElementById("workflow-api-file-status").textContent = t.workflow_api_file;
+            }
+            if (t.preview_image_a) {
+                document.getElementById("preview-a-file-status").textContent = t.preview_image_a;
+            }
+            if (t.preview_image_b) {
+                document.getElementById("preview-b-file-status").textContent = t.preview_image_b;
+            }
+
+            deleteBtn.style.display = "block";
+        } else {
+            // Create new template
+            title.textContent = "Add New Template";
+            document.getElementById("template-id").value = "";
+            deleteBtn.style.display = "none";
+        }
+
+        modal.classList.add("active");
+    }
+
+    // Close edit modal
+    function closeEditModal() {
+        document.getElementById("edit-template-modal").classList.remove("active");
+        currentTemplateId = null;
+    }
+
+    // Save template
+    function saveTemplate(event) {
+        event.preventDefault();
+
+        const id = document.getElementById("template-id").value;
+        const tagsStr = document.getElementById("template-tags").value;
+        const tags = tagsStr ? tagsStr.split(",").map(t => t.trim()).filter(t => t) : [];
+
+        const data = {
+            title: document.getElementById("template-title").value,
+            description: document.getElementById("template-description").value,
+            category: document.getElementById("template-category").value,
+            tags: tags,
+            logo_text: document.getElementById("template-logo").value || null
+        };
+
+        const url = id ? `/api/templates/${id}` : "/api/templates";
+        const method = id ? "PUT" : "POST";
+
+        fetch(url, {
+            method: method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                // Update local data
+                templatesData[result.template.id] = result.template;
+                if (!id) {
+                    currentTemplateId = result.template.id;
+                    document.getElementById("template-id").value = result.template.id;
+                    document.getElementById("delete-template-btn").style.display = "block";
+                    document.getElementById("modal-title").textContent = "Edit Template";
+                }
+                alert("Template saved! Don't forget to 'Commit & Push to Git' to save permanently.");
+            } else {
+                alert("Error: " + result.message);
+            }
+        })
+        .catch(err => alert("Error saving template: " + err));
+    }
+
+    // Upload template file
+    function uploadTemplateFile(fileType) {
+        const templateId = document.getElementById("template-id").value;
+        if (!templateId) {
+            alert("Please save the template first before uploading files.");
+            return;
+        }
+
+        let fileInput;
+        let statusSpan;
+
+        switch(fileType) {
+            case 'workflow':
+                fileInput = document.getElementById("workflow-file");
+                statusSpan = document.getElementById("workflow-file-status");
+                break;
+            case 'workflow_api':
+                fileInput = document.getElementById("workflow-api-file");
+                statusSpan = document.getElementById("workflow-api-file-status");
+                break;
+            case 'preview_a':
+                fileInput = document.getElementById("preview-a-file");
+                statusSpan = document.getElementById("preview-a-file-status");
+                break;
+            case 'preview_b':
+                fileInput = document.getElementById("preview-b-file");
+                statusSpan = document.getElementById("preview-b-file-status");
+                break;
+        }
+
+        if (!fileInput.files || !fileInput.files[0]) return;
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append("type", fileType);
+
+        statusSpan.textContent = "Uploading...";
+
+        fetch(`/api/templates/${templateId}/upload`, {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                statusSpan.textContent = result.filename;
+                // Update local data
+                if (templatesData[templateId]) {
+                    if (fileType === 'workflow') templatesData[templateId].workflow_file = result.filename;
+                    if (fileType === 'workflow_api') templatesData[templateId].workflow_api_file = result.filename;
+                    if (fileType === 'preview_a') templatesData[templateId].preview_image_a = result.filename;
+                    if (fileType === 'preview_b') templatesData[templateId].preview_image_b = result.filename;
+                }
+            } else {
+                statusSpan.textContent = "Error!";
+                alert("Error: " + result.message);
+            }
+        })
+        .catch(err => {
+            statusSpan.textContent = "Error!";
+            alert("Error uploading file: " + err);
+        });
+    }
+
+    // Delete template
+    function deleteTemplate() {
+        const templateId = document.getElementById("template-id").value;
+        if (!templateId) return;
+
+        if (!confirm("Are you sure you want to delete this template?")) return;
+
+        fetch(`/api/templates/${templateId}`, {
+            method: "DELETE"
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                delete templatesData[templateId];
+                closeEditModal();
+                location.reload();
+            } else {
+                alert("Error: " + result.message);
+            }
+        })
+        .catch(err => alert("Error deleting template: " + err));
+    }
+
+    // Commit and push to git
+    function commitToGit() {
+        const message = prompt("Enter commit message:", "Update workflow templates");
+        if (!message) return;
+
+        fetch("/api/templates/commit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: message })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert("Changes committed and pushed to Git successfully!");
+            } else {
+                alert("Error: " + result.message);
+            }
+        })
+        .catch(err => alert("Error committing to Git: " + err));
+    }
+
+    // Close modal on overlay click
+    document.getElementById("edit-template-modal").addEventListener("click", function(e) {
+        if (e.target === this) {
+            closeEditModal();
+        }
+    });
+    {% endif %}
 </script>
 {% endblock %}

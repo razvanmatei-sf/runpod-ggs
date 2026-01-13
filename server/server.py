@@ -1943,6 +1943,87 @@ def login():
 # Path for hero banner image
 HERO_BANNER_PATH = "/workspace/hero_banner.jpg"
 
+# Path for workflow templates
+TEMPLATES_JSON_PATH = os.path.join(REPO_DIR, "workflows", "templates.json")
+PREVIEWS_DIR = os.path.join(REPO_DIR, "workflows", "previews")
+WORKFLOWS_DIR = os.path.join(REPO_DIR, "workflows")
+
+
+def load_templates():
+    """Load workflow templates from JSON file"""
+    try:
+        if os.path.exists(TEMPLATES_JSON_PATH):
+            with open(TEMPLATES_JSON_PATH, "r") as f:
+                data = json.load(f)
+                return data.get("templates", [])
+    except Exception as e:
+        print(f"Error loading templates: {e}")
+    return []
+
+
+def save_templates(templates):
+    """Save workflow templates to JSON file"""
+    try:
+        with open(TEMPLATES_JSON_PATH, "w") as f:
+            json.dump({"templates": templates}, f, indent=2)
+        return True
+    except Exception as e:
+        print(f"Error saving templates: {e}")
+        return False
+
+
+def git_commit_and_push(message):
+    """Commit changes to git and push to remote"""
+    github_token = os.environ.get("GITHUB_TOKEN")
+    if not github_token:
+        return False, "GITHUB_TOKEN not configured"
+
+    try:
+        # Configure git to use token for authentication
+        repo_url = f"https://{github_token}@github.com/razvanmatei-sf/runpod-ggs.git"
+
+        # Stage all changes in workflows directory
+        subprocess.run(
+            ["git", "add", "workflows/"],
+            cwd=REPO_DIR,
+            check=True,
+            capture_output=True,
+        )
+
+        # Check if there are changes to commit
+        result = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=REPO_DIR,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        if not result.stdout.strip():
+            return True, "No changes to commit"
+
+        # Commit
+        subprocess.run(
+            ["git", "commit", "-m", message],
+            cwd=REPO_DIR,
+            check=True,
+            capture_output=True,
+        )
+
+        # Push using token auth
+        subprocess.run(
+            ["git", "push", repo_url, "feature/home-redesign-v3"],
+            cwd=REPO_DIR,
+            check=True,
+            capture_output=True,
+        )
+
+        return True, "Changes pushed successfully"
+    except subprocess.CalledProcessError as e:
+        return False, f"Git error: {e.stderr.decode() if e.stderr else str(e)}"
+    except Exception as e:
+        return False, f"Error: {str(e)}"
+
 
 def get_hero_banner_url():
     """Get the hero banner URL if it exists"""
@@ -1996,6 +2077,20 @@ def home():
     }
     active_filter_name = filter_names.get(active_filter, "Image")
 
+    # Load templates and filter by category
+    all_templates = load_templates()
+    if active_filter and active_filter != "use-cases":
+        templates = [
+            t
+            for t in all_templates
+            if t.get("category") == active_filter and t.get("enabled", True)
+        ]
+    else:
+        templates = [t for t in all_templates if t.get("enabled", True)]
+
+    # Sort by order
+    templates.sort(key=lambda x: x.get("order", 999))
+
     return render_template(
         "home.html",
         current_user=current_artist,
@@ -2006,7 +2101,184 @@ def home():
         page_title="Home",
         runpod_id=get_runpod_id(),
         hero_banner_url=get_hero_banner_url(),
+        templates=templates,
     )
+
+
+@app.route("/api/templates", methods=["GET"])
+def api_get_templates():
+    """Get all workflow templates"""
+    templates = load_templates()
+    return jsonify({"success": True, "templates": templates})
+
+
+@app.route("/api/templates", methods=["POST"])
+def api_create_template():
+    """Create a new workflow template"""
+    if not is_admin(current_artist):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    data = request.get_json()
+    templates = load_templates()
+
+    # Generate unique ID
+    import re
+
+    base_id = re.sub(r"[^a-z0-9]+", "-", data.get("title", "template").lower()).strip(
+        "-"
+    )
+    template_id = base_id
+    counter = 1
+    existing_ids = {t.get("id") for t in templates}
+    while template_id in existing_ids:
+        template_id = f"{base_id}-{counter}"
+        counter += 1
+
+    new_template = {
+        "id": template_id,
+        "title": data.get("title", "New Template"),
+        "description": data.get("description", ""),
+        "category": data.get("category", "image"),
+        "tags": data.get("tags", []),
+        "workflow_file": None,
+        "workflow_api_file": None,
+        "preview_image_a": None,
+        "preview_image_b": None,
+        "logo_text": data.get("logo_text"),
+        "enabled": True,
+        "order": len(templates) + 1,
+    }
+
+    templates.append(new_template)
+    if save_templates(templates):
+        return jsonify({"success": True, "template": new_template})
+    return jsonify({"success": False, "message": "Failed to save template"}), 500
+
+
+@app.route("/api/templates/<template_id>", methods=["PUT"])
+def api_update_template(template_id):
+    """Update a workflow template"""
+    if not is_admin(current_artist):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    data = request.get_json()
+    templates = load_templates()
+
+    for i, t in enumerate(templates):
+        if t.get("id") == template_id:
+            # Update fields
+            templates[i]["title"] = data.get("title", t.get("title"))
+            templates[i]["description"] = data.get("description", t.get("description"))
+            templates[i]["category"] = data.get("category", t.get("category"))
+            templates[i]["tags"] = data.get("tags", t.get("tags"))
+            templates[i]["logo_text"] = data.get("logo_text", t.get("logo_text"))
+            templates[i]["enabled"] = data.get("enabled", t.get("enabled", True))
+
+            if save_templates(templates):
+                return jsonify({"success": True, "template": templates[i]})
+            return jsonify(
+                {"success": False, "message": "Failed to save template"}
+            ), 500
+
+    return jsonify({"success": False, "message": "Template not found"}), 404
+
+
+@app.route("/api/templates/<template_id>", methods=["DELETE"])
+def api_delete_template(template_id):
+    """Delete a workflow template"""
+    if not is_admin(current_artist):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    templates = load_templates()
+    templates = [t for t in templates if t.get("id") != template_id]
+
+    if save_templates(templates):
+        return jsonify({"success": True})
+    return jsonify({"success": False, "message": "Failed to save templates"}), 500
+
+
+@app.route("/api/templates/<template_id>/upload", methods=["POST"])
+def api_upload_template_file(template_id):
+    """Upload a file for a template (workflow, preview images)"""
+    if not is_admin(current_artist):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    file_type = request.form.get("type")  # workflow, workflow_api, preview_a, preview_b
+    if "file" not in request.files:
+        return jsonify({"success": False, "message": "No file provided"}), 400
+
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"success": False, "message": "No file selected"}), 400
+
+    templates = load_templates()
+    template = None
+    template_idx = None
+    for i, t in enumerate(templates):
+        if t.get("id") == template_id:
+            template = t
+            template_idx = i
+            break
+
+    if not template:
+        return jsonify({"success": False, "message": "Template not found"}), 404
+
+    # Determine save path based on file type
+    if file_type == "workflow":
+        filename = f"{template_id}.json"
+        save_path = os.path.join(WORKFLOWS_DIR, filename)
+        templates[template_idx]["workflow_file"] = filename
+    elif file_type == "workflow_api":
+        filename = f"{template_id}_api.json"
+        save_path = os.path.join(WORKFLOWS_DIR, filename)
+        templates[template_idx]["workflow_api_file"] = filename
+    elif file_type == "preview_a":
+        ext = os.path.splitext(file.filename)[1] or ".jpg"
+        filename = f"{template_id}_a{ext}"
+        save_path = os.path.join(PREVIEWS_DIR, filename)
+        templates[template_idx]["preview_image_a"] = filename
+    elif file_type == "preview_b":
+        ext = os.path.splitext(file.filename)[1] or ".jpg"
+        filename = f"{template_id}_b{ext}"
+        save_path = os.path.join(PREVIEWS_DIR, filename)
+        templates[template_idx]["preview_image_b"] = filename
+    else:
+        return jsonify({"success": False, "message": "Invalid file type"}), 400
+
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+    # Save file
+    file.save(save_path)
+
+    # Update templates.json
+    if save_templates(templates):
+        return jsonify({"success": True, "filename": filename})
+    return jsonify({"success": False, "message": "Failed to update template"}), 500
+
+
+@app.route("/api/templates/commit", methods=["POST"])
+def api_commit_templates():
+    """Commit and push template changes to git"""
+    if not is_admin(current_artist):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    data = request.get_json() or {}
+    message = data.get("message", "Update workflow templates")
+
+    success, result_message = git_commit_and_push(message)
+    return jsonify({"success": success, "message": result_message})
+
+
+@app.route("/workflow/preview/<filename>")
+def serve_workflow_preview(filename):
+    """Serve workflow preview images"""
+    from flask import send_file
+
+    filepath = os.path.join(PREVIEWS_DIR, filename)
+    if os.path.exists(filepath):
+        return send_file(filepath)
+    return "", 404
 
 
 @app.route("/assets")
