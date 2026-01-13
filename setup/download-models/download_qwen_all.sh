@@ -51,6 +51,6 @@ download "https://huggingface.co/Comfy-Org/Qwen-Image-DiffSynth-ControlNets/reso
     "/workspace/ComfyUI/models/model_patches/qwen_image_inpaint_diffsynth_controlnet.safetensors"
 
 download "https://huggingface.co/Comfy-Org/Qwen-Image-DiffSynth-ControlNets/resolve/main/split_files/loras/qwen_image_union_diffsynth_lora.safetensors" \
-    "/workspace/ComfyUI/models/model_patches/qwen_image_union_diffsynth_lora.safetensors"
+    "/workspace/ComfyUI/models/loras/qwen_image_union_diffsynth_lora.safetensors"
 
 echo "Download finished"
