@@ -2,8 +2,6 @@
 
 # ComfyStudio Startup Script
 
-set -e
-
 echo "=========================================="
 echo "Starting ComfyStudio"
 echo "=========================================="
@@ -27,15 +25,18 @@ echo "Syncing repository..."
 if [ -d "$REPO_DIR/.git" ]; then
     echo "Repository exists, pulling latest changes..."
     cd "$REPO_DIR"
-    git fetch --all
-    git checkout feature/home-redesign-v3 2>/dev/null || git checkout -b feature/home-redesign-v3 origin/feature/home-redesign-v3
-    git reset --hard origin/feature/home-redesign-v3
-    git pull origin feature/home-redesign-v3
+    git fetch --all || echo "Warning: git fetch failed"
+    git checkout feature/home-redesign-v3 2>/dev/null || git checkout -b feature/home-redesign-v3 origin/feature/home-redesign-v3 || echo "Warning: checkout failed"
+    git reset --hard origin/feature/home-redesign-v3 || echo "Warning: reset failed"
+    git pull origin feature/home-redesign-v3 || echo "Warning: pull failed"
     echo "Repository updated."
 else
     echo "Cloning repository..."
     rm -rf "$REPO_DIR"
-    git clone -b feature/home-redesign-v3 "$REPO_URL" "$REPO_DIR"
+    if ! git clone -b feature/home-redesign-v3 "$REPO_URL" "$REPO_DIR"; then
+        echo "Warning: Clone failed, trying main branch..."
+        git clone "$REPO_URL" "$REPO_DIR" || echo "Warning: Clone of main also failed"
+    fi
     echo "Repository cloned."
 fi
 
@@ -74,6 +75,10 @@ echo ""
 
 # Export repo path for the server to use
 export REPO_DIR="$REPO_DIR"
+
+echo "Starting Python server..."
+echo "Python version: $(python3 --version)"
+echo "Server script exists: $(ls -la /usr/local/bin/server.py 2>&1)"
 
 # Start the server from Docker image (runs in foreground)
 # This ensures the new UI is used regardless of repo state
