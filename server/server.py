@@ -1940,17 +1940,72 @@ def login():
     return render_template("login.html", artists=artists)
 
 
+# Path for hero banner image
+HERO_BANNER_PATH = "/workspace/hero_banner.jpg"
+
+
+def get_hero_banner_url():
+    """Get the hero banner URL if it exists"""
+    if os.path.exists(HERO_BANNER_PATH):
+        return "/hero_banner"
+    return None
+
+
+@app.route("/hero_banner")
+def hero_banner():
+    """Serve the hero banner image"""
+    if os.path.exists(HERO_BANNER_PATH):
+        from flask import send_file
+
+        return send_file(HERO_BANNER_PATH, mimetype="image/jpeg")
+    return "", 404
+
+
+@app.route("/upload_hero_banner", methods=["POST"])
+def upload_hero_banner():
+    """Upload a new hero banner image"""
+    if not is_admin(current_artist):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    if "file" not in request.files:
+        return jsonify({"success": False, "message": "No file provided"}), 400
+
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"success": False, "message": "No file selected"}), 400
+
+    # Save the file
+    file.save(HERO_BANNER_PATH)
+    return jsonify({"success": True, "message": "Hero banner uploaded"})
+
+
 @app.route("/home")
 def home():
     if not current_artist:
         return redirect(url_for("login"))
+
+    # Get filter type from query params
+    active_filter = request.args.get("type", "image")
+    filter_names = {
+        "use-cases": "Use Cases",
+        "image": "Image",
+        "video": "Video",
+        "audio": "Audio",
+        "3d-model": "3D Model",
+        "llm": "LLM",
+    }
+    active_filter_name = filter_names.get(active_filter, "Image")
+
     return render_template(
         "home.html",
         current_user=current_artist,
         is_admin=is_admin(current_artist),
         active_page="home",
+        active_filter=active_filter,
+        active_filter_name=active_filter_name,
         page_title="Home",
         runpod_id=get_runpod_id(),
+        hero_banner_url=get_hero_banner_url(),
     )
 
 

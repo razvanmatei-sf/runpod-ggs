@@ -1,460 +1,440 @@
 {% extends "base.html" %} {% block title %}Home - SF AI Workbench{% endblock %}
 {% block content %}
-<div class="home-hero">
-    <h1>What would you like to create today?</h1>
+<!-- Hero Banner -->
+<div class="hero-banner">
+    {% if hero_banner_url %}
+    <img
+        src="{{ hero_banner_url }}"
+        alt="Hero Banner"
+        class="hero-banner-img"
+    />
+    {% else %}
+    <div class="hero-banner-placeholder">
+        <span>Upload a hero banner from the Admin panel</span>
+    </div>
+    {% endif %}
+</div>
 
-    <div class="home-tabs">
-        <button class="home-tab active">
+<!-- Search and Filters -->
+<div class="template-filters">
+    <div class="template-filters-left">
+        <div class="search-box">
             <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-            >
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21 15 16 10 5 21" />
-            </svg>
-            Image
-            <svg
-                class="dropdown-arrow"
-                width="12"
-                height="12"
+                class="search-icon"
+                width="20"
+                height="20"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
             >
-                <polyline points="6 9 12 15 18 9" />
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-        </button>
-        <button class="home-tab">
-            <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-            >
-                <polygon points="23 7 16 12 23 17 23 7" />
-                <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-            </svg>
-            Video
-            <svg
-                class="dropdown-arrow"
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            >
-                <polyline points="6 9 12 15 18 9" />
-            </svg>
-        </button>
-        <button class="home-tab">
-            <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-            >
-                <path
-                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
-                />
-            </svg>
-            3D
-            <svg
-                class="dropdown-arrow"
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            >
-                <polyline points="6 9 12 15 18 9" />
-            </svg>
-        </button>
-        <button class="home-tab">
-            <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-            >
-                <path
-                    d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
-                />
-            </svg>
-            Train LoRA
-            <svg
-                class="dropdown-arrow"
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            >
-                <polyline points="6 9 12 15 18 9" />
-            </svg>
-        </button>
-        <button class="home-tab">
-            <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-            >
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-            </svg>
-            Learn
-            <svg
-                class="dropdown-arrow"
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            >
-                <polyline points="6 9 12 15 18 9" />
-            </svg>
-        </button>
+            <input
+                type="text"
+                id="template-search"
+                class="search-input"
+                placeholder="Search..."
+            />
+            <button type="button" class="search-clear" id="search-clear">
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="filter-dropdowns">
+            <div class="filter-dropdown">
+                <button type="button" class="filter-btn">
+                    Model Filter
+                    <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="filter-dropdown">
+                <button type="button" class="filter-btn">
+                    Use Case
+                    <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="filter-dropdown">
+                <button type="button" class="filter-btn">
+                    Runs on
+                    <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="template-filters-right">
+        <div class="filter-dropdown">
+            <button type="button" class="filter-btn sort-btn">
+                <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <line x1="4" y1="6" x2="11" y2="6" />
+                    <line x1="4" y1="12" x2="16" y2="12" />
+                    <line x1="4" y1="18" x2="20" y2="18" />
+                </svg>
+                Newest
+                <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </button>
+        </div>
     </div>
 </div>
 
-<section>
-    <div class="section-header">
-        <h2 class="section-title">Creative Workflows</h2>
-        <a href="#" class="section-more">More ></a>
-    </div>
+<!-- Template Gallery -->
+<section class="template-section">
+    <h2 class="template-section-title">
+        {{ active_filter_name | default('Image') }}
+    </h2>
 
-    <div class="workflow-grid">
-        <div class="workflow-card">
-            <div class="workflow-card-header">
-                <h3 class="workflow-card-title">Logo</h3>
+    <div class="template-grid">
+        <!-- Template Card 1 -->
+        <div class="template-card" data-type="image">
+            <div class="template-card-image">
+                <div class="template-image-slider">
+                    <div
+                        class="template-image template-image-before"
+                        style="background-color: #7c3aed"
+                    ></div>
+                    <div
+                        class="template-image template-image-after"
+                        style="background-color: #3b82f6"
+                    ></div>
+                </div>
+                <div class="template-card-tags">
+                    <span class="template-tag">Text to Image</span>
+                    <span class="template-tag">Image</span>
+                </div>
             </div>
-            <div class="workflow-card-image">
-                <svg
-                    width="48"
-                    height="48"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1"
-                >
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                </svg>
-            </div>
-            <div class="workflow-card-body">
-                <button class="workflow-card-btn">Create</button>
+            <div class="template-card-content">
+                <h3 class="template-card-title">Qwen Image 2512</h3>
+                <p class="template-card-desc">
+                    Text to image model with enhanced human realism, finer
+                    natural details...
+                </p>
             </div>
         </div>
 
-        <div class="workflow-card">
-            <div class="workflow-card-header">
-                <h3 class="workflow-card-title">Character Dataset</h3>
+        <!-- Template Card 2 -->
+        <div class="template-card" data-type="image">
+            <div class="template-card-image">
+                <div class="template-image-slider">
+                    <div
+                        class="template-image template-image-before"
+                        style="background-color: #10b981"
+                    ></div>
+                    <div
+                        class="template-image template-image-after"
+                        style="background-color: #f59e0b"
+                    ></div>
+                </div>
+                <div class="template-card-tags">
+                    <span class="template-tag">Image Edit</span>
+                    <span class="template-tag">Image</span>
+                </div>
             </div>
-            <div class="workflow-card-image">
-                <svg
-                    width="48"
-                    height="48"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1"
-                >
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                </svg>
-            </div>
-            <div class="workflow-card-body">
-                <button class="workflow-card-btn">Create</button>
-            </div>
-        </div>
-
-        <div class="workflow-card">
-            <div class="workflow-card-header">
-                <h3 class="workflow-card-title">Buildings</h3>
-            </div>
-            <div class="workflow-card-image">
-                <svg
-                    width="48"
-                    height="48"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1"
-                >
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <line x1="3" y1="9" x2="21" y2="9" />
-                    <line x1="9" y1="21" x2="9" y2="9" />
-                </svg>
-            </div>
-            <div class="workflow-card-body">
-                <button class="workflow-card-btn">Create</button>
+            <div class="template-card-content">
+                <h3 class="template-card-title">
+                    Qwen Image Edit 2511 - Material...
+                </h3>
+                <p class="template-card-desc">
+                    Replace materials in objects (e.g., furniture) by combining
+                    reference...
+                </p>
             </div>
         </div>
 
-        <div class="workflow-card">
-            <div class="workflow-card-header">
-                <h3 class="workflow-card-title">Video</h3>
+        <!-- Template Card 3 -->
+        <div class="template-card" data-type="image">
+            <div class="template-card-image">
+                <div class="template-image-slider">
+                    <div
+                        class="template-image template-image-before"
+                        style="background-color: #ef4444"
+                    ></div>
+                    <div
+                        class="template-image template-image-after"
+                        style="background-color: #8b5cf6"
+                    ></div>
+                </div>
+                <div class="template-card-tags">
+                    <span class="template-tag">Layer Decompose</span>
+                </div>
             </div>
-            <div class="workflow-card-image">
-                <svg
-                    width="48"
-                    height="48"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1"
-                >
-                    <polygon points="23 7 16 12 23 17 23 7" />
-                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                </svg>
+            <div class="template-card-content">
+                <h3 class="template-card-title">Qwen-Image-Layered...</h3>
+                <p class="template-card-desc">
+                    Decompose an image into editable RGBA layers for high
+                    fidelity recolor,...
+                </p>
             </div>
-            <div class="workflow-card-body">
-                <button class="workflow-card-btn">Create</button>
+        </div>
+
+        <!-- Template Card 4 -->
+        <div class="template-card" data-type="image">
+            <div class="template-card-image">
+                <div class="template-image-slider has-logo">
+                    <div
+                        class="template-image template-image-before"
+                        style="background-color: #06b6d4"
+                    ></div>
+                    <div
+                        class="template-image template-image-after"
+                        style="background-color: #ec4899"
+                    ></div>
+                    <div class="template-logo">
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                        >
+                            <path
+                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+                            />
+                        </svg>
+                        <span>Flux.2 [Max]</span>
+                    </div>
+                </div>
+                <div class="template-card-tags">
+                    <span class="template-tag">Image Edit</span>
+                    <span class="template-tag">Image</span>
+                    <span class="template-tag">API</span>
+                </div>
+            </div>
+            <div class="template-card-content">
+                <h3 class="template-card-title">FLUX.2 [max]: Object Swap</h3>
+                <p class="template-card-desc">
+                    Replace objects in images with unmatched quality using
+                    FLUX.2...
+                </p>
+            </div>
+        </div>
+
+        <!-- Template Card 5 - Video -->
+        <div class="template-card" data-type="video">
+            <div class="template-card-image">
+                <div class="template-image-slider">
+                    <div
+                        class="template-image template-image-before"
+                        style="background-color: #f97316"
+                    ></div>
+                    <div
+                        class="template-image template-image-after"
+                        style="background-color: #14b8a6"
+                    ></div>
+                </div>
+                <div class="template-card-tags">
+                    <span class="template-tag">Text to Video</span>
+                    <span class="template-tag">Video</span>
+                </div>
+            </div>
+            <div class="template-card-content">
+                <h3 class="template-card-title">LTX-Video 2.0</h3>
+                <p class="template-card-desc">
+                    Generate high-quality videos from text prompts with
+                    LTX-Video...
+                </p>
+            </div>
+        </div>
+
+        <!-- Template Card 6 -->
+        <div class="template-card" data-type="image">
+            <div class="template-card-image">
+                <div class="template-image-slider">
+                    <div
+                        class="template-image template-image-before"
+                        style="background-color: #6366f1"
+                    ></div>
+                    <div
+                        class="template-image template-image-after"
+                        style="background-color: #22c55e"
+                    ></div>
+                </div>
+                <div class="template-card-tags">
+                    <span class="template-tag">Image Edit</span>
+                    <span class="template-tag">Image</span>
+                </div>
+            </div>
+            <div class="template-card-content">
+                <h3 class="template-card-title">Fashion Style Transfer</h3>
+                <p class="template-card-desc">
+                    Transfer clothing styles between images with high
+                    fidelity...
+                </p>
+            </div>
+        </div>
+
+        <!-- Template Card 7 -->
+        <div class="template-card" data-type="image">
+            <div class="template-card-image">
+                <div class="template-image-slider">
+                    <div
+                        class="template-image template-image-before"
+                        style="background-color: #a855f7"
+                    ></div>
+                    <div
+                        class="template-image template-image-after"
+                        style="background-color: #f43f5e"
+                    ></div>
+                </div>
+                <div class="template-card-tags">
+                    <span class="template-tag">Image</span>
+                    <span class="template-tag">ControlNet</span>
+                </div>
+            </div>
+            <div class="template-card-content">
+                <h3 class="template-card-title">Portrait Enhancement</h3>
+                <p class="template-card-desc">
+                    Enhance portrait photos with AI-powered improvements...
+                </p>
+            </div>
+        </div>
+
+        <!-- Template Card 8 -->
+        <div class="template-card" data-type="video">
+            <div class="template-card-image">
+                <div class="template-image-slider">
+                    <div
+                        class="template-image template-image-before"
+                        style="background-color: #0ea5e9"
+                    ></div>
+                    <div
+                        class="template-image template-image-after"
+                        style="background-color: #d946ef"
+                    ></div>
+                </div>
+                <div class="template-card-tags">
+                    <span class="template-tag">Image to Video</span>
+                    <span class="template-tag">Video</span>
+                </div>
+            </div>
+            <div class="template-card-content">
+                <h3 class="template-card-title">Wan 2.2 Animate</h3>
+                <p class="template-card-desc">
+                    Animate still images into dynamic videos with Wan 2.2...
+                </p>
             </div>
         </div>
     </div>
 </section>
 
+<!-- Tutorials Section (commented out for now)
 <section>
     <div class="section-header">
         <h2 class="section-title">Tutorials</h2>
         <a href="#" class="section-more">More ></a>
     </div>
-
-    <div class="tutorial-list">
-        <div class="tutorial-item">
-            <div class="tutorial-icon">
-                <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                >
-                    <polygon points="23 7 16 12 23 17 23 7" />
-                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                </svg>
-            </div>
-            <div class="tutorial-content">
-                <h3 class="tutorial-title">
-                    Lip-Sync Video
-                    <span class="tutorial-badge">New</span>
-                </h3>
-                <p class="tutorial-desc">
-                    Make any video, image, or character talk.
-                </p>
-            </div>
-            <button class="tutorial-btn">Start</button>
-        </div>
-
-        <div class="tutorial-item">
-            <div class="tutorial-icon">
-                <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                >
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-            </div>
-            <div class="tutorial-content">
-                <h3 class="tutorial-title">
-                    Motion-Sync Video
-                    <span class="tutorial-badge">New</span>
-                </h3>
-                <p class="tutorial-desc">
-                    Turn any video, image, or character into a motion-driven
-                    animation.
-                </p>
-            </div>
-            <button class="tutorial-btn">Start</button>
-        </div>
-
-        <div class="tutorial-item">
-            <div class="tutorial-icon">
-                <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                >
-                    <path
-                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                    />
-                    <path
-                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                    />
-                </svg>
-            </div>
-            <div class="tutorial-content">
-                <h3 class="tutorial-title">Chat to Edit</h3>
-                <p class="tutorial-desc">
-                    Make any video, image, or character.
-                </p>
-            </div>
-            <button class="tutorial-btn">Start</button>
-        </div>
-
-        <div class="tutorial-item">
-            <div class="tutorial-icon">
-                <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                >
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                </svg>
-            </div>
-            <div class="tutorial-content">
-                <h3 class="tutorial-title">Edit Image</h3>
-                <p class="tutorial-desc">
-                    Turn any video, image, or character into a motion-driven
-                    animation.
-                </p>
-            </div>
-            <button class="tutorial-btn">Start</button>
-        </div>
-    </div>
+    ...
 </section>
+-->
 
+<!-- News Section (commented out for now)
 <section>
     <div class="section-header">
         <h2 class="section-title">News</h2>
         <a href="#" class="section-more">More ></a>
     </div>
-
-    <div class="tutorial-list">
-        <div class="tutorial-item">
-            <div class="tutorial-icon">
-                <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                >
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="16" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                </svg>
-            </div>
-            <div class="tutorial-content">
-                <h3 class="tutorial-title">
-                    Flux 1.1 Pro Released
-                    <span class="tutorial-badge">New</span>
-                </h3>
-                <p class="tutorial-desc">
-                    Black Forest Labs releases Flux 1.1 Pro with improved
-                    quality and speed.
-                </p>
-            </div>
-            <button class="tutorial-btn">Read</button>
-        </div>
-
-        <div class="tutorial-item">
-            <div class="tutorial-icon">
-                <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                >
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="16" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                </svg>
-            </div>
-            <div class="tutorial-content">
-                <h3 class="tutorial-title">ComfyUI Manager Update</h3>
-                <p class="tutorial-desc">
-                    New version includes better node management and
-                    auto-updates.
-                </p>
-            </div>
-            <button class="tutorial-btn">Read</button>
-        </div>
-
-        <div class="tutorial-item">
-            <div class="tutorial-icon">
-                <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                >
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="16" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                </svg>
-            </div>
-            <div class="tutorial-content">
-                <h3 class="tutorial-title">SDXL Lightning LoRAs</h3>
-                <p class="tutorial-desc">
-                    New distilled LoRAs for 2-4 step generation with SDXL
-                    models.
-                </p>
-            </div>
-            <button class="tutorial-btn">Read</button>
-        </div>
-
-        <div class="tutorial-item">
-            <div class="tutorial-icon">
-                <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                >
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="16" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                </svg>
-            </div>
-            <div class="tutorial-content">
-                <h3 class="tutorial-title">AI-Toolkit Video Training</h3>
-                <p class="tutorial-desc">
-                    Train video LoRAs with the latest AI-Toolkit update.
-                </p>
-            </div>
-            <button class="tutorial-btn">Read</button>
-        </div>
-    </div>
+    ...
 </section>
+-->
+
+{% endblock %} {% block scripts %}
+<script>
+    // Search functionality
+    const searchInput = document.getElementById("template-search");
+    const searchClear = document.getElementById("search-clear");
+    const templateCards = document.querySelectorAll(".template-card");
+
+    searchInput.addEventListener("input", function () {
+        const query = this.value.toLowerCase();
+        searchClear.style.display = query ? "flex" : "none";
+
+        templateCards.forEach((card) => {
+            const title = card
+                .querySelector(".template-card-title")
+                .textContent.toLowerCase();
+            const desc = card
+                .querySelector(".template-card-desc")
+                .textContent.toLowerCase();
+            const tags = Array.from(card.querySelectorAll(".template-tag"))
+                .map((t) => t.textContent.toLowerCase())
+                .join(" ");
+
+            if (
+                title.includes(query) ||
+                desc.includes(query) ||
+                tags.includes(query)
+            ) {
+                card.style.display = "";
+            } else {
+                card.style.display = "none";
+            }
+        });
+    });
+
+    searchClear.addEventListener("click", function () {
+        searchInput.value = "";
+        searchClear.style.display = "none";
+        templateCards.forEach((card) => (card.style.display = ""));
+    });
+
+    // Initially hide clear button
+    searchClear.style.display = "none";
+</script>
 {% endblock %}

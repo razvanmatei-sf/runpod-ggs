@@ -44,6 +44,195 @@
                         <span>Home</span>
                     </a>
 
+                    <!-- All Templates -->
+                    <a
+                        href="{{ url_for('home') }}?view=all"
+                        class="nav-item {% if active_page == 'all-templates' %}active{% endif %}"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                        >
+                            <line x1="8" y1="6" x2="21" y2="6" />
+                            <line x1="8" y1="12" x2="21" y2="12" />
+                            <line x1="8" y1="18" x2="21" y2="18" />
+                            <line x1="3" y1="6" x2="3.01" y2="6" />
+                            <line x1="3" y1="12" x2="3.01" y2="12" />
+                            <line x1="3" y1="18" x2="3.01" y2="18" />
+                        </svg>
+                        <span>All Templates</span>
+                    </a>
+
+                    <!-- Getting Started -->
+                    <a
+                        href="{{ url_for('home') }}?view=getting-started"
+                        class="nav-item {% if active_page == 'getting-started' %}active{% endif %}"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                        >
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        <span>Getting Started</span>
+                    </a>
+
+                    <!-- Generation Type Section -->
+                    <div class="nav-section">
+                        <button
+                            type="button"
+                            class="nav-section-header"
+                            data-section="generation-type"
+                            aria-expanded="true"
+                        >
+                            <span>Generation Type</span>
+                            <svg
+                                class="nav-section-chevron"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                        </button>
+                        <div
+                            class="nav-section-content"
+                            data-section="generation-type"
+                        >
+                            <a
+                                href="{{ url_for('home') }}?type=use-cases"
+                                class="nav-item {% if active_filter == 'use-cases' %}active{% endif %}"
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                >
+                                    <polygon
+                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                                    />
+                                </svg>
+                                <span>Use Cases</span>
+                            </a>
+
+                            <a
+                                href="{{ url_for('home') }}?type=image"
+                                class="nav-item {% if active_filter == 'image' %}active{% endif %}"
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                >
+                                    <rect
+                                        x="3"
+                                        y="3"
+                                        width="18"
+                                        height="18"
+                                        rx="2"
+                                        ry="2"
+                                    />
+                                    <circle cx="8.5" cy="8.5" r="1.5" />
+                                    <polyline points="21 15 16 10 5 21" />
+                                </svg>
+                                <span>Image</span>
+                            </a>
+
+                            <a
+                                href="{{ url_for('home') }}?type=video"
+                                class="nav-item {% if active_filter == 'video' %}active{% endif %}"
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                >
+                                    <polygon points="23 7 16 12 23 17 23 7" />
+                                    <rect
+                                        x="1"
+                                        y="5"
+                                        width="15"
+                                        height="14"
+                                        rx="2"
+                                        ry="2"
+                                    />
+                                </svg>
+                                <span>Video</span>
+                            </a>
+
+                            <a
+                                href="{{ url_for('home') }}?type=audio"
+                                class="nav-item {% if active_filter == 'audio' %}active{% endif %}"
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                >
+                                    <path d="M9 18V5l12-2v13" />
+                                    <circle cx="6" cy="18" r="3" />
+                                    <circle cx="18" cy="16" r="3" />
+                                </svg>
+                                <span>Audio</span>
+                            </a>
+
+                            <a
+                                href="{{ url_for('home') }}?type=3d-model"
+                                class="nav-item {% if active_filter == '3d-model' %}active{% endif %}"
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                >
+                                    <path
+                                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+                                    />
+                                    <polyline
+                                        points="3.27 6.96 12 12.01 20.73 6.96"
+                                    />
+                                    <line x1="12" y1="22.08" x2="12" y2="12" />
+                                </svg>
+                                <span>3D Model</span>
+                            </a>
+
+                            <a
+                                href="{{ url_for('home') }}?type=llm"
+                                class="nav-item {% if active_filter == 'llm' %}active{% endif %}"
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                >
+                                    <rect
+                                        x="2"
+                                        y="3"
+                                        width="20"
+                                        height="14"
+                                        rx="2"
+                                        ry="2"
+                                    />
+                                    <line x1="8" y1="21" x2="16" y2="21" />
+                                    <line x1="12" y1="17" x2="12" y2="21" />
+                                </svg>
+                                <span>LLM</span>
+                            </a>
+                        </div>
+                    </div>
+
                     <!-- Tools Section -->
                     <div class="nav-section">
                         <button
