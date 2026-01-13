@@ -28,14 +28,14 @@ if [ -d "$REPO_DIR/.git" ]; then
     echo "Repository exists, pulling latest changes..."
     cd "$REPO_DIR"
     git fetch --all
-    git checkout feature/sf-ai-workbench 2>/dev/null || git checkout -b feature/sf-ai-workbench origin/feature/sf-ai-workbench
-    git reset --hard origin/feature/sf-ai-workbench
-    git pull origin feature/sf-ai-workbench
+    git checkout feature/home-redesign-v3 2>/dev/null || git checkout -b feature/home-redesign-v3 origin/feature/home-redesign-v3
+    git reset --hard origin/feature/home-redesign-v3
+    git pull origin feature/home-redesign-v3
     echo "Repository updated."
 else
     echo "Cloning repository..."
     rm -rf "$REPO_DIR"
-    git clone -b feature/sf-ai-workbench "$REPO_URL" "$REPO_DIR"
+    git clone -b feature/home-redesign-v3 "$REPO_URL" "$REPO_DIR"
     echo "Repository cloned."
 fi
 
