@@ -1979,6 +1979,20 @@ def git_commit_and_push(message):
         return False, "GITHUB_TOKEN not configured"
 
     try:
+        # Configure git user identity
+        subprocess.run(
+            ["git", "config", "user.email", "sfaiworkbench@stillfront.com"],
+            cwd=REPO_DIR,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "SF AI Workbench"],
+            cwd=REPO_DIR,
+            check=True,
+            capture_output=True,
+        )
+
         # Configure git to use token for authentication
         repo_url = f"https://{github_token}@github.com/razvanmatei-sf/runpod-ggs.git"
 

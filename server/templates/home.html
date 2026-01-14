@@ -681,12 +681,52 @@
         .catch(err => alert("Error saving template: " + err));
     }
 
-    // Upload template file
-    function uploadTemplateFile(fileType) {
-        const templateId = document.getElementById("template-id").value;
+    // Upload template file (auto-saves if new template)
+    async function uploadTemplateFile(fileType) {
+        let templateId = document.getElementById("template-id").value;
+
+        // If no template ID, auto-save first
         if (!templateId) {
-            alert("Please save the template first before uploading files.");
-            return;
+            const title = document.getElementById("template-title").value;
+            if (!title) {
+                alert("Please enter a title before uploading files.");
+                return;
+            }
+
+            // Auto-save the template first
+            const tagsStr = document.getElementById("template-tags").value;
+            const tags = tagsStr ? tagsStr.split(",").map(t => t.trim()).filter(t => t) : [];
+
+            const data = {
+                title: title,
+                description: document.getElementById("template-description").value,
+                category: document.getElementById("template-category").value,
+                tags: tags,
+                logo_text: document.getElementById("template-logo").value || null
+            };
+
+            try {
+                const response = await fetch("/api/templates", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    templateId = result.template.id;
+                    templatesData[templateId] = result.template;
+                    document.getElementById("template-id").value = templateId;
+                    document.getElementById("delete-template-btn").style.display = "block";
+                    document.getElementById("modal-title").textContent = "Edit Template";
+                } else {
+                    alert("Error saving template: " + result.message);
+                    return;
+                }
+            } catch (err) {
+                alert("Error saving template: " + err);
+                return;
+            }
         }
 
         let fileInput;
@@ -770,8 +810,9 @@
 
     // Commit and push to git
     function commitToGit() {
-        const message = prompt("Enter commit message:", "Update workflow templates");
-        if (!message) return;
+        // Auto-generate commit message from current template title or use default
+        const title = document.getElementById("template-title").value;
+        const message = title ? `Update template: ${title}` : "Update workflow templates";
 
         fetch("/api/templates/commit", {
             method: "POST",
