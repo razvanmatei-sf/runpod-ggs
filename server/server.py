@@ -1984,14 +1984,18 @@ def sanitize_workflow_json(content):
     """
     # Pattern for various API keys
     patterns = [
-        # Anthropic API keys: sk-ant-api03-... (variable length)
-        (r"sk-ant-[a-zA-Z0-9_-]{20,}", "[ANTHROPIC_API_KEY_REMOVED]"),
+        # Anthropic API keys: sk-ant-... (various formats, be aggressive)
+        (r"sk-ant-[a-zA-Z0-9_\-]{10,}", "[ANTHROPIC_API_KEY_REMOVED]"),
+        # Anthropic broader pattern (catches sk-ant followed by anything inside quotes)
+        (r'"sk-ant[^"]*"', '"[ANTHROPIC_API_KEY_REMOVED]"'),
         # OpenAI API keys: sk-... (but not sk-ant which is Anthropic)
         (r"sk-(?!ant)[a-zA-Z0-9]{20,}", "[OPENAI_API_KEY_REMOVED]"),
+        # OpenAI project keys: sk-proj-...
+        (r"sk-proj-[a-zA-Z0-9_\-]{20,}", "[OPENAI_PROJECT_KEY_REMOVED]"),
         # HuggingFace tokens: hf_...
-        (r"hf_[a-zA-Z0-9]{20,}", "[HF_TOKEN_REMOVED]"),
+        (r"hf_[a-zA-Z0-9]{10,}", "[HF_TOKEN_REMOVED]"),
         # Replicate API tokens
-        (r"r8_[a-zA-Z0-9]{20,}", "[REPLICATE_TOKEN_REMOVED]"),
+        (r"r8_[a-zA-Z0-9]{10,}", "[REPLICATE_TOKEN_REMOVED]"),
     ]
 
     sanitized = content
@@ -2312,15 +2316,20 @@ def api_upload_template_file(template_id):
     # Ensure directory exists
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-    # For JSON workflow files, sanitize API keys before saving
-    if file_type in ("workflow", "workflow_api"):
-        content = file.read().decode("utf-8")
-        sanitized_content = sanitize_workflow_json(content)
+    # Read file content
+    file_content = file.read()
+
+    # Try to sanitize all files (in case JSON was uploaded with wrong extension)
+    try:
+        # Try to decode as text and sanitize
+        text_content = file_content.decode("utf-8")
+        sanitized_content = sanitize_workflow_json(text_content)
         with open(save_path, "w") as f:
             f.write(sanitized_content)
-    else:
-        # Save other files (images) directly
-        file.save(save_path)
+    except UnicodeDecodeError:
+        # Binary file (actual image), save directly
+        with open(save_path, "wb") as f:
+            f.write(file_content)
 
     # Update templates.json
     if save_templates(templates):
