@@ -5,7 +5,10 @@
       "title": "Qwen Image 2512",
       "description": "Text to image model with enhanced human realism, finer natural details...",
       "category": "image",
-      "tags": ["Text to Image", "Image"],
+      "tags": [
+        "Text to Image",
+        "Image"
+      ],
       "workflow_file": null,
       "workflow_api_file": null,
       "preview_image_a": null,
@@ -18,7 +21,10 @@
       "title": "Qwen Image Edit 2511 - Material...",
       "description": "Replace materials in objects (e.g., furniture) by combining reference...",
       "category": "image",
-      "tags": ["Image Edit", "Image"],
+      "tags": [
+        "Image Edit",
+        "Image"
+      ],
       "workflow_file": null,
       "workflow_api_file": null,
       "preview_image_a": null,
@@ -31,7 +37,9 @@
       "title": "Qwen-Image-Layered...",
       "description": "Decompose an image into editable RGBA layers for high fidelity recolor,...",
       "category": "image",
-      "tags": ["Layer Decompose"],
+      "tags": [
+        "Layer Decompose"
+      ],
       "workflow_file": null,
       "workflow_api_file": null,
       "preview_image_a": null,
@@ -44,7 +52,11 @@
       "title": "FLUX.2 [max]: Object Swap",
       "description": "Replace objects in images with unmatched quality using FLUX.2...",
       "category": "image",
-      "tags": ["Image Edit", "Image", "API"],
+      "tags": [
+        "Image Edit",
+        "Image",
+        "API"
+      ],
       "workflow_file": null,
       "workflow_api_file": null,
       "preview_image_a": null,
@@ -58,7 +70,10 @@
       "title": "LTX-Video 2.0",
       "description": "Generate high-quality videos from text prompts with LTX-Video...",
       "category": "video",
-      "tags": ["Text to Video", "Video"],
+      "tags": [
+        "Text to Video",
+        "Video"
+      ],
       "workflow_file": null,
       "workflow_api_file": null,
       "preview_image_a": null,
@@ -71,7 +86,10 @@
       "title": "Fashion Style Transfer",
       "description": "Transfer clothing styles between images with high fidelity...",
       "category": "image",
-      "tags": ["Image Edit", "Image"],
+      "tags": [
+        "Image Edit",
+        "Image"
+      ],
       "workflow_file": null,
       "workflow_api_file": null,
       "preview_image_a": null,
@@ -84,7 +102,10 @@
       "title": "Portrait Enhancement",
       "description": "Enhance portrait photos with AI-powered improvements...",
       "category": "image",
-      "tags": ["Image", "ControlNet"],
+      "tags": [
+        "Image",
+        "ControlNet"
+      ],
       "workflow_file": null,
       "workflow_api_file": null,
       "preview_image_a": null,
@@ -97,13 +118,33 @@
       "title": "Wan 2.2 Animate",
       "description": "Animate still images into dynamic videos with Wan 2.2...",
       "category": "video",
-      "tags": ["Image to Video", "Video"],
+      "tags": [
+        "Image to Video",
+        "Video"
+      ],
       "workflow_file": null,
       "workflow_api_file": null,
       "preview_image_a": null,
       "preview_image_b": null,
       "enabled": true,
       "order": 8
+    },
+    {
+      "id": "test",
+      "title": "test",
+      "description": "test des",
+      "category": "image",
+      "tags": [
+        "ControlNet",
+        "LoRA"
+      ],
+      "workflow_file": "test.json",
+      "workflow_api_file": null,
+      "preview_image_a": "test_a.png",
+      "preview_image_b": "test_b.png",
+      "logo_text": "Qwen Image",
+      "enabled": true,
+      "order": 9
     }
   ]
 }
