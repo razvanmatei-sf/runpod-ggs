@@ -2253,11 +2253,52 @@ def api_update_template(template_id):
 
 @app.route("/api/templates/<template_id>", methods=["DELETE"])
 def api_delete_template(template_id):
-    """Delete a workflow template"""
+    """Delete a workflow template and its associated files"""
     if not is_admin(current_artist):
         return jsonify({"success": False, "message": "Unauthorized"}), 403
 
     templates = load_templates()
+
+    # Find the template to get file references before deleting
+    template_to_delete = None
+    for t in templates:
+        if t.get("id") == template_id:
+            template_to_delete = t
+            break
+
+    if template_to_delete:
+        # Delete associated files
+        files_to_delete = []
+
+        if template_to_delete.get("workflow_file"):
+            files_to_delete.append(
+                os.path.join(WORKFLOWS_DIR, template_to_delete["workflow_file"])
+            )
+
+        if template_to_delete.get("workflow_api_file"):
+            files_to_delete.append(
+                os.path.join(WORKFLOWS_DIR, template_to_delete["workflow_api_file"])
+            )
+
+        if template_to_delete.get("preview_image_a"):
+            files_to_delete.append(
+                os.path.join(PREVIEWS_DIR, template_to_delete["preview_image_a"])
+            )
+
+        if template_to_delete.get("preview_image_b"):
+            files_to_delete.append(
+                os.path.join(PREVIEWS_DIR, template_to_delete["preview_image_b"])
+            )
+
+        for filepath in files_to_delete:
+            try:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                    print(f"Deleted file: {filepath}")
+            except Exception as e:
+                print(f"Error deleting file {filepath}: {e}")
+
+    # Remove template from list
     templates = [t for t in templates if t.get("id") != template_id]
 
     if save_templates(templates):
