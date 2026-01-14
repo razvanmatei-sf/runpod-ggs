@@ -1624,7 +1624,7 @@ a:hover {
 .template-card-image {
     position: relative;
     width: 100%;
-    height: 180px;
+    aspect-ratio: 1;
     overflow: hidden;
 }
 
@@ -1640,22 +1640,40 @@ a:hover {
     left: 0;
     width: 100%;
     height: 100%;
-    transition: opacity 0.3s ease;
+    object-fit: cover;
 }
 
 .template-image-before {
-    opacity: 1;
+    z-index: 1;
+    clip-path: inset(0 0 0 0);
 }
 
 .template-image-after {
-    opacity: 0;
+    z-index: 0;
 }
 
-.template-card:hover .template-image-before {
-    opacity: 0;
+/* Slider divider line */
+.template-image-slider {
+    --slider-pos: 100%;
 }
 
-.template-card:hover .template-image-after {
+.template-image-slider::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: white;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+    z-index: 2;
+    left: var(--slider-pos);
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.template-image-slider:hover::after {
     opacity: 1;
 }
 
@@ -1755,7 +1773,7 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 280px;
+    aspect-ratio: 1;
 }
 
 .template-card-add:hover {

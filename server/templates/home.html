@@ -569,6 +569,33 @@
     // Initially hide clear button
     searchClear.style.display = "none";
 
+    // Image comparison slider - reveals image B based on mouse position
+    document.querySelectorAll('.template-image-slider').forEach(slider => {
+        const beforeImg = slider.querySelector('.template-image-before');
+        const sliderLine = slider;
+
+        slider.addEventListener('mousemove', (e) => {
+            const rect = slider.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const percent = (x / rect.width) * 100;
+
+            // Clip the "before" image from the right based on mouse position
+            if (beforeImg) {
+                beforeImg.style.clipPath = `inset(0 ${100 - percent}% 0 0)`;
+            }
+            // Move the slider line
+            sliderLine.style.setProperty('--slider-pos', `${percent}%`);
+        });
+
+        slider.addEventListener('mouseleave', () => {
+            // Reset to show full "before" image
+            if (beforeImg) {
+                beforeImg.style.clipPath = 'inset(0 0 0 0)';
+            }
+            sliderLine.style.setProperty('--slider-pos', '100%');
+        });
+    });
+
     // Open workflow in ComfyUI
     function openWorkflow(templateId, workflowFile) {
         if (!workflowFile) {
