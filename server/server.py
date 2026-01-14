@@ -2015,6 +2015,45 @@ def sanitize_workflow_json(content):
     return sanitized
 
 
+def strip_image_metadata(image_path):
+    """Strip all metadata from an image file to remove embedded secrets.
+
+    ComfyUI embeds workflow JSON (including API keys) into PNG metadata.
+    This function removes all metadata to prevent secrets from leaking.
+    """
+    try:
+        # Try using exiftool first (most thorough)
+        result = subprocess.run(
+            ["exiftool", "-all=", "-overwrite_original", image_path],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            print(f"Stripped metadata from {image_path} using exiftool")
+            return True
+    except FileNotFoundError:
+        pass  # exiftool not installed, try PIL
+
+    # Fallback to PIL - re-save image without metadata
+    try:
+        from PIL import Image
+
+        img = Image.open(image_path)
+        # Create a new image without metadata
+        data = list(img.getdata())
+        img_no_meta = Image.new(img.mode, img.size)
+        img_no_meta.putdata(data)
+        img_no_meta.save(image_path)
+        print(f"Stripped metadata from {image_path} using PIL")
+        return True
+    except ImportError:
+        print("Warning: Neither exiftool nor PIL available for metadata stripping")
+        return False
+    except Exception as e:
+        print(f"Error stripping metadata with PIL: {e}")
+        return False
+
+
 def git_commit_and_push(message):
     """Commit changes to git and push to remote"""
     github_token = os.environ.get("GITHUB_TOKEN")
@@ -2371,6 +2410,9 @@ def api_upload_template_file(template_id):
         # Binary file (actual image), save directly
         with open(save_path, "wb") as f:
             f.write(file_content)
+        # Strip metadata from images to remove embedded secrets (ComfyUI embeds workflow JSON)
+        if file_type in ("preview_a", "preview_b"):
+            strip_image_metadata(save_path)
 
     # Update templates.json
     if save_templates(templates):
