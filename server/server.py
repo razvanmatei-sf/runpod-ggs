@@ -1981,13 +1981,13 @@ def git_commit_and_push(message):
     try:
         # Configure git user identity
         subprocess.run(
-            ["git", "config", "user.email", "sfaiworkbench@stillfront.com"],
+            ["git", "config", "user.email", "razvan.matei@stillfront.com"],
             cwd=REPO_DIR,
             check=True,
             capture_output=True,
         )
         subprocess.run(
-            ["git", "config", "user.name", "SF AI Workbench"],
+            ["git", "config", "user.name", "Razvan Matei"],
             cwd=REPO_DIR,
             check=True,
             capture_output=True,
