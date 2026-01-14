@@ -4,6 +4,7 @@
 
 import json
 import os
+import re
 import signal
 import socket
 import subprocess
@@ -1972,6 +1973,49 @@ def save_templates(templates):
         return False
 
 
+def sanitize_workflow_json(content):
+    """Remove API keys and secrets from workflow JSON content.
+
+    Patterns removed:
+    - Anthropic API keys (sk-ant-...)
+    - OpenAI API keys (sk-...)
+    - HuggingFace tokens (hf_...)
+    - Generic API key patterns
+    """
+    # Pattern for various API keys
+    patterns = [
+        # Anthropic API keys: sk-ant-api03-... (variable length)
+        (r"sk-ant-[a-zA-Z0-9_-]{20,}", "[ANTHROPIC_API_KEY_REMOVED]"),
+        # OpenAI API keys: sk-... (but not sk-ant which is Anthropic)
+        (r"sk-(?!ant)[a-zA-Z0-9]{20,}", "[OPENAI_API_KEY_REMOVED]"),
+        # HuggingFace tokens: hf_...
+        (r"hf_[a-zA-Z0-9]{20,}", "[HF_TOKEN_REMOVED]"),
+        # Replicate API tokens
+        (r"r8_[a-zA-Z0-9]{20,}", "[REPLICATE_TOKEN_REMOVED]"),
+        # Generic "api_key": "value" or "apikey": "value" patterns
+        (
+            r'("(?:api[_-]?key|apikey|secret[_-]?key|access[_-]?token)":\s*")[^"]{20,}(")',
+            r"\1[API_KEY_REMOVED]\2",
+        ),
+    ]
+
+    sanitized = content
+    removed_keys = []
+
+    for pattern, replacement in patterns:
+        matches = re.findall(pattern, sanitized, re.IGNORECASE)
+        if matches:
+            removed_keys.extend(
+                matches if isinstance(matches[0], str) else [m[0] for m in matches]
+            )
+            sanitized = re.sub(pattern, replacement, sanitized, flags=re.IGNORECASE)
+
+    if removed_keys:
+        print(f"Sanitized workflow: removed {len(removed_keys)} potential API key(s)")
+
+    return sanitized
+
+
 def git_commit_and_push(message):
     """Commit changes to git and push to remote"""
     github_token = os.environ.get("GITHUB_TOKEN")
@@ -1979,15 +2023,15 @@ def git_commit_and_push(message):
         return False, "GITHUB_TOKEN not configured"
 
     try:
-        # Configure git user identity
+        # Configure git user identity (use --global for root user)
         subprocess.run(
-            ["git", "config", "user.email", "razvan.matei@stillfront.com"],
+            ["git", "config", "--global", "user.email", "razvan.matei@stillfront.com"],
             cwd=REPO_DIR,
             check=True,
             capture_output=True,
         )
         subprocess.run(
-            ["git", "config", "user.name", "Razvan Matei"],
+            ["git", "config", "--global", "user.name", "Razvan Matei"],
             cwd=REPO_DIR,
             check=True,
             capture_output=True,
@@ -2262,8 +2306,15 @@ def api_upload_template_file(template_id):
     # Ensure directory exists
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-    # Save file
-    file.save(save_path)
+    # For JSON workflow files, sanitize API keys before saving
+    if file_type in ("workflow", "workflow_api"):
+        content = file.read().decode("utf-8")
+        sanitized_content = sanitize_workflow_json(content)
+        with open(save_path, "w") as f:
+            f.write(sanitized_content)
+    else:
+        # Save other files (images) directly
+        file.save(save_path)
 
     # Update templates.json
     if save_templates(templates):
