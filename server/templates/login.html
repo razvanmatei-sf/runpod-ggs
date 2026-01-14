@@ -33,8 +33,30 @@
                         {% endfor %}
                     </select>
 
+                    <label class="login-checkbox">
+                        <input
+                            type="checkbox"
+                            name="autostart_comfyui"
+                            id="autostart_comfyui"
+                        />
+                        <span>Auto-start ComfyUI on login</span>
+                    </label>
+
                     <button type="submit" class="login-btn">Start</button>
                 </form>
+
+                <script>
+                    // Restore checkbox state from localStorage
+                    const checkbox =
+                        document.getElementById("autostart_comfyui");
+                    if (localStorage.getItem("autostart_comfyui") === "true") {
+                        checkbox.checked = true;
+                    }
+                    // Save checkbox state on change
+                    checkbox.addEventListener("change", function () {
+                        localStorage.setItem("autostart_comfyui", this.checked);
+                    });
+                </script>
             </div>
         </div>
     </body>

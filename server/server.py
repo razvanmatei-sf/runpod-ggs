@@ -2665,12 +2665,24 @@ def set_artist():
     if request.is_json:
         data = request.get_json()
         current_artist = data.get("artist", "")
+        autostart_comfyui = data.get("autostart_comfyui", False)
     else:
         current_artist = request.form.get("artist", "")
+        autostart_comfyui = request.form.get("autostart_comfyui") == "on"
 
     # Reset admin mode if not an admin
     if not is_admin(current_artist):
         admin_mode = False
+
+    # Auto-start ComfyUI if requested
+    if autostart_comfyui and current_artist:
+        # Start ComfyUI in background thread to not block the redirect
+        def start_comfyui_background():
+            start_session_internal("comfy-ui", current_artist)
+
+        thread = threading.Thread(target=start_comfyui_background)
+        thread.daemon = True
+        thread.start()
 
     # If form submission, redirect to home
     if not request.is_json:
