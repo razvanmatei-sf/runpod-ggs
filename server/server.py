@@ -2056,24 +2056,35 @@ def git_commit_and_push(message):
             return True, "No changes to commit"
 
         # Commit
-        subprocess.run(
+        commit_result = subprocess.run(
             ["git", "commit", "-m", message],
             cwd=REPO_DIR,
-            check=True,
             capture_output=True,
+            text=True,
         )
 
+        if commit_result.returncode != 0:
+            error_msg = commit_result.stderr or commit_result.stdout
+            if "nothing to commit" in error_msg.lower():
+                return True, "No changes to commit"
+            return False, f"Commit failed: {error_msg}"
+
         # Push using token auth
-        subprocess.run(
+        push_result = subprocess.run(
             ["git", "push", repo_url, "feature/home-redesign-v3"],
             cwd=REPO_DIR,
-            check=True,
             capture_output=True,
+            text=True,
         )
+
+        if push_result.returncode != 0:
+            return False, f"Push failed: {push_result.stderr or push_result.stdout}"
 
         return True, "Changes pushed successfully"
     except subprocess.CalledProcessError as e:
-        return False, f"Git error: {e.stderr.decode() if e.stderr else str(e)}"
+        stderr = e.stderr.decode() if e.stderr else ""
+        stdout = e.stdout.decode() if e.stdout else ""
+        return False, f"Git error: {stderr or stdout or str(e)}"
     except Exception as e:
         return False, f"Error: {str(e)}"
 
