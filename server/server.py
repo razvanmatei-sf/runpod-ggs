@@ -1992,11 +1992,6 @@ def sanitize_workflow_json(content):
         (r"hf_[a-zA-Z0-9]{20,}", "[HF_TOKEN_REMOVED]"),
         # Replicate API tokens
         (r"r8_[a-zA-Z0-9]{20,}", "[REPLICATE_TOKEN_REMOVED]"),
-        # Generic "api_key": "value" or "apikey": "value" patterns
-        (
-            r'("(?:api[_-]?key|apikey|secret[_-]?key|access[_-]?token)":\s*")[^"]{20,}(")',
-            r"\1[API_KEY_REMOVED]\2",
-        ),
     ]
 
     sanitized = content
