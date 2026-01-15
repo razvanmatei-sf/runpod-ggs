@@ -28,4 +28,4 @@ https://github.com/BadCafeCode/masquerade-nodes-comfyui
 https://github.com/rgthree/rgthree-comfy
 https://github.com/ltdrdata/was-node-suite-comfyui
 https://github.com/WaveSpeedAI/wavespeed-comfyui
-https://github.com/razvanmatei-sf/razv-wavespeed
+https://github.com/razvanmatei-sf/comfyui-stillfront
