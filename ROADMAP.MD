@@ -64,3 +64,35 @@ Benefits:
 Deployment:
 - Two Docker images (or one image with env var)
 - Two RunPod templates pointing to different configs
+
+
+14. possible actions when you click on a card - two options - one is to open comfy and open that workflow - you have to find a way for comfy to accesss the file from /workspace/runpod-ggs/workflows
+for second option we have to build an interface that will:
+-have the option to load any of the workflows present on the use case/images/3d model/etc in a simplified interface
+the idea behind it is that i want to, as an admin, be able to edit a particular workflow for his "simplified form"
+this will open the API version of the workflow which is arranged in such a way that it can be utilised to, instead of opening the worjkflow in comfy ui, have a sort of interface that will:
+allow me to select which of the nodes from a workflow (API version) i want to expose in the simplified interface
+example:
+let's say I have a workflow that has 20 nodes
+i will save the normal version of the workflow, which can be opened in comfy ui (the running instance on runpod)
+i will save the API version of the workflow in the interface editor which will allow me to select which one of the multitude of nodes present in the workflow I want to expose 
+the goal is to create a super simplified version of the workflow that will allow non advanced users to use these workflows as a user and not as a workflow builder
+i would use the same pop-up/modal interface that we already have for uplloading the workflow to github
+I would have another tab called something like "simplified workflow - don't use this ad literam, i want you to come up with a proper name for this"
+all of this will be avaiulable if I have uploaded the API version of the workflow (btw this is a json file with a slightly better organized structure in terms of order of execution i suppose)
+in this tab, i want, based on the workflow that I am adding as a template/card to see the different nodes from the workflow as selectable options (think of it as checkboxes that I can select) that, if checked, will expose that parameter
+the nodes will be, but not allways, prompt input fields, image input fields, that will allow the non experienced users to use the workflow without the fear of openiong a very complex workflow
+the cards should, by default, open the simplified version
+i want us to add another button somewhere on the card that will say something like "advanced" which will open that workflow in comfy ui, for the advanced users that want to modify the parameters of that workflow
+i want you to plan this before and let me know if there are any unknowns for you
+after clicking a card, the simplified interface should open as a full screen page, where the users will see the selectable parameters, input images, or any other nodes that I expose from the card edit menu
+anything that is unclear about this?
+
+
+15. logout/switch profile
+
+
+16. I want to remove the home conf title from the page, which is redundant because you already see that on the left sidebar. 
+
+
+17. add sf new nodes
