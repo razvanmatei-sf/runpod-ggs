@@ -2454,7 +2454,8 @@ WORKSPACE_ROOT = "/workspace"
 
 def get_user_allowed_roots(user):
     """Get the allowed root paths for a user's assets"""
-    username = user.get("name", "")
+    # user can be a string (artist name) or None
+    username = user if isinstance(user, str) else ""
     return [
         f"ComfyUI/output/{username}",
         f"ComfyUI/input/{username}",
