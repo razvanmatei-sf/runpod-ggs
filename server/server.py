@@ -2546,6 +2546,7 @@ def assets():
         files=[],
         current_path="",
         breadcrumb=[],
+        parent_path="",
         is_root=True,
     )
 
@@ -2605,22 +2606,55 @@ def assets_browse(subpath):
     except PermissionError:
         return "Permission denied", 403
 
-    # Build breadcrumb
+    # Build breadcrumb - only show from output/input folder onwards
     parts = subpath.split("/")
     breadcrumb = []
     current_crumb_path = ""
 
-    for part in parts:
+    # Find the index of "output" or "input" in the path
+    root_index = -1
+    root_type = None
+    for i, part in enumerate(parts):
+        if part == "output":
+            root_index = i
+            root_type = "output"
+            break
+        elif part == "input":
+            root_index = i
+            root_type = "input"
+            break
+
+    # Only build breadcrumb from root folder onwards
+    for i, part in enumerate(parts):
         if part:
             current_crumb_path = (
                 os.path.join(current_crumb_path, part) if current_crumb_path else part
             )
-            breadcrumb.append(
-                {
-                    "name": part,
-                    "path": current_crumb_path,
-                }
-            )
+            # Only add to visible breadcrumb if at or after root index
+            if i >= root_index and root_index >= 0:
+                # Rename the root folder to friendly name
+                if i == root_index:
+                    display_name = (
+                        "My Outputs" if root_type == "output" else "My Inputs"
+                    )
+                else:
+                    display_name = part
+                breadcrumb.append(
+                    {
+                        "name": display_name,
+                        "path": current_crumb_path,
+                    }
+                )
+
+    # Determine parent path for back button
+    if len(breadcrumb) > 1:
+        # Go to previous breadcrumb
+        parent_path = breadcrumb[-2]["path"]
+    elif len(breadcrumb) == 1:
+        # At root of output/input, go back to assets root
+        parent_path = ""
+    else:
+        parent_path = ""
 
     # Determine page title from path
     if "output" in subpath:
@@ -2641,6 +2675,7 @@ def assets_browse(subpath):
         files=files,
         current_path=subpath,
         breadcrumb=breadcrumb,
+        parent_path=parent_path,
         is_root=False,
     )
 

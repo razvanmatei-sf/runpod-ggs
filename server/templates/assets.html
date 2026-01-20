@@ -4,6 +4,25 @@
     <!-- Toolbar -->
     <div class="assets-toolbar">
         <div class="toolbar-left">
+            {% if not is_root %}
+            <!-- Back Button -->
+            <a
+                href="{% if parent_path %}{{ url_for('assets_browse', subpath=parent_path) }}{% else %}{{ url_for('assets') }}{% endif %}"
+                class="back-btn"
+                title="Go back"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    width="18"
+                    height="18"
+                >
+                    <polyline points="15 18 9 12 15 6" />
+                </svg>
+            </a>
+            {% endif %}
             <!-- Breadcrumb -->
             <nav class="assets-breadcrumb">
                 <a
@@ -493,6 +512,26 @@
 <div class="toast" id="toast"></div>
 
 <style>
+    /* Back button */
+    .back-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: all 0.15s ease;
+        flex-shrink: 0;
+    }
+
+    .back-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+    }
+
     /* Assets page styles */
     .assets-page {
         display: flex;
