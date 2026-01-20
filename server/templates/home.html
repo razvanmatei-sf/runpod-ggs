@@ -147,7 +147,8 @@
             class="template-card"
             data-id="{{ template.id }}"
             data-type="{{ template.category }}"
-            onclick="openWorkflow('{{ template.id }}', '{{ template.workflow_file }}')"
+            data-has-quickgen="{{ 'true' if template.exposed_nodes else 'false' }}"
+            onclick="openTemplate('{{ template.id }}', '{{ template.workflow_file }}', {{ 'true' if template.exposed_nodes else 'false' }})"
         >
             {% if is_admin %}
             <button
@@ -171,6 +172,23 @@
                     />
                 </svg>
             </button>
+            {% endif %} {% if template.exposed_nodes %}
+            <div
+                class="quickgen-badge"
+                title="QuickGen enabled - simplified generation"
+            >
+                <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
+                QuickGen
+            </div>
             {% endif %}
             <div class="template-card-image">
                 <div class="template-image-slider">
@@ -670,6 +688,16 @@
             sliderLine.style.setProperty('--slider-pos', '50%');
         });
     });
+
+    // Open template - either QuickGen or ComfyUI
+    function openTemplate(templateId, workflowFile, hasQuickGen) {
+        if (hasQuickGen) {
+            // Open QuickGen page for simplified generation
+            window.location.href = '/quickgen/' + templateId;
+        } else {
+            openWorkflow(templateId, workflowFile);
+        }
+    }
 
     // Open workflow in ComfyUI
     function openWorkflow(templateId, workflowFile) {

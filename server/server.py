@@ -11,7 +11,11 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
+import urllib.request
+import uuid
 from datetime import datetime
+from urllib.parse import urlencode
 
 from flask import (
     Flask,
@@ -2478,6 +2482,318 @@ def serve_workflow_preview(filename):
     if os.path.exists(filepath):
         return send_file(filepath)
     return "", 404
+
+
+# =============================================================================
+# QuickGen Routes - Simplified workflow generation interface
+# =============================================================================
+
+COMFYUI_API_URL = "http://127.0.0.1:8188"
+
+
+@app.route("/quickgen/<template_id>")
+def quickgen_page(template_id):
+    """Render the QuickGen page for a template"""
+    if not current_artist:
+        return redirect(url_for("login"))
+
+    templates = load_templates()
+    template = None
+    for t in templates:
+        if t.get("id") == template_id:
+            template = t
+            break
+
+    if not template:
+        return redirect(url_for("home"))
+
+    # Get exposed nodes with their default values from the API workflow
+    exposed_nodes = template.get("exposed_nodes", [])
+
+    # Load API workflow to get default values
+    if template.get("workflow_api_file"):
+        workflow_path = os.path.join(WORKFLOWS_DIR, template["workflow_api_file"])
+        if os.path.exists(workflow_path):
+            try:
+                with open(workflow_path, "r") as f:
+                    workflow_data = json.load(f)
+
+                # Enrich exposed nodes with default values
+                for node in exposed_nodes:
+                    node_id = node.get("node_id")
+                    input_name = node.get("input_name")
+                    if node_id in workflow_data:
+                        node_data = workflow_data[node_id]
+                        inputs = node_data.get("inputs", {})
+                        if input_name in inputs:
+                            value = inputs[input_name]
+                            # Only set default if it's not a link (list means connection)
+                            if not isinstance(value, list):
+                                node["default_value"] = value
+            except Exception as e:
+                print(f"Error loading workflow for QuickGen: {e}")
+
+    return render_template(
+        "quickgen.html",
+        current_user=current_artist,
+        is_admin=is_admin(current_artist),
+        active_page="home",
+        page_title=f"QuickGen - {template.get('title', 'Generate')}",
+        runpod_id=get_runpod_id(),
+        template=template,
+        exposed_nodes=exposed_nodes,
+    )
+
+
+@app.route("/api/quickgen/submit", methods=["POST"])
+def api_quickgen_submit():
+    """Submit a QuickGen prompt to ComfyUI"""
+    if not current_artist:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+
+    data = request.get_json()
+    template_id = data.get("template_id")
+    inputs = data.get("inputs", {})
+
+    # Load template
+    templates = load_templates()
+    template = None
+    for t in templates:
+        if t.get("id") == template_id:
+            template = t
+            break
+
+    if not template:
+        return jsonify({"success": False, "error": "Template not found"}), 404
+
+    if not template.get("workflow_api_file"):
+        return jsonify(
+            {"success": False, "error": "No API workflow for this template"}
+        ), 400
+
+    # Load the API workflow
+    workflow_path = os.path.join(WORKFLOWS_DIR, template["workflow_api_file"])
+    if not os.path.exists(workflow_path):
+        return jsonify({"success": False, "error": "Workflow file not found"}), 404
+
+    try:
+        with open(workflow_path, "r") as f:
+            workflow = json.load(f)
+    except Exception as e:
+        return jsonify(
+            {"success": False, "error": f"Failed to load workflow: {e}"}
+        ), 500
+
+    # Apply user inputs to the workflow
+    for key, value in inputs.items():
+        if ":" in key:
+            node_id, input_name = key.split(":", 1)
+            if node_id in workflow and "inputs" in workflow[node_id]:
+                # Convert value to appropriate type
+                current_value = workflow[node_id]["inputs"].get(input_name)
+                if isinstance(current_value, int):
+                    try:
+                        value = int(value)
+                    except (ValueError, TypeError):
+                        pass
+                elif isinstance(current_value, float):
+                    try:
+                        value = float(value)
+                    except (ValueError, TypeError):
+                        pass
+                elif isinstance(current_value, bool) or value in [
+                    True,
+                    False,
+                    "true",
+                    "false",
+                ]:
+                    value = value in [True, "true", "on", "1"]
+
+                workflow[node_id]["inputs"][input_name] = value
+
+    # Generate a unique client ID for this request
+    client_id = str(uuid.uuid4())
+
+    # Submit to ComfyUI
+    try:
+        prompt_data = {"prompt": workflow, "client_id": client_id}
+
+        req = urllib.request.Request(
+            f"{COMFYUI_API_URL}/prompt",
+            data=json.dumps(prompt_data).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+
+        with urllib.request.urlopen(req, timeout=30) as response:
+            result = json.loads(response.read().decode("utf-8"))
+            prompt_id = result.get("prompt_id")
+
+            if prompt_id:
+                return jsonify(
+                    {"success": True, "prompt_id": prompt_id, "client_id": client_id}
+                )
+            else:
+                return jsonify(
+                    {"success": False, "error": "No prompt_id returned"}
+                ), 500
+
+    except urllib.error.URLError as e:
+        return jsonify({"success": False, "error": f"ComfyUI not reachable: {e}"}), 503
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/quickgen/status/<prompt_id>")
+def api_quickgen_status(prompt_id):
+    """Check the status of a QuickGen generation"""
+    if not current_artist:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    try:
+        # Check history for completed prompts
+        req = urllib.request.Request(
+            f"{COMFYUI_API_URL}/history/{prompt_id}", method="GET"
+        )
+
+        with urllib.request.urlopen(req, timeout=10) as response:
+            history = json.loads(response.read().decode("utf-8"))
+
+            if prompt_id in history:
+                prompt_data = history[prompt_id]
+                outputs = prompt_data.get("outputs", {})
+
+                # Find all output images
+                images = []
+                for node_id, node_output in outputs.items():
+                    if "images" in node_output:
+                        for img in node_output["images"]:
+                            filename = img.get("filename")
+                            subfolder = img.get("subfolder", "")
+                            img_type = img.get("type", "output")
+
+                            # Build URL to fetch image from ComfyUI
+                            img_url = f"/api/quickgen/image?filename={filename}"
+                            if subfolder:
+                                img_url += f"&subfolder={subfolder}"
+                            img_url += f"&type={img_type}"
+
+                            images.append({"url": img_url, "filename": filename})
+
+                if images:
+                    return jsonify({"status": "completed", "images": images})
+
+        # Check queue for pending prompts
+        req = urllib.request.Request(f"{COMFYUI_API_URL}/queue", method="GET")
+
+        with urllib.request.urlopen(req, timeout=10) as response:
+            queue = json.loads(response.read().decode("utf-8"))
+
+            # Check running queue
+            running = queue.get("queue_running", [])
+            for item in running:
+                if len(item) > 1 and item[1] == prompt_id:
+                    return jsonify({"status": "processing", "progress": "Running..."})
+
+            # Check pending queue
+            pending = queue.get("queue_pending", [])
+            for i, item in enumerate(pending):
+                if len(item) > 1 and item[1] == prompt_id:
+                    return jsonify({"status": "queued", "queue_position": i + 1})
+
+        # Not found in history or queue - might still be processing
+        return jsonify({"status": "processing", "progress": "Processing..."})
+
+    except urllib.error.URLError as e:
+        return jsonify({"status": "error", "error": f"ComfyUI not reachable: {e}"}), 503
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
+@app.route("/api/quickgen/image")
+def api_quickgen_image():
+    """Proxy image from ComfyUI to client"""
+    if not current_artist:
+        return "", 401
+
+    filename = request.args.get("filename")
+    subfolder = request.args.get("subfolder", "")
+    img_type = request.args.get("type", "output")
+
+    if not filename:
+        return "", 400
+
+    try:
+        params = {"filename": filename, "subfolder": subfolder, "type": img_type}
+
+        url = f"{COMFYUI_API_URL}/view?{urlencode(params)}"
+        req = urllib.request.Request(url, method="GET")
+
+        with urllib.request.urlopen(req, timeout=30) as response:
+            image_data = response.read()
+            content_type = response.headers.get("Content-Type", "image/png")
+
+            from flask import Response
+
+            return Response(image_data, mimetype=content_type)
+
+    except Exception as e:
+        print(f"Error fetching image from ComfyUI: {e}")
+        return "", 500
+
+
+@app.route("/api/quickgen/upload-image", methods=["POST"])
+def api_quickgen_upload_image():
+    """Upload an image to ComfyUI's input folder"""
+    if not current_artist:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+
+    if "image" not in request.files:
+        return jsonify({"success": False, "error": "No image provided"}), 400
+
+    file = request.files["image"]
+    if not file.filename:
+        return jsonify({"success": False, "error": "No file selected"}), 400
+
+    try:
+        from io import BytesIO
+
+        # Read file content
+        file_content = file.read()
+
+        # Create multipart form data manually
+        boundary = "----WebKitFormBoundary" + str(uuid.uuid4()).replace("-", "")[:16]
+
+        body = BytesIO()
+        body.write(f"--{boundary}\r\n".encode())
+        body.write(
+            f'Content-Disposition: form-data; name="image"; filename="{file.filename}"\r\n'.encode()
+        )
+        body.write(f"Content-Type: {file.content_type or 'image/png'}\r\n\r\n".encode())
+        body.write(file_content)
+        body.write(f"\r\n--{boundary}--\r\n".encode())
+
+        req = urllib.request.Request(
+            f"{COMFYUI_API_URL}/upload/image",
+            data=body.getvalue(),
+            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+            method="POST",
+        )
+
+        with urllib.request.urlopen(req, timeout=60) as response:
+            result = json.loads(response.read().decode("utf-8"))
+            return jsonify(
+                {
+                    "success": True,
+                    "filename": result.get("name"),
+                    "subfolder": result.get("subfolder", ""),
+                }
+            )
+
+    except urllib.error.URLError as e:
+        return jsonify({"success": False, "error": f"ComfyUI not reachable: {e}"}), 503
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # =============================================================================
