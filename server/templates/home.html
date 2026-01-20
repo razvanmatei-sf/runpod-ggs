@@ -596,43 +596,42 @@
     searchClear.style.display = "none";
 
     // Image comparison slider - reveals image B based on mouse position
+    // When images are zoomed at 1.05x, we need to adjust the clip-path to account for the zoom
+    const ZOOM_SCALE = 1.05;
+
     document.querySelectorAll('.template-image-slider').forEach(slider => {
         const beforeImg = slider.querySelector('.template-image-before');
-        const afterImg = slider.querySelector('.template-image-after');
         const sliderLine = slider;
-        const card = slider.closest('.template-card');
-
-        slider.addEventListener('mouseenter', () => {
-            // Disable zoom effect while using slider
-            if (beforeImg) beforeImg.style.transform = 'scale(1)';
-            if (afterImg) afterImg.style.transform = 'scale(1)';
-            if (card) card.classList.add('slider-active');
-        });
 
         slider.addEventListener('mousemove', (e) => {
             const rect = slider.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const percent = (x / rect.width) * 100;
 
-            // Clip the "before" image from the right based on mouse position
+            // When zoomed, the image extends beyond container by (scale-1)/2 on each side
+            // So 1.05x zoom means 2.5% extra on each side
+            // We need to adjust the clip-path to account for this
+            const zoomOffset = ((ZOOM_SCALE - 1) / 2) * 100; // 2.5%
+
+            // Map the container percentage to the zoomed image percentage
+            // The visible area in the zoomed image goes from zoomOffset to (100 - zoomOffset)
+            const adjustedPercent = zoomOffset + (percent * (100 - 2 * zoomOffset) / 100);
+
+            // Clip the "before" image from the right based on adjusted position
             if (beforeImg) {
-                beforeImg.style.clipPath = `inset(0 ${100 - percent}% 0 0)`;
+                beforeImg.style.clipPath = `inset(0 ${100 - adjustedPercent}% 0 0)`;
             }
-            // Move the slider line
+            // Move the slider line (this stays at container percentage)
             sliderLine.style.setProperty('--slider-pos', `${percent}%`);
         });
 
         slider.addEventListener('mouseleave', () => {
             // Reset to 50% position (show both images equally)
+            // For 50% container position, adjusted is 2.5 + (50 * 95 / 100) = 50%
             if (beforeImg) {
                 beforeImg.style.clipPath = 'inset(0 50% 0 0)';
-                beforeImg.style.transform = '';
-            }
-            if (afterImg) {
-                afterImg.style.transform = '';
             }
             sliderLine.style.setProperty('--slider-pos', '50%');
-            if (card) card.classList.remove('slider-active');
         });
     });
 
