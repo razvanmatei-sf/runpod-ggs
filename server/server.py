@@ -2614,6 +2614,11 @@ def api_quickgen_submit():
     # Generate a unique client ID for this request
     client_id = str(uuid.uuid4())
 
+    # Debug: log the workflow being submitted
+    print(f"QuickGen: Submitting workflow for template {template_id}")
+    print(f"QuickGen: Applied inputs: {inputs}")
+    print(f"QuickGen: Workflow node IDs: {list(workflow.keys())}")
+
     # Submit to ComfyUI
     try:
         prompt_data = {"prompt": workflow, "client_id": client_id}
@@ -2638,6 +2643,21 @@ def api_quickgen_submit():
                     {"success": False, "error": "No prompt_id returned"}
                 ), 500
 
+    except urllib.error.HTTPError as e:
+        # Read the error response body for more details
+        error_body = ""
+        try:
+            error_body = e.read().decode("utf-8")
+            error_json = json.loads(error_body)
+            # ComfyUI returns detailed error info in the response
+            error_msg = error_json.get("error", {}).get("message", str(e))
+            node_errors = error_json.get("node_errors", {})
+            if node_errors:
+                error_msg += f" Node errors: {json.dumps(node_errors)}"
+        except:
+            error_msg = f"{e}: {error_body}" if error_body else str(e)
+        print(f"ComfyUI HTTP Error: {error_msg}")
+        return jsonify({"success": False, "error": f"ComfyUI error: {error_msg}"}), 400
     except urllib.error.URLError as e:
         return jsonify({"success": False, "error": f"ComfyUI not reachable: {e}"}), 503
     except Exception as e:
