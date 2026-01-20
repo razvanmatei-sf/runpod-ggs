@@ -1885,6 +1885,7 @@ img.template-image {
 
 #template-form {
     padding: var(--space-5);
+    padding-top: var(--space-4);
 }
 
 .form-group {

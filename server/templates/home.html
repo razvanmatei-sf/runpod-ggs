@@ -303,22 +303,6 @@
                 </div>
             </div>
         </div>
-        <div class="modal-header">
-            <h2 class="modal-title" id="modal-title">Edit Template</h2>
-            <button type="button" class="modal-close" onclick="tryCloseModal()">
-                <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-            </button>
-        </div>
         <form id="template-form" onsubmit="saveTemplate(event)">
             <input type="hidden" id="template-id" name="id" />
 
@@ -381,9 +365,14 @@
                 />
             </div>
 
-            <div class="form-section-title">Files</div>
-
-            <div class="form-row">
+            <div
+                class="form-row"
+                style="
+                    margin-top: var(--space-4);
+                    padding-top: var(--space-4);
+                    border-top: 1px solid var(--border-default);
+                "
+            >
                 <div class="form-group">
                     <label>Workflow JSON</label>
                     <div class="file-upload-row">
@@ -528,46 +517,46 @@
                 </div>
             </div>
 
-            <div class="modal-actions">
+            <div class="modal-actions" style="justify-content: flex-end">
                 <button
                     type="button"
                     class="btn-danger"
                     id="delete-template-btn"
                     onclick="deleteTemplate()"
-                    style="display: none"
+                    style="display: none; margin-right: auto"
                 >
                     Delete
                 </button>
-                <div class="modal-actions-right">
-                    <button
-                        type="button"
-                        class="btn-secondary"
-                        onclick="tryCloseModal()"
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    onclick="tryCloseModal()"
+                >
+                    Cancel
+                </button>
+                <button type="submit" class="btn-primary">Save</button>
+                <button
+                    type="button"
+                    class="btn-commit"
+                    onclick="commitToGit()"
+                    style="margin-left: var(--space-2)"
+                >
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
                     >
-                        Cancel
-                    </button>
-                    <button type="submit" class="btn-primary">Save</button>
-                </div>
+                        <circle cx="12" cy="12" r="4" />
+                        <line x1="1.05" y1="12" x2="7" y2="12" />
+                        <line x1="17.01" y1="12" x2="22.96" y2="12" />
+                    </svg>
+                    Commit & Push
+                </button>
             </div>
         </form>
-
-        <div class="modal-footer">
-            <button type="button" class="btn-commit" onclick="commitToGit()">
-                <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <circle cx="12" cy="12" r="4" />
-                    <line x1="1.05" y1="12" x2="7" y2="12" />
-                    <line x1="17.01" y1="12" x2="22.96" y2="12" />
-                </svg>
-                Commit & Push to Git
-            </button>
-        </div>
     </div>
 </div>
 {% endif %}
@@ -755,7 +744,6 @@
         currentTemplateId = templateId;
         const modal = document.getElementById("edit-template-modal");
         const form = document.getElementById("template-form");
-        const title = document.getElementById("modal-title");
         const deleteBtn = document.getElementById("delete-template-btn");
 
         // Reset form
@@ -768,7 +756,6 @@
         if (templateId && templatesData[templateId]) {
             // Edit existing template
             const t = templatesData[templateId];
-            title.textContent = "Edit Template";
             document.getElementById("template-id").value = t.id;
             document.getElementById("template-title").value = t.title || "";
             document.getElementById("template-description").value = t.description || "";
@@ -795,7 +782,6 @@
             deleteBtn.style.display = "block";
         } else {
             // Create new template
-            title.textContent = "Add New Template";
             document.getElementById("template-id").value = "";
             deleteBtn.style.display = "none";
             // Reset QuickGen settings
@@ -864,7 +850,6 @@
                     currentTemplateId = result.template.id;
                     document.getElementById("template-id").value = result.template.id;
                     document.getElementById("delete-template-btn").style.display = "block";
-                    document.getElementById("modal-title").textContent = "Edit Template";
                 }
                 alert("Template saved! Don't forget to 'Commit & Push to Git' to save permanently.");
             } else {
@@ -911,7 +896,6 @@
                     templatesData[templateId] = result.template;
                     document.getElementById("template-id").value = templateId;
                     document.getElementById("delete-template-btn").style.display = "block";
-                    document.getElementById("modal-title").textContent = "Edit Template";
                 } else {
                     alert("Error saving template: " + result.message);
                     return;
