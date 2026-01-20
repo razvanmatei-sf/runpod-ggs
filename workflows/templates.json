@@ -1,3 +1,18 @@
 {
-  "templates": []
+  "templates": [
+    {
+      "id": "ggs-buildings",
+      "title": "GGS Buildings",
+      "description": "",
+      "category": "image",
+      "tags": [],
+      "workflow_file": "ggs-buildings.json",
+      "workflow_api_file": "ggs-buildings_api.json",
+      "preview_image_a": "ggs-buildings_a.png",
+      "preview_image_b": "ggs-buildings_b.png",
+      "logo_text": null,
+      "enabled": true,
+      "order": 1
+    }
+  ]
 }
