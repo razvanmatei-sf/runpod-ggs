@@ -278,9 +278,18 @@ a:hover {
 .sidebar-header {
     padding: var(--space-4) var(--space-5);
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: var(--space-2);
+}
+
+.sidebar-header-top {
+    display: flex;
     align-items: center;
     gap: var(--space-3);
-    height: var(--header-height);
 }
 
 .sidebar-logo {
@@ -300,6 +309,12 @@ a:hover {
     font-weight: var(--font-bold);
     color: var(--text-primary);
     white-space: nowrap;
+}
+
+.sidebar-user {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    padding-left: calc(26px + var(--space-3));
 }
 
 .sidebar-nav {

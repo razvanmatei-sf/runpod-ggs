@@ -14,14 +14,17 @@
             <!-- Sidebar -->
             <aside class="sidebar">
                 <div class="sidebar-header">
-                    <div class="sidebar-logo">
-                        <img
-                            src="{{ url_for('static', filename='images/stillfront.png') }}"
-                            alt="SF AI Workbench"
-                            onerror="this.style.display='none';"
-                        />
+                    <div class="sidebar-header-top">
+                        <div class="sidebar-logo">
+                            <img
+                                src="{{ url_for('static', filename='images/stillfront.png') }}"
+                                alt="SF AI Workbench"
+                                onerror="this.style.display='none';"
+                            />
+                        </div>
+                        <span class="sidebar-title">SF AI Workbench</span>
                     </div>
-                    <span class="sidebar-title">SF AI Workbench</span>
+                    <span class="sidebar-user">{{ current_user }}</span>
                 </div>
 
                 <nav class="sidebar-nav">
@@ -451,26 +454,6 @@
 
             <!-- Main Content -->
             <main class="main-content">
-                <!-- Header -->
-                <header class="header">
-                    <div class="header-left">
-                        <h1 class="header-title">
-                            {% block page_title %}{{ page_title |
-                            default('Home') }}{% endblock %}
-                        </h1>
-                    </div>
-                    <div class="header-right">
-                        <div class="header-user">
-                            <span class="header-user-name"
-                                >{{ current_user }}</span
-                            >
-                            <div class="header-user-avatar">
-                                {{ current_user[0] if current_user else '?' }}
-                            </div>
-                        </div>
-                    </div>
-                </header>
-
                 <!-- Page Content -->
                 <div class="page-content">
                     {% block content %}{% endblock %}

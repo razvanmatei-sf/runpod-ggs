@@ -31,4 +31,8 @@ download "https://huggingface.co/Comfy-Org/ltx-2/resolve/main/split_files/text_e
 download "https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-19b-distilled-lora-384.safetensors" \
     "/workspace/ComfyUI/models/loras/ltx-2-19b-distilled-lora-384.safetensors"
 
+# VAE
+download "https://huggingface.co/Kijai/LTXV2_comfy/resolve/main/VAE/LTX2_video_vae_bf16.safetensors" \
+    "/workspace/ComfyUI/models/vae/LTX2_video_vae_bf16.safetensors"
+
 echo "Download finished"
