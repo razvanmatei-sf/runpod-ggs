@@ -1643,18 +1643,16 @@ a:hover {
 
 .template-card {
     position: relative;
-    background: var(--bg-card);
-    border: 1px solid var(--border-default);
+    background: transparent;
+    border: none;
     border-radius: var(--radius-lg);
-    overflow: hidden;
+    overflow: visible;
     cursor: pointer;
     transition: var(--transition-normal);
 }
 
 .template-card:hover {
-    border-color: var(--border-card);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    /* No lift effect - zoom happens on images instead */
 }
 
 .template-card-image {
@@ -1662,6 +1660,7 @@ a:hover {
     width: 100%;
     aspect-ratio: 1;
     overflow: hidden;
+    border-radius: var(--radius-lg);
 }
 
 .template-image-slider {
@@ -1677,20 +1676,25 @@ a:hover {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.template-card:hover .template-image {
+    transform: scale(1.05);
 }
 
 .template-image-before {
     z-index: 1;
-    clip-path: inset(0 0 0 0);
+    clip-path: inset(0 50% 0 0);
 }
 
 .template-image-after {
     z-index: 0;
 }
 
-/* Slider divider line */
+/* Slider divider line - starts at 50% */
 .template-image-slider {
-    --slider-pos: 100%;
+    --slider-pos: 50%;
 }
 
 .template-image-slider::after {
@@ -1704,13 +1708,9 @@ a:hover {
     z-index: 2;
     left: var(--slider-pos);
     transform: translateX(-50%);
-    opacity: 0;
+    opacity: 1;
     transition: opacity 0.2s ease;
     pointer-events: none;
-}
-
-.template-image-slider:hover::after {
-    opacity: 1;
 }
 
 .template-logo {
@@ -1757,7 +1757,7 @@ a:hover {
 }
 
 .template-card-content {
-    padding: var(--space-3);
+    padding: var(--space-3) 0;
 }
 
 .template-card-title {
@@ -1780,11 +1780,11 @@ a:hover {
     overflow: hidden;
 }
 
-/* Template Card - Edit Button */
+/* Template Card - Edit Button (bottom-left to avoid logo overlap) */
 .template-edit-btn {
     position: absolute;
     top: var(--space-2);
-    right: var(--space-2);
+    left: var(--space-2);
     z-index: 10;
     background: rgba(0, 0, 0, 0.7);
     border: none;
@@ -1812,6 +1812,7 @@ a:hover {
     align-items: center;
     justify-content: center;
     aspect-ratio: 1;
+    border-radius: var(--radius-lg);
 }
 
 .template-card-add:hover {
