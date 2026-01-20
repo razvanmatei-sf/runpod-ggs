@@ -4,10 +4,10 @@
     <!-- Toolbar -->
     <div class="assets-toolbar">
         <div class="toolbar-left">
-            {% if not is_root %}
-            <!-- Back Button -->
+            {% if not is_root and breadcrumb|length > 1 %}
+            <!-- Back Button - only show when deeper than user's root folder -->
             <a
-                href="{% if parent_path %}{{ url_for('assets_browse', subpath=parent_path) }}{% else %}{{ url_for('assets') }}{% endif %}"
+                href="{{ url_for('assets_browse', subpath=parent_path) }}"
                 class="back-btn"
                 title="Go back"
             >
@@ -23,29 +23,12 @@
                 </svg>
             </a>
             {% endif %}
-            <!-- Breadcrumb -->
+            <!-- Breadcrumb - starts from user's folder as apparent root -->
             <nav class="assets-breadcrumb">
-                <a
-                    href="{{ url_for('assets') }}"
-                    class="breadcrumb-item {% if is_root %}current{% endif %}"
-                >
-                    <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        width="16"
-                        height="16"
-                    >
-                        <rect x="3" y="3" width="7" height="7" rx="1" />
-                        <rect x="14" y="3" width="7" height="7" rx="1" />
-                        <rect x="14" y="14" width="7" height="7" rx="1" />
-                        <rect x="3" y="14" width="7" height="7" rx="1" />
-                    </svg>
-                    <span>Assets</span>
-                </a>
-                {% for crumb in breadcrumb %}
-                <span class="breadcrumb-sep">/</span>
+                {% for crumb in breadcrumb %} {% if not loop.first %}<span
+                    class="breadcrumb-sep"
+                    >/</span
+                >{% endif %}
                 <a
                     href="{{ url_for('assets_browse', subpath=crumb.path) }}"
                     class="breadcrumb-item {% if loop.last %}current{% endif %}"
@@ -157,11 +140,15 @@
 
             <!-- Folders -->
             {% for folder in folders %}
-            <a
-                href="{{ url_for('assets_browse', subpath=folder.path) }}"
+            <div
                 class="asset-item folder-item"
+                data-path="{{ folder.path }}"
+                data-name="{{ folder.name }}"
             >
-                <div class="asset-thumb">
+                <a
+                    href="{{ url_for('assets_browse', subpath=folder.path) }}"
+                    class="asset-thumb folder-link"
+                >
                     <div class="folder-icon">
                         <svg
                             viewBox="0 0 24 24"
@@ -174,9 +161,56 @@
                             />
                         </svg>
                     </div>
+                </a>
+                <a
+                    href="{{ url_for('assets_browse', subpath=folder.path) }}"
+                    class="asset-name"
+                    >{{ folder.name }}</a
+                >
+                <div class="asset-actions">
+                    <button
+                        type="button"
+                        class="action-btn"
+                        onclick="event.preventDefault(); downloadFolder('{{ folder.path }}', '{{ folder.name }}')"
+                        title="Download folder"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            width="16"
+                            height="16"
+                        >
+                            <path
+                                d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                            />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                    </button>
+                    <button
+                        type="button"
+                        class="action-btn danger"
+                        onclick="event.preventDefault(); confirmDeleteFolder('{{ folder.path }}', '{{ folder.name }}')"
+                        title="Delete folder"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            width="16"
+                            height="16"
+                        >
+                            <polyline points="3 6 5 6 21 6" />
+                            <path
+                                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                            />
+                        </svg>
+                    </button>
                 </div>
-                <div class="asset-name">{{ folder.name }}</div>
-            </a>
+            </div>
             {% endfor %}
 
             <!-- Files -->
@@ -537,7 +571,7 @@
         display: flex;
         flex-direction: column;
         height: 100%;
-        gap: 16px;
+        gap: 8px;
     }
 
     /* Toolbar */
@@ -545,7 +579,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 12px 16px;
+        padding: 8px 12px;
         background: var(--card-bg);
         border-radius: 8px;
         border: 1px solid var(--border-color);
@@ -677,6 +711,14 @@
         background: rgba(0, 0, 0, 0.2);
         cursor: pointer;
         overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    /* Folder link styling */
+    .folder-link {
+        text-decoration: none;
+        color: inherit;
     }
 
     .asset-thumb img {
@@ -743,44 +785,56 @@
 
     /* Asset info */
     .asset-info {
-        padding: 12px;
+        padding: 6px 8px;
         flex: 1;
     }
 
     .asset-name {
-        font-size: 13px;
+        display: block;
+        font-size: 12px;
         font-weight: 500;
         color: var(--text-primary);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        padding: 8px 12px;
+        padding: 4px 8px;
+        text-decoration: none;
     }
 
     .folder-item .asset-name {
         text-align: center;
     }
 
+    a.asset-name:hover {
+        color: var(--primary-color);
+    }
+
     .asset-meta {
         display: flex;
         justify-content: space-between;
-        font-size: 11px;
+        font-size: 10px;
         color: var(--text-muted);
-        margin-top: 4px;
+        margin-top: 2px;
+        padding: 0 8px;
     }
 
     /* Asset actions */
     .asset-actions {
         display: flex;
         gap: 4px;
-        padding: 8px 12px;
+        padding: 4px 8px 6px;
         border-top: 1px solid var(--border-color);
         opacity: 0;
         transition: opacity 0.15s ease;
+        justify-content: center;
     }
 
     .asset-item:hover .asset-actions {
         opacity: 1;
+    }
+
+    .folder-item .asset-actions {
+        justify-content: center;
     }
 
     .action-btn {
@@ -1221,6 +1275,59 @@
             })
             .catch((err) => {
                 showToast("Error deleting file", "error");
+                console.error(err);
+            });
+    }
+
+    function downloadFolder(path, name) {
+        showToast("Preparing folder download...");
+        // Trigger folder download - server will create a zip
+        const a = document.createElement("a");
+        a.href = "/assets/download-folder/" + path;
+        a.download = name + ".zip";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    function confirmDeleteFolder(path, name) {
+        if (
+            !confirm(
+                'Are you sure you want to delete the folder "' +
+                    name +
+                    '" and ALL its contents?\n\nThis action cannot be undone.',
+            )
+        ) {
+            return;
+        }
+
+        fetch("/assets/delete-folder/" + path, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    // Remove the folder from the grid
+                    const item = document.querySelector(
+                        `.folder-item[data-path="${path}"]`,
+                    );
+                    if (item) {
+                        item.remove();
+                    }
+                    showToast("Deleted folder " + name, "success");
+                    updateFileCount();
+                } else {
+                    showToast(
+                        "Error: " + (data.error || "Failed to delete folder"),
+                        "error",
+                    );
+                }
+            })
+            .catch((err) => {
+                showToast("Error deleting folder", "error");
                 console.error(err);
             });
     }

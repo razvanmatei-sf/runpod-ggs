@@ -2613,35 +2613,23 @@ def assets_browse(subpath):
 
     # Find the index of "output" or "input" in the path
     root_index = -1
-    root_type = None
     for i, part in enumerate(parts):
-        if part == "output":
+        if part in ("output", "input"):
             root_index = i
-            root_type = "output"
-            break
-        elif part == "input":
-            root_index = i
-            root_type = "input"
             break
 
-    # Only build breadcrumb from root folder onwards
+    # Only build breadcrumb from username folder onwards (skip output/input folder)
+    # This makes the user's folder appear as the root since they can't browse elsewhere
     for i, part in enumerate(parts):
         if part:
             current_crumb_path = (
                 os.path.join(current_crumb_path, part) if current_crumb_path else part
             )
-            # Only add to visible breadcrumb if at or after root index
-            if i >= root_index and root_index >= 0:
-                # Rename the root folder to friendly name
-                if i == root_index:
-                    display_name = (
-                        "My Outputs" if root_type == "output" else "My Inputs"
-                    )
-                else:
-                    display_name = part
+            # Only add to visible breadcrumb if after root index (username folder onwards)
+            if i > root_index and root_index >= 0:
                 breadcrumb.append(
                     {
-                        "name": display_name,
+                        "name": part,
                         "path": current_crumb_path,
                     }
                 )
@@ -2753,6 +2741,83 @@ def assets_delete(filepath):
 
     try:
         os.remove(full_path)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/assets/download-folder/<path:folderpath>")
+def assets_download_folder(folderpath):
+    """Download a folder as a zip file"""
+    import tempfile
+    import zipfile
+
+    if not current_artist:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    if not is_path_allowed(folderpath, current_artist):
+        return jsonify({"error": "Access denied"}), 403
+
+    full_path = os.path.join(WORKSPACE_ROOT, folderpath)
+
+    if not os.path.exists(full_path):
+        return jsonify({"error": "Folder not found"}), 404
+
+    if not os.path.isdir(full_path):
+        return jsonify({"error": "Not a folder"}), 400
+
+    folder_name = os.path.basename(folderpath)
+
+    # Create a temporary zip file
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    try:
+        with zipfile.ZipFile(temp_file.name, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for root, dirs, files in os.walk(full_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, full_path)
+                    zipf.write(file_path, os.path.join(folder_name, arcname))
+
+        return send_file(
+            temp_file.name,
+            mimetype="application/zip",
+            as_attachment=True,
+            download_name=f"{folder_name}.zip",
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/assets/delete-folder/<path:folderpath>", methods=["POST"])
+def assets_delete_folder(folderpath):
+    """Delete a folder and all its contents"""
+    import shutil
+
+    if not current_artist:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+
+    if not is_path_allowed(folderpath, current_artist):
+        return jsonify({"success": False, "error": "Access denied"}), 403
+
+    full_path = os.path.join(WORKSPACE_ROOT, folderpath)
+
+    if not os.path.exists(full_path):
+        return jsonify({"success": False, "error": "Folder not found"}), 404
+
+    if not os.path.isdir(full_path):
+        return jsonify({"success": False, "error": "Not a folder"}), 400
+
+    # Prevent deleting the user's root folder
+    parts = folderpath.split("/")
+    # Path structure: ComfyUI/output/username or ComfyUI/input/username
+    # Don't allow deleting at depth <= 3 (the username folder level)
+    if len(parts) <= 3:
+        return jsonify(
+            {"success": False, "error": "Cannot delete root user folder"}
+        ), 403
+
+    try:
+        shutil.rmtree(full_path)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

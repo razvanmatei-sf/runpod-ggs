@@ -293,14 +293,14 @@ a:hover {
 }
 
 .sidebar-logo {
-    width: 26px;
-    height: 26px;
+    width: 44px;
+    height: 44px;
     flex-shrink: 0;
 }
 
 .sidebar-logo img {
-    width: 26px;
-    height: 26px;
+    width: 44px;
+    height: 44px;
     border-radius: var(--radius-md);
 }
 
@@ -314,7 +314,7 @@ a:hover {
 .sidebar-user {
     font-size: var(--text-sm);
     color: var(--text-muted);
-    padding-left: calc(26px + var(--space-3));
+    padding-left: calc(44px + var(--space-3));
 }
 
 .sidebar-nav {
