@@ -13,6 +13,62 @@
       "logo_text": null,
       "enabled": true,
       "order": 1
+    },
+    {
+      "id": "test",
+      "title": "Test",
+      "description": "",
+      "category": "image",
+      "tags": [],
+      "workflow_file": null,
+      "workflow_api_file": "test_api.json",
+      "preview_image_a": null,
+      "preview_image_b": "test_b.png",
+      "logo_text": null,
+      "exposed_nodes": [
+        {
+          "node_id": "60",
+          "node_title": "Save Image",
+          "input_name": "filename_prefix",
+          "input_type": "string",
+          "class_type": "SaveImage",
+          "label": ""
+        },
+        {
+          "node_id": "107",
+          "node_title": "EmptySD3LatentImage",
+          "input_name": "width",
+          "input_type": "number",
+          "class_type": "EmptySD3LatentImage",
+          "label": ""
+        },
+        {
+          "node_id": "107",
+          "node_title": "EmptySD3LatentImage",
+          "input_name": "height",
+          "input_type": "number",
+          "class_type": "EmptySD3LatentImage",
+          "label": ""
+        },
+        {
+          "node_id": "107",
+          "node_title": "EmptySD3LatentImage",
+          "input_name": "batch_size",
+          "input_type": "number",
+          "class_type": "EmptySD3LatentImage",
+          "label": ""
+        },
+        {
+          "node_id": "111",
+          "node_title": "CLIP Text Encode (Negative Prompt)",
+          "input_name": "text",
+          "input_type": "string",
+          "class_type": "CLIPTextEncode",
+          "label": ""
+        }
+      ],
+      "enabled": true,
+      "order": 2
     }
   ]
 }
