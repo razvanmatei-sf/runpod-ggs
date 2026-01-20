@@ -1,98 +1,223 @@
-3. make sure you save custom loras from ComfyUI fodler before reinstalling
-save workflows folder as well
+1. Ensure to back up custom LoRAs from ComfyUI folder and workflows before reinstalling. Save workflows folder separately. reconsider having the models folder outside comfy and to have a symlink from /workspace/models to /worksapce/ComfyUI/models
+-use mv to move comfy models folder outside and then create symlink from there to the comfy ui installation folder so that you don't re-download all models
+
+2. Download the repository and copy the ai-toolkit login example (with RunPod secret key). Each artist should set up their own RunPod secret key for login. Question: Is there an option to link artist usernames from the dropdown list to their respective RunPod accounts? Use case: Artist selects wrong name from the list and saves images in another artist's folder, or selects my name (Razvan Matei) to access the admin page.
+
+3. Update button colors to match RunPod's reference images. Move admin menu closer to the sidebar.
+
+4. Integrate UI elements from RunPod's Serverless example into the home page.
+
+5. Re-Evaluate whether to use aria on Docker image or install temporarily when downloading models. Consider similar approach for AI-Toolkit. right now it's not working so well - rerunit and copy the error with mismatch; have a simple loading bar for the download progress, now it's super confusing to see any real progress; have a message at the end that will show the models that were supposed to be downloaded and whether they were actually downloaded
+
+6. Comfy setup changes:
+-Watch YouTube video (https://youtu.be/yOj9PYq3XYM) and create new version of the template with new installer from SECourses. Update arguments to high VRAM (as per Patreon post readme). Integrate model downloader from SECourses or use his links for new ZImage models and LTX. ComfyUI Installers: [https://www.patreon.com/posts/ComfyUI-Installers-105023709]. SwarmUI Installer, Model Auto Downloader and Presets: [https://www.patreon.com/posts/SwarmUI-Install-Download-Models-Presets-114517862]. Note: Pay attention to the template, might need to modify mine. Uses Python 3.10 and CUDA 13.
+-think about using a smaller linux version - ask Alex Geana about it, and ask about the drivers/cuda he used to make Arch Linux work for the comfy UI server
 
 
-4. download repo and copy the ai-toolkit login example (with runpod secret key)
-esch artist should setup their own runpod secret and use it when they login
-Q is there an option to connect an artist user name from the dropdown list to their respective runpod accounts?
-the use case would be this: artist selects wreong name from the list and will save images in another artist's folder or they select my name(Razvan Matei) and they can access the admin page
+✅ 7. Add LTX to model downloader admin panel.
 
-6. buttons colors to match reference images from runpod
-move admin menu close to sidebar
+8. Integrate these tools into the workbench:  
+   - https://www.patreon.com/cw/SECourses/posts  
+   - https://www.patreon.com/posts/swarmui-to-in-1-146959136  
+   - https://www.patreon.com/posts/1-click-for-undo-121228327  
+   - https://www.patreon.com/posts/ostris-ai-1-for-140089077  
+   - https://www.patreon.com/posts/z-image-turbo-ai-145094916  
+   - https://www.patreon.com/posts/birefnet-hr-high-121679760  
+   - https://www.patreon.com/posts/hi3dgen-image-to-130766890  
+   - https://www.patreon.com/posts/ultimate-image-2-120352012  
+   - https://www.patreon.com/posts/mmaudio-1-click-117990364  
+   - https://www.patreon.com/posts/how-to-install-141537068  
+   - https://www.patreon.com/posts/trellis-2-app-1-147686623
 
-7. Home page ingrate the ui elements from Serverless example from runpod
+9. let's think of a way to add details about the Studios that will be working with this interface
+-Studio Name
+-Studio Logo
+-Studio Banner (rename the existing one)
+we already have something in the Settings page where I can upload a Hero banner so let's add the other two options
+ideally this feature will be as following:
+superadmins have the option to create Studios in the admin pannel
+over there I can  define the 15 studios, logos, banner
+this gets saved on github
+I can select the studio from the admin pannel
+so there can be a simple studio name input field, upload banner/upload log buttons and git submit (similar to how we create the cards, since we already have auth setup over there)
 
-8. Try to see if you need aria on docker image vs installing temporary when downloading models
-maybe same for AI-Toolkit
+10. Workbench Platform Rebranding
+Implement white-label/rebrand architecture with config-driven branding. Create config/brand.json with:  
+   - name: "SF AI Workbench" or other brand name  
+   - logo: path to logo image  
+   - theme_color: primary accent color  
+   - features: array of enabled features for this brand  
+   Use environment variable (BRAND_CONFIG=sf or BRAND_CONFIG=other) to select config at startup.
 
-9. https://youtu.be/yOj9PYq3XYM
-create new version of the template with new installer from SECourses
-change arguments to high vram (patreon post readme)
-integrate model downloader from secourses or use his links for the new zimage models and LTX
-ComfyUI Installers: [ https://www.patreon.com/posts/ComfyUI-Installers-105023709 ]
-SwarmUI Installer, Model Auto Downloader and Presets: [ https://www.patreon.com/posts/SwarmUI-Install-Download-Models-Presets-114517862 ]
-pay attention to the template, might need to change mine
-has python 3.10 and cuda 13
-10. add LTX to model downloader admin pannel
+11. When clicking on a card, provide two options:  
+   - Open ComfyUI with the workflow file from /workspace/runpod-ggs/workflows  
+   - Build a simplified interface that allows selecting which nodes from the workflow to expose. This should have:  
+     - A tab for editing workflows (similar to the existing GitHub upload modal)  
+     - A "simplified workflow" tab where nodes can be selected as checkboxes  
+     - The simplified interface should open as a fullscreen page with selectable parameters and input fields  
+     - Add an "advanced" button on the card to open the workflow in ComfyUI  
+     - The simplified version should open by default
 
-11. integrate these tools in the workbench
-https://www.patreon.com/cw/SECourses/posts
-https://www.patreon.com/posts/swarmui-to-in-1-146959136
-https://www.patreon.com/posts/1-click-for-undo-121228327
-https://www.patreon.com/posts/ostris-ai-1-for-140089077
-https://www.patreon.com/posts/z-image-turbo-ai-145094916
-https://www.patreon.com/posts/birefnet-hr-high-121679760
-https://www.patreon.com/posts/hi3dgen-image-to-130766890
-https://www.patreon.com/posts/ultimate-image-2-120352012
-https://www.patreon.com/posts/mmaudio-1-click-117990364
-https://www.patreon.com/posts/how-to-install-141537068
-https://www.patreon.com/posts/trellis-2-app-1-147686623
+12. Implement logout/switch user/profile functionality
 
+13. Remove the "Home conf" title from the page as it's redundant with the left sidebar.
 
-12. Add option to set the name of the Studio in the Admin pannel - name should appear next to SF AI Workbench so that it's easy for me to differentiate between runpods when more than one is open
+14. Add SF new nodes.
 
+15. Fix the bug where deleted workflows are re-added from GitHub on pod restart. Either:  
+   - Sync deletion with GitHub  
+   - Remove all mockups entirely
 
-13. White-label / Rebrand Architecture
-Implement config-driven branding to support multiple branded versions of the workbench from a single codebase.
+16. Add Qwen layered model (YouTube video: https://www.youtube.com/watch?v=OVhmiBrsziQ)
 
-Solution:
-- Brand config file (config/brand.json) containing:
-  - name: "SF AI Workbench" or other brand name
-  - logo: path to logo image
-  - theme_color: primary accent color
-  - features: array of enabled features for this brand
-- Feature flags - each feature checks if enabled before showing in UI
-- Environment variable (BRAND_CONFIG=sf or BRAND_CONFIG=other) to select config at startup
+17. Add indicator next to ComfyUI icon in sidebar when auto-start is selected but Comfy is not ready.
 
-Benefits:
-- Single codebase, single set of commits
-- Shared bug fixes automatically apply to both brands
-- Easy to add/remove features per brand via config
-- One repo to manage when going private
-- Extensible to more brands if needed
+18. Implement file browser interface (no longer use Jupyter).
 
-Deployment:
-- Two Docker images (or one image with env var)
-- Two RunPod templates pointing to different configs
+19. Implement rclone file sync to Google Drive (Alex Geana)  
+- Implement rclone configuration in the admin panel with:  
+   - Google Drive API credential setup (OAuth 2.0 flow)  
+   - Folder selection interface for syncing from Runpod S3 to Google Drive  
+   - Configurable sync intervals (real-time, hourly, daily)  
+- Add "Gdrive Sync" section to admin panel with:  
+   - Google Drive account selection (multiple accounts support)  
+   - Runpod S3 bucket/folder selection  
+   - Sync status monitoring dashboard  
+- Ensure secure storage of Google Drive API keys using:  
+   - Environment variables in studio-specific templates (as per item 25)  
+   - Automatic rotation of credentials  
+- Test S3 sync functionality when pod is powered off using Runpod's S3 capabilities  
+- Add "Sync Now" button for manual triggering  
+- Display sync logs in admin panel with error tracking
 
+20. Add Gemma model from DeepMind: https://deepmind.google/models/gemma/gemma-3/
 
-14. possible actions when you click on a card - two options - one is to open comfy and open that workflow - you have to find a way for comfy to accesss the file from /workspace/runpod-ggs/workflows
-for second option we have to build an interface that will:
--have the option to load any of the workflows present on the use case/images/3d model/etc in a simplified interface
-the idea behind it is that i want to, as an admin, be able to edit a particular workflow for his "simplified form"
-this will open the API version of the workflow which is arranged in such a way that it can be utilised to, instead of opening the worjkflow in comfy ui, have a sort of interface that will:
-allow me to select which of the nodes from a workflow (API version) i want to expose in the simplified interface
-example:
-let's say I have a workflow that has 20 nodes
-i will save the normal version of the workflow, which can be opened in comfy ui (the running instance on runpod)
-i will save the API version of the workflow in the interface editor which will allow me to select which one of the multitude of nodes present in the workflow I want to expose 
-the goal is to create a super simplified version of the workflow that will allow non advanced users to use these workflows as a user and not as a workflow builder
-i would use the same pop-up/modal interface that we already have for uplloading the workflow to github
-I would have another tab called something like "simplified workflow - don't use this ad literam, i want you to come up with a proper name for this"
-all of this will be avaiulable if I have uploaded the API version of the workflow (btw this is a json file with a slightly better organized structure in terms of order of execution i suppose)
-in this tab, i want, based on the workflow that I am adding as a template/card to see the different nodes from the workflow as selectable options (think of it as checkboxes that I can select) that, if checked, will expose that parameter
-the nodes will be, but not allways, prompt input fields, image input fields, that will allow the non experienced users to use the workflow without the fear of openiong a very complex workflow
-the cards should, by default, open the simplified version
-i want us to add another button somewhere on the card that will say something like "advanced" which will open that workflow in comfy ui, for the advanced users that want to modify the parameters of that workflow
-i want you to plan this before and let me know if there are any unknowns for you
-after clicking a card, the simplified interface should open as a full screen page, where the users will see the selectable parameters, input images, or any other nodes that I expose from the card edit menu
-anything that is unclear about this?
+21. Add warning dialog when closing a new card template with unsaved changes.
 
+22. **Simplified Workflow Interface** 
+-create a catchy name for the simplified interface, suggestive yet fun and memorable
+-in the add new card/edit card modal, i want to have a dropdown that will display the custom nodes contained by the API version of the workflow: if the card has an API workflow uploaded, the Edit Simplified Interface will appear as a collapsed menu, that if clicked it will expand to show all the custom nodes 
+-all the custom nodes inside the workflow will appear as selectable checkboxes
+-i will select the ones that i want to expose, then click save
+-when clicking the card, the default action will be to open the simplified interface that we create with the exposed custom nodes, effectively creating an easier to use interface
+-the card should have an "open in comfy" option so that advanced users can modify settings if they so want to
+-the simplified interface of the opened workflow should run in a new tab under the current category (image, etc) 
 
-15. logout/switch profile
+23. remove the app title from the top bar, move all UI higher to create more working space
+
+24. Think about how we can integrate the workbench workflows into comfy UI
+
+25. add API keys in the environment variables of each studio's Template, for easy use withouth the fear of sharing API keys
+they will add the keys themselves if possible so that nodes like SF LLM, SF Wavespeed, etc pick the API key automatically without the need to have it in the workflow as a string
+
+26. ask Serhii about his version of the runpod server (interface with start-stop pods, file browser, etc)
+file browser
+terminate pods interface
+
+27. URGENT - Update Models - Qwen latest image and edit, LTX if anything, Flux 
 
 
-16. I want to remove the home conf title from the page, which is redundant because you already see that on the left sidebar. 
 
 
-17. add sf new nodes
+
+
+++++++++++++++
+++++++++++++++
+++++++++++++++
+
+Deepseek priority plan:
+### **Phase 1: Critical Foundation Work (High Priority)**
+**Goals**: Ensure data integrity, improve core functionality, and stabilize infrastructure.
+
+1. **Backup & Symlink Strategy**  
+- *Symlinks for critical directories with studio-specific paths:*  
+     - Source: `/workspace/outputs` → Destination: `/workspace/ComfyUI/outputs`  
+     - Source: `/workspace/models` → Destination: `/workspace/ComfyUI/models`  
+     - Source: `/workspace/inputs` → Destination: `/workspace/ComfyUI/inputs`  
+     - Source: `/workspace/workflows_<STUDIO_NAME>` → Destination: `/workspace/ComfyUI/user/default/workflows`  
+   - *Why*: Prevent data loss during reinstalls, save time on model re-downloads  
+   - *Implementation Details*:  
+     - Use dynamic symlink creation with studio name interpolation  
+     - Store original workflows in `/workspace/workflows_<STUDIO_NAME>`  
+     - Ensure symlink paths are validated during startup  
+     - Add fallback mechanism if symlink breaks
+     - implement step in the initial setup/comfy installer so that you add the studio ticker (GGS, ERP, ART, etc)
+- *Implement rclone configuration in the admin panel with:*
+   - Google Drive API credential setup (OAuth 2.0 flow)  
+   - Folder selection interface for syncing from Runpod S3 to Google Drive  
+   - Configurable sync intervals (real-time, hourly, daily)  
+- Add "Gdrive Sync" section to admin panel with:  
+   - Google Drive account selection (multiple accounts support)  
+   - Runpod S3 bucket/folder selection  
+   - Sync status monitoring dashboard  
+- Ensure secure storage of Google Drive API keys using:  
+   - Environment variables in studio-specific templates (as per item 25)  
+   - Automatic rotation of credentials  
+- Test S3 sync functionality when pod is powered off using Runpod's S3 capabilities  
+- Add "Sync Now" button for manual triggering  
+- Display sync logs in admin panel with error tracking
+
+3. **RunPod Secret Key Integration (Item 2)**  
+   - Implement per-artist RunPod key setup  
+   - Investigate username-to-account linking mechanism  
+   - *Why*: Security and prevent workflow folder contamination
+
+4. **Workflow Sync Bug Fix (Item 15)**  
+   - Implement GitHub sync for workflow deletions  
+   - *Why*: Prevent data corruption on pod restarts
+
+---
+
+### **Phase 2: Usability & UX Improvements (Medium Priority)**
+**Goals**: Enhance platform usability and consistency with RunPod's design language.
+
+5. **UI/UX Overhaul (Items 3, 13, 23)**  
+   - Update button colors to match RunPod  
+   - Move admin menu closer to sidebar  
+   - Remove redundant "Home conf" title  
+   - Increase vertical workspace by removing top bar title  
+   - *Why*: Improve visual consistency and user efficiency
+
+6. **Simplified Workflow Interface (Item 22)**  
+   - Develop a "Studio Mode" interface with checkbox-based node exposure  
+   - Add "Open in ComfyUI" fallback for advanced users  
+   - *Why*: Key differentiator for non-technical users
+
+7. **Logout/Profile Switching (Item 12)**  
+   - Implement secure session management  
+   - *Why*: Essential for multi-user environments
+
+---
+
+### **Phase 3: Feature Expansion & Integration (Long-Term)**
+**Goals**: Add new capabilities, integrations, and rebranding.
+
+8. **ComfyUI Rebuild (Item 6)**  
+   - Update to SECourses' installer with high VRAM support  
+   - Explore smaller Linux distro options (consult Alex Geana)  
+   - *Why*: Ensure platform stays up-to-date with latest tools
+
+9. **Studio Management System (Item 9)**  
+   - Superadmin studio creation interface  
+   - GitHub storage for studio configs  
+   - *Why*: Enables multi-studio deployment
+
+10. **Rebranding Architecture (Item 10)**  
+    - Implement `config/brand.json` with theme, logo, and feature toggles  
+    - *Why*: Enables white-labeling for different clients
+
+11. **API Key Management (Item 25)**  
+    - Store API keys in studio-specific environment variables  
+    - *Why*: Enhances security for LLM/audio nodes
+
+12. **Advanced Tool Integrations (Items 8, 16, 20)**  
+    - Add Gemma, Qwen, and other models  
+    - Integrate SECourses' tools  
+    - *Why*: Expands platform capabilities
+
+
+
+
+Serhii call
+
+S3 browser -

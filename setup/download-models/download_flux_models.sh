@@ -2,7 +2,6 @@
 # ABOUTME: Downloads Flux models (diffusion, CLIP, VAE, ControlNet)
 # ABOUTME: Requires HF_TOKEN for gated model access
 
-set -e
 cd /workspace
 source "$(dirname "$0")/download_helper.sh"
 
@@ -48,5 +47,3 @@ download "https://huggingface.co/Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro/re
 
 download "https://huggingface.co/Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro-2.0/resolve/main/diffusion_pytorch_model.safetensors" \
     "/workspace/models/controlnet/FLUX.1-dev-ControlNet-Union-Pro-2.0.safetensors"
-
-echo "Download finished"

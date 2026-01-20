@@ -1,83 +1,117 @@
 #!/bin/bash
-# ABOUTME: Shared download helper for model downloads
-# ABOUTME: Uses aria2c for fast parallel downloads with wget fallback, validates file sizes
+# ABOUTME: Simple download helper using aria2c with conditional-get for smart skipping
+# ABOUTME: Tracks downloads and provides a summary at the end automatically
 
-# Get remote file size via HEAD request
-# Usage: get_remote_size <url> [token]
-get_remote_size() {
-    local url="$1"
-    local token="$2"
-    local size
+# Arrays to track download results
+DOWNLOAD_ATTEMPTED=()
+DOWNLOAD_SUCCESS=()
+DOWNLOAD_SKIPPED=()
+DOWNLOAD_FAILED=()
 
-    if [ -n "$token" ]; then
-        size=$(curl -sI -H "Authorization: Bearer $token" "$url" | grep -i content-length | tail -1 | tr -d '\r' | awk '{print $2}')
-    else
-        size=$(curl -sI "$url" | grep -i content-length | tail -1 | tr -d '\r' | awk '{print $2}')
-    fi
-
-    echo "${size:-0}"
-}
-
-# Download a file with aria2c (fast) or wget (fallback)
-# Validates file size to detect incomplete downloads
+# Simple download function using aria2c
 # Usage: download <url> <destination>
 download() {
     local url="$1"
     local dest="$2"
+    local dir="$(dirname "$dest")"
+    local filename="$(basename "$dest")"
     local token="${HF_TOKEN:-$HUGGING_FACE_HUB_TOKEN}"
 
-    mkdir -p "$(dirname "$dest")"
+    DOWNLOAD_ATTEMPTED+=("$filename")
+    mkdir -p "$dir"
 
-    # Check for aria2 control file (incomplete download)
-    if [ -f "${dest}.aria2" ]; then
-        echo "Resuming incomplete download: $(basename "$dest")..."
-    elif [ -f "$dest" ]; then
-        # File exists, verify size
-        local local_size=$(stat -c%s "$dest" 2>/dev/null || stat -f%z "$dest" 2>/dev/null)
-        local remote_size=$(get_remote_size "$url" "$token")
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "📥 $filename"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-        if [ "$remote_size" -gt 0 ] && [ "$local_size" -eq "$remote_size" ]; then
-            echo "Skipping $(basename "$dest") - complete (${local_size} bytes)"
-            return 0
-        elif [ "$remote_size" -gt 0 ]; then
-            echo "Re-downloading $(basename "$dest") - size mismatch (local: ${local_size}, remote: ${remote_size})"
-            rm -f "$dest"
-        else
-            echo "Skipping $(basename "$dest") - exists (could not verify size)"
-            return 0
-        fi
-    else
-        echo "Downloading $(basename "$dest")..."
+    local aria_args=(
+        -x 16 -s 16
+        -d "$dir"
+        -o "$filename"
+        --auto-file-renaming=false
+        --conditional-get=true
+        --allow-overwrite=true
+        --console-log-level=notice
+        --summary-interval=5
+    )
+
+    # Add auth header if token is available
+    if [ -n "$token" ]; then
+        aria_args+=(--header="Authorization: Bearer $token")
     fi
 
-    if command -v aria2c &> /dev/null; then
-        if [ -n "$token" ]; then
-            aria2c -x 16 -s 16 -k 1M --summary-interval=1 --file-allocation=none \
-                --auto-file-renaming=false --allow-overwrite=true \
-                --header="Authorization: Bearer $token" \
-                -d "$(dirname "$dest")" -o "$(basename "$dest")" "$url"
+    # Capture aria2c output to detect skipped files
+    local output
+    output=$(aria2c "${aria_args[@]}" "$url" 2>&1)
+    local exit_code=$?
+
+    echo "$output"
+
+    if [ $exit_code -eq 0 ]; then
+        # Check if file was skipped (already complete)
+        if echo "$output" | grep -q "already completed\|Download complete\|Nothing to download"; then
+            DOWNLOAD_SKIPPED+=("$filename")
+            echo "⏭️  $filename (already exists)"
         else
-            aria2c -x 16 -s 16 -k 1M --summary-interval=1 --file-allocation=none \
-                --auto-file-renaming=false --allow-overwrite=true \
-                -d "$(dirname "$dest")" -o "$(basename "$dest")" "$url"
-        fi
-    elif [ -n "$token" ]; then
-        wget -c -q --show-progress --header="Authorization: Bearer $token" -O "$dest" "$url"
-    else
-        wget -c -q --show-progress -O "$dest" "$url"
-    fi
-
-    # Verify download completed successfully
-    if [ -f "$dest" ]; then
-        local final_size=$(stat -c%s "$dest" 2>/dev/null || stat -f%z "$dest" 2>/dev/null)
-        local expected_size=$(get_remote_size "$url" "$token")
-
-        if [ "$expected_size" -gt 0 ] && [ "$final_size" -ne "$expected_size" ]; then
-            echo "WARNING: $(basename "$dest") may be incomplete (got ${final_size}, expected ${expected_size})"
-            return 1
+            DOWNLOAD_SUCCESS+=("$filename")
+            echo "✅ $filename"
         fi
     else
-        echo "ERROR: Failed to download $(basename "$dest")"
+        DOWNLOAD_FAILED+=("$filename")
+        echo "❌ $filename - FAILED"
         return 1
     fi
 }
+
+# Print download summary
+_print_summary() {
+    local total=${#DOWNLOAD_ATTEMPTED[@]}
+    local success=${#DOWNLOAD_SUCCESS[@]}
+    local skipped=${#DOWNLOAD_SKIPPED[@]}
+    local failed=${#DOWNLOAD_FAILED[@]}
+
+    # Only print if we attempted any downloads
+    if [ $total -eq 0 ]; then
+        return
+    fi
+
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║                     DOWNLOAD SUMMARY                         ║"
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    printf "║  📊 Total attempted: %-40s║\n" "$total"
+    printf "║  ✅ Downloaded:      %-40s║\n" "$success"
+    printf "║  ⏭️  Skipped:         %-40s║\n" "$skipped"
+    printf "║  ❌ Failed:          %-40s║\n" "$failed"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+
+    if [ ${#DOWNLOAD_FAILED[@]} -gt 0 ]; then
+        echo ""
+        echo "❌ Failed downloads:"
+        for file in "${DOWNLOAD_FAILED[@]}"; do
+            echo "   • $file"
+        done
+    fi
+
+    if [ ${#DOWNLOAD_SUCCESS[@]} -gt 0 ]; then
+        echo ""
+        echo "✅ Downloaded:"
+        for file in "${DOWNLOAD_SUCCESS[@]}"; do
+            echo "   • $file"
+        done
+    fi
+
+    if [ ${#DOWNLOAD_SKIPPED[@]} -gt 0 ]; then
+        echo ""
+        echo "⏭️  Skipped (already exist):"
+        for file in "${DOWNLOAD_SKIPPED[@]}"; do
+            echo "   • $file"
+        done
+    fi
+
+    echo ""
+}
+
+# Trap to ensure summary is printed when script exits
+trap _print_summary EXIT
