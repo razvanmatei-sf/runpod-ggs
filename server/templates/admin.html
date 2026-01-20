@@ -323,6 +323,7 @@
         <div class="admin-actions">
             <button
                 type="button"
+                id="btn-download-models"
                 class="tool-btn tool-btn-start"
                 onclick="downloadModels()"
             >
@@ -330,6 +331,7 @@
             </button>
             <button
                 type="button"
+                id="btn-remove-models"
                 class="tool-btn tool-btn-stop"
                 onclick="removeModels()"
             >
@@ -397,6 +399,7 @@
         <div class="admin-actions">
             <button
                 type="button"
+                id="btn-install-nodes"
                 class="tool-btn tool-btn-start"
                 onclick="installNodes()"
             >
@@ -404,7 +407,8 @@
             </button>
             <button
                 type="button"
-                class="tool-btn tool-btn-open"
+                id="btn-update-nodes"
+                class="tool-btn tool-btn-restart"
                 onclick="updateAllNodes()"
             >
                 Update All
@@ -935,6 +939,14 @@
         const terminal = document.getElementById("admin-terminal");
         terminal.textContent = `Starting download for: ${selected.join(", ")}...\n`;
 
+        // Disable download button
+        const downloadBtn = document.getElementById("btn-download-models");
+        if (downloadBtn) {
+            downloadBtn.disabled = true;
+            downloadBtn.classList.add("tool-btn-disabled");
+            downloadBtn.textContent = "Downloading...";
+        }
+
         fetch("/download_models", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -947,9 +959,30 @@
             .then((response) => response.json())
             .then((data) => {
                 if (data.success) {
-                    startPollingLogs();
+                    startPollingLogsWithCallback(() => {
+                        // Re-enable button when done
+                        if (downloadBtn) {
+                            downloadBtn.disabled = false;
+                            downloadBtn.classList.remove("tool-btn-disabled");
+                            downloadBtn.textContent = "Download Selected";
+                        }
+                    });
                 } else {
                     terminal.textContent += `Error: ${data.message}\n`;
+                    // Re-enable button on error
+                    if (downloadBtn) {
+                        downloadBtn.disabled = false;
+                        downloadBtn.classList.remove("tool-btn-disabled");
+                        downloadBtn.textContent = "Download Selected";
+                    }
+                }
+            })
+            .catch((err) => {
+                terminal.textContent += `Error: ${err}\n`;
+                if (downloadBtn) {
+                    downloadBtn.disabled = false;
+                    downloadBtn.classList.remove("tool-btn-disabled");
+                    downloadBtn.textContent = "Download Selected";
                 }
             });
     }
@@ -966,6 +999,14 @@
         const terminal = document.getElementById("admin-terminal");
         terminal.textContent = `Installing ${selected.length} custom nodes...\n`;
 
+        // Disable install button
+        const installBtn = document.getElementById("btn-install-nodes");
+        if (installBtn) {
+            installBtn.disabled = true;
+            installBtn.classList.add("tool-btn-disabled");
+            installBtn.textContent = "Installing...";
+        }
+
         fetch("/custom_nodes_action", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -974,9 +1015,28 @@
             .then((response) => response.json())
             .then((data) => {
                 if (data.success) {
-                    startPollingLogs();
+                    startPollingLogsWithCallback(() => {
+                        if (installBtn) {
+                            installBtn.disabled = false;
+                            installBtn.classList.remove("tool-btn-disabled");
+                            installBtn.textContent = "Install Selected";
+                        }
+                    });
                 } else {
                     terminal.textContent += `Error: ${data.message}\n`;
+                    if (installBtn) {
+                        installBtn.disabled = false;
+                        installBtn.classList.remove("tool-btn-disabled");
+                        installBtn.textContent = "Install Selected";
+                    }
+                }
+            })
+            .catch((err) => {
+                terminal.textContent += `Error: ${err}\n`;
+                if (installBtn) {
+                    installBtn.disabled = false;
+                    installBtn.classList.remove("tool-btn-disabled");
+                    installBtn.textContent = "Install Selected";
                 }
             });
     }
@@ -984,6 +1044,14 @@
     function updateAllNodes() {
         const terminal = document.getElementById("admin-terminal");
         terminal.textContent = `Updating all custom nodes...\n`;
+
+        // Disable update button
+        const updateBtn = document.getElementById("btn-update-nodes");
+        if (updateBtn) {
+            updateBtn.disabled = true;
+            updateBtn.classList.add("tool-btn-disabled");
+            updateBtn.textContent = "Updating...";
+        }
 
         fetch("/custom_nodes_action", {
             method: "POST",
@@ -993,9 +1061,28 @@
             .then((response) => response.json())
             .then((data) => {
                 if (data.success) {
-                    startPollingLogs();
+                    startPollingLogsWithCallback(() => {
+                        if (updateBtn) {
+                            updateBtn.disabled = false;
+                            updateBtn.classList.remove("tool-btn-disabled");
+                            updateBtn.textContent = "Update All";
+                        }
+                    });
                 } else {
                     terminal.textContent += `Error: ${data.message}\n`;
+                    if (updateBtn) {
+                        updateBtn.disabled = false;
+                        updateBtn.classList.remove("tool-btn-disabled");
+                        updateBtn.textContent = "Update All";
+                    }
+                }
+            })
+            .catch((err) => {
+                terminal.textContent += `Error: ${err}\n`;
+                if (updateBtn) {
+                    updateBtn.disabled = false;
+                    updateBtn.classList.remove("tool-btn-disabled");
+                    updateBtn.textContent = "Update All";
                 }
             });
     }

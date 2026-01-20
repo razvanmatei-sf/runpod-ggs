@@ -665,8 +665,6 @@
 
     .asset-item:hover {
         border-color: var(--primary-color);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
     /* Asset thumbnail */
@@ -685,6 +683,21 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .asset-item:hover .asset-thumb img {
+        transform: scale(1.05);
+    }
+
+    .asset-item:hover .folder-icon,
+    .asset-item:hover .file-icon {
+        transform: scale(1.1);
+    }
+
+    .folder-icon,
+    .file-icon {
+        transition: transform 0.3s ease;
     }
 
     .file-icon {
