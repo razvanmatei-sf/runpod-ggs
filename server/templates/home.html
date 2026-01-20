@@ -273,13 +273,39 @@
 <!-- Edit Template Modal -->
 <div class="modal-overlay" id="edit-template-modal">
     <div class="modal template-edit-modal">
+        <!-- Unsaved Changes Confirmation Dialog -->
+        <div
+            class="confirm-dialog"
+            id="unsaved-changes-dialog"
+            style="display: none"
+        >
+            <div class="confirm-dialog-content">
+                <h3>Unsaved Changes</h3>
+                <p>
+                    You have unsaved changes. Are you sure you want to close
+                    without saving?
+                </p>
+                <div class="confirm-dialog-actions">
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        onclick="cancelCloseModal()"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        class="btn-danger"
+                        onclick="forceCloseModal()"
+                    >
+                        Discard Changes
+                    </button>
+                </div>
+            </div>
+        </div>
         <div class="modal-header">
             <h2 class="modal-title" id="modal-title">Edit Template</h2>
-            <button
-                type="button"
-                class="modal-close"
-                onclick="closeEditModal()"
-            >
+            <button type="button" class="modal-close" onclick="tryCloseModal()">
                 <svg
                     width="20"
                     height="20"
@@ -469,7 +495,7 @@
                     <button
                         type="button"
                         class="btn-secondary"
-                        onclick="closeEditModal()"
+                        onclick="tryCloseModal()"
                     >
                         Cancel
                     </button>
@@ -608,6 +634,62 @@
     }
 
     {% if is_admin %}
+    // Track form state for unsaved changes detection
+    let initialFormState = {};
+    let hasUnsavedChanges = false;
+    let pendingClose = false;
+
+    // Capture initial form state
+    function captureFormState() {
+        initialFormState = {
+            title: document.getElementById("template-title").value,
+            description: document.getElementById("template-description").value,
+            category: document.getElementById("template-category").value,
+            tags: document.getElementById("template-tags").value,
+            logo: document.getElementById("template-logo").value
+        };
+        hasUnsavedChanges = false;
+    }
+
+    // Check if form has changed
+    function checkFormChanges() {
+        const current = {
+            title: document.getElementById("template-title").value,
+            description: document.getElementById("template-description").value,
+            category: document.getElementById("template-category").value,
+            tags: document.getElementById("template-tags").value,
+            logo: document.getElementById("template-logo").value
+        };
+        hasUnsavedChanges = JSON.stringify(current) !== JSON.stringify(initialFormState);
+        return hasUnsavedChanges;
+    }
+
+    // Try to close modal - show confirmation if unsaved changes
+    function tryCloseModal() {
+        checkFormChanges();
+        if (hasUnsavedChanges) {
+            document.getElementById("unsaved-changes-dialog").style.display = "flex";
+            pendingClose = true;
+        } else {
+            forceCloseModal();
+        }
+    }
+
+    // Cancel the close action
+    function cancelCloseModal() {
+        document.getElementById("unsaved-changes-dialog").style.display = "none";
+        pendingClose = false;
+    }
+
+    // Force close without saving
+    function forceCloseModal() {
+        document.getElementById("unsaved-changes-dialog").style.display = "none";
+        document.getElementById("edit-template-modal").classList.remove("active");
+        currentTemplateId = null;
+        hasUnsavedChanges = false;
+        pendingClose = false;
+    }
+
     // Open edit modal
     function openEditModal(templateId) {
         currentTemplateId = templateId;
@@ -657,12 +739,22 @@
         }
 
         modal.classList.add("active");
+
+        // Capture initial state after a small delay to ensure form is populated
+        setTimeout(captureFormState, 50);
+
+        // Add change listeners to form inputs
+        const formInputs = form.querySelectorAll('input, textarea, select');
+        formInputs.forEach(input => {
+            input.addEventListener('input', checkFormChanges);
+            input.addEventListener('change', checkFormChanges);
+        });
     }
 
-    // Close edit modal
+    // Close edit modal (called after successful save)
     function closeEditModal() {
-        document.getElementById("edit-template-modal").classList.remove("active");
-        currentTemplateId = null;
+        hasUnsavedChanges = false;
+        forceCloseModal();
     }
 
     // Save template
@@ -694,6 +786,9 @@
             if (result.success) {
                 // Update local data
                 templatesData[result.template.id] = result.template;
+                // Mark as saved (no unsaved changes)
+                hasUnsavedChanges = false;
+                captureFormState();
                 if (!id) {
                     currentTemplateId = result.template.id;
                     document.getElementById("template-id").value = result.template.id;
@@ -860,9 +955,72 @@
     // Close modal on overlay click
     document.getElementById("edit-template-modal").addEventListener("click", function(e) {
         if (e.target === this) {
-            closeEditModal();
+            tryCloseModal();
+        }
+    });
+
+    // Handle Escape key for this modal specifically
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape") {
+            const modal = document.getElementById("edit-template-modal");
+            const confirmDialog = document.getElementById("unsaved-changes-dialog");
+            if (modal.classList.contains("active")) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (confirmDialog.style.display === "flex") {
+                    cancelCloseModal();
+                } else {
+                    tryCloseModal();
+                }
+            }
         }
     });
     {% endif %}
 </script>
+
+<style>
+    /* Confirmation dialog styles */
+    .confirm-dialog {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        border-radius: var(--radius-lg);
+    }
+
+    .confirm-dialog-content {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        max-width: 400px;
+        text-align: center;
+    }
+
+    .confirm-dialog-content h3 {
+        margin: 0 0 12px 0;
+        color: var(--text-primary);
+        font-size: 18px;
+    }
+
+    .confirm-dialog-content p {
+        margin: 0 0 20px 0;
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .confirm-dialog-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+
+    .confirm-dialog-actions button {
+        min-width: 120px;
+    }
+</style>
 {% endblock %}

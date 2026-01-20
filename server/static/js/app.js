@@ -13,21 +13,25 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Close modals when clicking overlay
+  // Close modals when clicking overlay (skip edit-template-modal - it has custom handling)
   document.querySelectorAll(".modal-overlay").forEach(function (overlay) {
     overlay.addEventListener("click", function (e) {
       if (e.target === overlay) {
+        // Skip edit-template-modal - it handles clicks itself for unsaved changes
+        if (overlay.id === "edit-template-modal") return;
         overlay.classList.remove("active");
       }
     });
   });
 
-  // Close modals with Escape key
+  // Close modals with Escape key (skip edit-template-modal - it has custom handling)
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") {
       document
         .querySelectorAll(".modal-overlay.active")
         .forEach(function (modal) {
+          // Skip edit-template-modal - it handles Escape itself for unsaved changes
+          if (modal.id === "edit-template-modal") return;
           modal.classList.remove("active");
         });
     }
