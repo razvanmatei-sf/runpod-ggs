@@ -1979,6 +1979,97 @@ select.form-input {
     border-top: 1px solid var(--border-default);
 }
 
+/* ============================================
+   QUICKGEN SETTINGS
+   ============================================ */
+.quickgen-section-header {
+    user-select: none;
+}
+
+.quickgen-section-header:hover {
+    color: var(--text-primary);
+}
+
+.quickgen-nodes-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    max-height: 300px;
+    overflow-y: auto;
+    padding: var(--space-2);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-default);
+}
+
+.quickgen-node-group {
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.quickgen-node-group:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.quickgen-node-title {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+}
+
+.quickgen-node-title .text-muted {
+    font-weight: var(--font-normal);
+    font-size: var(--text-xs);
+}
+
+.quickgen-input-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) 0;
+}
+
+.quickgen-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex: 1;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.quickgen-checkbox-label:hover {
+    color: var(--text-primary);
+}
+
+.quickgen-checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent-primary);
+}
+
+.quickgen-input-name {
+    font-weight: var(--font-medium);
+    color: var(--text-primary);
+    min-width: 80px;
+}
+
+.quickgen-input-preview {
+    font-size: var(--text-xs);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.quickgen-label-input {
+    flex-shrink: 0;
+}
+
 /* Buttons */
 .btn-primary {
     background: var(--accent-primary);

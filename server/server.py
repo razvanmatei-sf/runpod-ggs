@@ -2253,6 +2253,7 @@ def api_create_template():
         "preview_image_a": None,
         "preview_image_b": None,
         "logo_text": data.get("logo_text"),
+        "exposed_nodes": data.get("exposed_nodes", []),
         "enabled": True,
         "order": len(templates) + 1,
     }
@@ -2280,6 +2281,9 @@ def api_update_template(template_id):
             templates[i]["category"] = data.get("category", t.get("category"))
             templates[i]["tags"] = data.get("tags", t.get("tags"))
             templates[i]["logo_text"] = data.get("logo_text", t.get("logo_text"))
+            templates[i]["exposed_nodes"] = data.get(
+                "exposed_nodes", t.get("exposed_nodes", [])
+            )
             templates[i]["enabled"] = data.get("enabled", t.get("enabled", True))
 
             if save_templates(templates):
@@ -2419,6 +2423,37 @@ def api_upload_template_file(template_id):
     if save_templates(templates):
         return jsonify({"success": True, "filename": filename})
     return jsonify({"success": False, "message": "Failed to update template"}), 500
+
+
+@app.route("/api/templates/<template_id>/workflow-api")
+def api_get_workflow_api(template_id):
+    """Get the API workflow JSON for a template (for QuickGen parsing)"""
+    if not current_artist:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    templates = load_templates()
+    template = None
+    for t in templates:
+        if t.get("id") == template_id:
+            template = t
+            break
+
+    if not template:
+        return jsonify({"error": "Template not found"}), 404
+
+    if not template.get("workflow_api_file"):
+        return jsonify({"error": "No API workflow file"}), 404
+
+    workflow_path = os.path.join(WORKFLOWS_DIR, template["workflow_api_file"])
+    if not os.path.exists(workflow_path):
+        return jsonify({"error": "Workflow file not found"}), 404
+
+    try:
+        with open(workflow_path, "r") as f:
+            workflow_data = json.load(f)
+        return jsonify(workflow_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/templates/commit", methods=["POST"])

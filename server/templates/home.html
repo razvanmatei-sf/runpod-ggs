@@ -481,6 +481,53 @@
                 </div>
             </div>
 
+            <!-- QuickGen Settings Section (collapsible) -->
+            <div
+                class="form-section-title quickgen-section-header"
+                onclick="toggleQuickGenSettings()"
+                style="
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                "
+            >
+                <span>QuickGen Settings</span>
+                <svg
+                    id="quickgen-chevron"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    width="16"
+                    height="16"
+                    style="transition: transform 0.2s ease"
+                >
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </div>
+            <div id="quickgen-settings" style="display: none">
+                <p
+                    id="quickgen-no-api"
+                    class="text-muted"
+                    style="font-size: 13px; margin-bottom: 12px"
+                >
+                    Upload an API Workflow JSON to configure QuickGen exposed
+                    nodes.
+                </p>
+                <div id="quickgen-nodes-container" style="display: none">
+                    <p
+                        class="text-muted"
+                        style="font-size: 13px; margin-bottom: 12px"
+                    >
+                        Select which nodes to expose in the QuickGen interface:
+                    </p>
+                    <div id="quickgen-nodes-list" class="quickgen-nodes-list">
+                        <!-- Nodes will be populated here dynamically -->
+                    </div>
+                </div>
+            </div>
+
             <div class="modal-actions">
                 <button
                     type="button"
@@ -735,6 +782,8 @@
             }
             if (t.workflow_api_file) {
                 document.getElementById("workflow-api-file-status").textContent = t.workflow_api_file;
+                // Load and parse the API workflow for QuickGen settings
+                loadApiWorkflowForQuickGen(t.id, t.exposed_nodes || []);
             }
             if (t.preview_image_a) {
                 document.getElementById("preview-a-file-status").textContent = t.preview_image_a;
@@ -749,7 +798,15 @@
             title.textContent = "Add New Template";
             document.getElementById("template-id").value = "";
             deleteBtn.style.display = "none";
+            // Reset QuickGen settings
+            document.getElementById("quickgen-no-api").style.display = "block";
+            document.getElementById("quickgen-nodes-container").style.display = "none";
+            document.getElementById("quickgen-nodes-list").innerHTML = "";
         }
+
+        // Collapse QuickGen section by default
+        document.getElementById("quickgen-settings").style.display = "none";
+        document.getElementById("quickgen-chevron").style.transform = "rotate(0deg)";
 
         modal.classList.add("active");
 
@@ -783,7 +840,8 @@
             description: document.getElementById("template-description").value,
             category: document.getElementById("template-category").value,
             tags: tags,
-            logo_text: document.getElementById("template-logo").value || null
+            logo_text: document.getElementById("template-logo").value || null,
+            exposed_nodes: getExposedNodesForSave()
         };
 
         const url = id ? `/api/templates/${id}` : "/api/templates";
@@ -894,6 +952,17 @@
 
         statusSpan.textContent = "Uploading...";
 
+        // If uploading API workflow, also read it for QuickGen parsing
+        let apiWorkflowData = null;
+        if (fileType === 'workflow_api') {
+            try {
+                const fileContent = await fileInput.files[0].text();
+                apiWorkflowData = JSON.parse(fileContent);
+            } catch (e) {
+                console.error("Error parsing API workflow JSON:", e);
+            }
+        }
+
         fetch(`/api/templates/${templateId}/upload`, {
             method: "POST",
             body: formData
@@ -905,7 +974,13 @@
                 // Update local data
                 if (templatesData[templateId]) {
                     if (fileType === 'workflow') templatesData[templateId].workflow_file = result.filename;
-                    if (fileType === 'workflow_api') templatesData[templateId].workflow_api_file = result.filename;
+                    if (fileType === 'workflow_api') {
+                        templatesData[templateId].workflow_api_file = result.filename;
+                        // Parse and display QuickGen nodes
+                        if (apiWorkflowData) {
+                            parseAndDisplayQuickGenNodes(apiWorkflowData, templatesData[templateId].exposed_nodes || []);
+                        }
+                    }
                     if (fileType === 'preview_a') templatesData[templateId].preview_image_a = result.filename;
                     if (fileType === 'preview_b') templatesData[templateId].preview_image_b = result.filename;
                 }
@@ -941,6 +1016,175 @@
             }
         })
         .catch(err => alert("Error deleting template: " + err));
+    }
+
+    // QuickGen Settings Functions
+    function toggleQuickGenSettings() {
+        const settings = document.getElementById("quickgen-settings");
+        const chevron = document.getElementById("quickgen-chevron");
+        if (settings.style.display === "none") {
+            settings.style.display = "block";
+            chevron.style.transform = "rotate(180deg)";
+        } else {
+            settings.style.display = "none";
+            chevron.style.transform = "rotate(0deg)";
+        }
+    }
+
+    async function loadApiWorkflowForQuickGen(templateId, existingExposedNodes) {
+        try {
+            const response = await fetch(`/api/templates/${templateId}/workflow-api`);
+            if (response.ok) {
+                const workflowData = await response.json();
+                parseAndDisplayQuickGenNodes(workflowData, existingExposedNodes);
+            }
+        } catch (e) {
+            console.error("Error loading API workflow:", e);
+        }
+    }
+
+    function parseAndDisplayQuickGenNodes(workflowData, existingExposedNodes) {
+        const noApiMsg = document.getElementById("quickgen-no-api");
+        const container = document.getElementById("quickgen-nodes-container");
+        const nodesList = document.getElementById("quickgen-nodes-list");
+
+        noApiMsg.style.display = "none";
+        container.style.display = "block";
+        nodesList.innerHTML = "";
+
+        // Parse the workflow to extract nodes with configurable inputs
+        const nodes = [];
+        for (const [nodeId, nodeData] of Object.entries(workflowData)) {
+            const title = nodeData._meta?.title || nodeData.class_type || `Node ${nodeId}`;
+            const classType = nodeData.class_type;
+            const inputs = nodeData.inputs || {};
+
+            // Filter out inputs that are references to other nodes (arrays)
+            const configurableInputs = [];
+            for (const [inputName, inputValue] of Object.entries(inputs)) {
+                // Skip if it's a node reference (array like ["109", 0])
+                if (!Array.isArray(inputValue)) {
+                    configurableInputs.push({
+                        name: inputName,
+                        value: inputValue,
+                        type: typeof inputValue
+                    });
+                }
+            }
+
+            if (configurableInputs.length > 0) {
+                nodes.push({
+                    id: nodeId,
+                    title: title,
+                    classType: classType,
+                    inputs: configurableInputs
+                });
+            }
+        }
+
+        // Create existing exposed nodes lookup
+        const exposedLookup = {};
+        existingExposedNodes.forEach(en => {
+            exposedLookup[`${en.node_id}:${en.input_name}`] = en;
+        });
+
+        // Render nodes as checkboxes
+        nodes.forEach(node => {
+            const nodeDiv = document.createElement("div");
+            nodeDiv.className = "quickgen-node-group";
+            nodeDiv.innerHTML = `<div class="quickgen-node-title">${node.title} <span class="text-muted">(${node.classType})</span></div>`;
+
+            node.inputs.forEach(input => {
+                const key = `${node.id}:${input.name}`;
+                const isChecked = exposedLookup[key] ? "checked" : "";
+                const customLabel = exposedLookup[key]?.label || "";
+                const displayValue = typeof input.value === 'string'
+                    ? (input.value.length > 50 ? input.value.substring(0, 50) + '...' : input.value)
+                    : input.value;
+
+                const inputDiv = document.createElement("div");
+                inputDiv.className = "quickgen-input-row";
+                inputDiv.innerHTML = `
+                    <label class="quickgen-checkbox-label">
+                        <input type="checkbox"
+                               class="quickgen-node-checkbox"
+                               data-node-id="${node.id}"
+                               data-node-title="${node.title}"
+                               data-input-name="${input.name}"
+                               data-input-type="${input.type}"
+                               data-class-type="${node.classType}"
+                               ${isChecked}
+                               onchange="updateExposedNodes()">
+                        <span class="quickgen-input-name">${input.name}</span>
+                        <span class="quickgen-input-preview text-muted">${displayValue}</span>
+                    </label>
+                    <input type="text"
+                           class="quickgen-label-input form-input"
+                           placeholder="Custom label (optional)"
+                           data-node-id="${node.id}"
+                           data-input-name="${input.name}"
+                           value="${customLabel}"
+                           onchange="updateExposedNodes()"
+                           style="width: 150px; font-size: 12px; padding: 4px 8px;">
+                `;
+                nodeDiv.appendChild(inputDiv);
+            });
+
+            nodesList.appendChild(nodeDiv);
+        });
+    }
+
+    function updateExposedNodes() {
+        const checkboxes = document.querySelectorAll(".quickgen-node-checkbox:checked");
+        const exposedNodes = [];
+
+        checkboxes.forEach(cb => {
+            const nodeId = cb.dataset.nodeId;
+            const inputName = cb.dataset.inputName;
+            const labelInput = document.querySelector(`.quickgen-label-input[data-node-id="${nodeId}"][data-input-name="${inputName}"]`);
+
+            exposedNodes.push({
+                node_id: nodeId,
+                node_title: cb.dataset.nodeTitle,
+                input_name: inputName,
+                input_type: cb.dataset.inputType,
+                class_type: cb.dataset.classType,
+                label: labelInput?.value || ""
+            });
+        });
+
+        // Store in hidden field or directly in templatesData
+        const templateId = document.getElementById("template-id").value;
+        if (templateId && templatesData[templateId]) {
+            templatesData[templateId].exposed_nodes = exposedNodes;
+        }
+
+        // Mark form as changed
+        if (typeof checkFormChanges === 'function') {
+            checkFormChanges();
+        }
+    }
+
+    function getExposedNodesForSave() {
+        const checkboxes = document.querySelectorAll(".quickgen-node-checkbox:checked");
+        const exposedNodes = [];
+
+        checkboxes.forEach(cb => {
+            const nodeId = cb.dataset.nodeId;
+            const inputName = cb.dataset.inputName;
+            const labelInput = document.querySelector(`.quickgen-label-input[data-node-id="${nodeId}"][data-input-name="${inputName}"]`);
+
+            exposedNodes.push({
+                node_id: nodeId,
+                node_title: cb.dataset.nodeTitle,
+                input_name: inputName,
+                input_type: cb.dataset.inputType,
+                class_type: cb.dataset.classType,
+                label: labelInput?.value || ""
+            });
+        });
+
+        return exposedNodes;
     }
 
     // Commit and push to git
