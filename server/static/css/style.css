@@ -277,31 +277,32 @@ a:hover {
 
 .sidebar-header {
     padding: var(--space-5); /* Equal padding all around - 20px */
-    padding-bottom: var(--space-3);
+    padding-bottom: var(--space-4);
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-1);
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-3);
     border-bottom: 1px solid var(--border-color);
     margin-bottom: var(--space-2);
 }
 
-.sidebar-header-top {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-}
-
 .sidebar-logo {
-    width: 36px;
-    height: 36px;
+    width: 42px;
+    height: 42px;
     flex-shrink: 0;
 }
 
 .sidebar-logo img {
-    width: 36px;
-    height: 36px;
+    width: 42px;
+    height: 42px;
     border-radius: var(--radius-md);
+}
+
+.sidebar-header-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
 }
 
 .sidebar-title {
@@ -309,13 +310,13 @@ a:hover {
     font-weight: var(--font-bold);
     color: var(--text-primary);
     white-space: nowrap;
+    line-height: 1.2;
 }
 
 .sidebar-user {
     font-size: var(--text-sm);
     color: var(--text-muted);
-    /* Align with nav item text: logo width (36px) + gap (12px) = 48px */
-    padding-left: calc(36px + var(--space-3));
+    line-height: 1.2;
 }
 
 .sidebar-nav {

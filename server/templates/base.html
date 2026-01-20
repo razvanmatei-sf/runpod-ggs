@@ -14,17 +14,17 @@
             <!-- Sidebar -->
             <aside class="sidebar">
                 <div class="sidebar-header">
-                    <div class="sidebar-header-top">
-                        <div class="sidebar-logo">
-                            <img
-                                src="{{ url_for('static', filename='images/stillfront.png') }}"
-                                alt="SF AI Workbench"
-                                onerror="this.style.display='none';"
-                            />
-                        </div>
-                        <span class="sidebar-title">SF AI Workbench</span>
+                    <div class="sidebar-logo">
+                        <img
+                            src="{{ url_for('static', filename='images/stillfront.png') }}"
+                            alt="SF AI Workbench"
+                            onerror="this.style.display='none';"
+                        />
                     </div>
-                    <span class="sidebar-user">{{ current_user }}</span>
+                    <div class="sidebar-header-text">
+                        <span class="sidebar-title">SF AI Workbench</span>
+                        <span class="sidebar-user">{{ current_user }}</span>
+                    </div>
                 </div>
 
                 <nav class="sidebar-nav">
