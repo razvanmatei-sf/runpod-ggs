@@ -598,7 +598,16 @@
     // Image comparison slider - reveals image B based on mouse position
     document.querySelectorAll('.template-image-slider').forEach(slider => {
         const beforeImg = slider.querySelector('.template-image-before');
+        const afterImg = slider.querySelector('.template-image-after');
         const sliderLine = slider;
+        const card = slider.closest('.template-card');
+
+        slider.addEventListener('mouseenter', () => {
+            // Disable zoom effect while using slider
+            if (beforeImg) beforeImg.style.transform = 'scale(1)';
+            if (afterImg) afterImg.style.transform = 'scale(1)';
+            if (card) card.classList.add('slider-active');
+        });
 
         slider.addEventListener('mousemove', (e) => {
             const rect = slider.getBoundingClientRect();
@@ -617,8 +626,13 @@
             // Reset to 50% position (show both images equally)
             if (beforeImg) {
                 beforeImg.style.clipPath = 'inset(0 50% 0 0)';
+                beforeImg.style.transform = '';
+            }
+            if (afterImg) {
+                afterImg.style.transform = '';
             }
             sliderLine.style.setProperty('--slider-pos', '50%');
+            if (card) card.classList.remove('slider-active');
         });
     });
 

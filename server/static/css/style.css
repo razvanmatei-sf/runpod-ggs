@@ -1684,6 +1684,11 @@ a:hover {
     transform: scale(1.05);
 }
 
+.template-card.slider-active .template-image,
+.template-card.slider-active:hover .template-image {
+    transform: scale(1) !important;
+}
+
 .template-image-before {
     z-index: 1;
     clip-path: inset(0 50% 0 0);
