@@ -20,6 +20,7 @@ from flask import (
     render_template,
     render_template_string,
     request,
+    send_file,
     url_for,
 )
 
@@ -2444,10 +2445,95 @@ def serve_workflow_preview(filename):
     return "", 404
 
 
+# =============================================================================
+# Assets Browser Routes
+# =============================================================================
+
+WORKSPACE_ROOT = "/workspace"
+
+
+def get_user_allowed_roots(user):
+    """Get the allowed root paths for a user's assets"""
+    username = user.get("name", "")
+    return [
+        f"ComfyUI/output/{username}",
+        f"ComfyUI/input/{username}",
+    ]
+
+
+def is_path_allowed(path, user):
+    """Check if the given path is within the user's allowed directories"""
+    allowed_roots = get_user_allowed_roots(user)
+    # Normalize path to prevent traversal attacks
+    normalized = os.path.normpath(path).lstrip("/")
+    for root in allowed_roots:
+        if normalized == root or normalized.startswith(root + "/"):
+            return True
+    return False
+
+
+def get_file_type(filename):
+    """Determine file type based on extension"""
+    ext = filename.lower().split(".")[-1] if "." in filename else ""
+    image_exts = {"png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "tiff"}
+    video_exts = {"mp4", "webm", "mov", "avi", "mkv", "m4v"}
+    audio_exts = {"mp3", "wav", "ogg", "flac", "aac", "m4a"}
+
+    if ext in image_exts:
+        return "image"
+    elif ext in video_exts:
+        return "video"
+    elif ext in audio_exts:
+        return "audio"
+    elif ext == "pdf":
+        return "pdf"
+    elif ext in {"py", "js", "ts", "json", "html", "css", "sh", "yaml", "yml", "xml"}:
+        return "code"
+    else:
+        return "file"
+
+
+def format_file_size(size_bytes):
+    """Format file size in human-readable format"""
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if size_bytes < 1024:
+            return f"{size_bytes:.1f} {unit}"
+        size_bytes /= 1024
+    return f"{size_bytes:.1f} PB"
+
+
 @app.route("/assets")
+@app.route("/assets/")
 def assets():
+    """Assets landing page - show user's root folders"""
     if not current_artist:
         return redirect(url_for("login"))
+
+    allowed_roots = get_user_allowed_roots(current_artist)
+    folders = []
+
+    for root in allowed_roots:
+        full_path = os.path.join(WORKSPACE_ROOT, root)
+        # Create directory if it doesn't exist
+        if not os.path.exists(full_path):
+            os.makedirs(full_path, exist_ok=True)
+
+        # Determine folder display name
+        if "output" in root:
+            display_name = "My Outputs"
+            folder_type = "output"
+        else:
+            display_name = "My Inputs"
+            folder_type = "input"
+
+        folders.append(
+            {
+                "name": display_name,
+                "path": root,
+                "type": folder_type,
+            }
+        )
+
     return render_template(
         "assets.html",
         current_user=current_artist,
@@ -2455,7 +2541,264 @@ def assets():
         active_page="assets",
         page_title="Assets",
         runpod_id=get_runpod_id(),
+        folders=folders,
+        files=[],
+        current_path="",
+        breadcrumb=[],
+        is_root=True,
     )
+
+
+@app.route("/assets/browse/<path:subpath>")
+def assets_browse(subpath):
+    """Browse a specific directory"""
+    if not current_artist:
+        return redirect(url_for("login"))
+
+    # Security check
+    if not is_path_allowed(subpath, current_artist):
+        return "Access denied", 403
+
+    full_path = os.path.join(WORKSPACE_ROOT, subpath)
+
+    if not os.path.exists(full_path):
+        return "Path not found", 404
+
+    if not os.path.isdir(full_path):
+        return "Not a directory", 400
+
+    # List directory contents
+    folders = []
+    files = []
+
+    try:
+        for name in os.listdir(full_path):
+            item_path = os.path.join(full_path, name)
+
+            if os.path.isdir(item_path):
+                folders.append(
+                    {
+                        "name": name,
+                        "path": os.path.join(subpath, name),
+                    }
+                )
+            else:
+                stat = os.stat(item_path)
+                files.append(
+                    {
+                        "name": name,
+                        "path": os.path.join(subpath, name),
+                        "size": stat.st_size,
+                        "size_formatted": format_file_size(stat.st_size),
+                        "modified": datetime.fromtimestamp(stat.st_mtime).strftime(
+                            "%Y-%m-%d %H:%M"
+                        ),
+                        "type": get_file_type(name),
+                    }
+                )
+
+        # Sort folders and files alphabetically
+        folders.sort(key=lambda x: x["name"].lower())
+        files.sort(key=lambda x: x["name"].lower())
+
+    except PermissionError:
+        return "Permission denied", 403
+
+    # Build breadcrumb
+    parts = subpath.split("/")
+    breadcrumb = []
+    current_crumb_path = ""
+
+    for part in parts:
+        if part:
+            current_crumb_path = (
+                os.path.join(current_crumb_path, part) if current_crumb_path else part
+            )
+            breadcrumb.append(
+                {
+                    "name": part,
+                    "path": current_crumb_path,
+                }
+            )
+
+    # Determine page title from path
+    if "output" in subpath:
+        page_title = "My Outputs"
+    elif "input" in subpath:
+        page_title = "My Inputs"
+    else:
+        page_title = "Assets"
+
+    return render_template(
+        "assets.html",
+        current_user=current_artist,
+        is_admin=is_admin(current_artist),
+        active_page="assets",
+        page_title=page_title,
+        runpod_id=get_runpod_id(),
+        folders=folders,
+        files=files,
+        current_path=subpath,
+        breadcrumb=breadcrumb,
+        is_root=False,
+    )
+
+
+@app.route("/assets/download/<path:filepath>")
+def assets_download(filepath):
+    """Download a file"""
+    if not current_artist:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    if not is_path_allowed(filepath, current_artist):
+        return jsonify({"error": "Access denied"}), 403
+
+    full_path = os.path.join(WORKSPACE_ROOT, filepath)
+
+    if not os.path.exists(full_path):
+        return jsonify({"error": "File not found"}), 404
+
+    if not os.path.isfile(full_path):
+        return jsonify({"error": "Not a file"}), 400
+
+    return send_file(full_path, as_attachment=True)
+
+
+@app.route("/assets/preview/<path:filepath>")
+def assets_preview(filepath):
+    """Preview/stream a file (for images and videos)"""
+    if not current_artist:
+        return "", 401
+
+    if not is_path_allowed(filepath, current_artist):
+        return "", 403
+
+    full_path = os.path.join(WORKSPACE_ROOT, filepath)
+
+    if not os.path.exists(full_path) or not os.path.isfile(full_path):
+        return "", 404
+
+    # Determine MIME type
+    ext = filepath.lower().split(".")[-1] if "." in filepath else ""
+    mime_types = {
+        "png": "image/png",
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "gif": "image/gif",
+        "webp": "image/webp",
+        "svg": "image/svg+xml",
+        "mp4": "video/mp4",
+        "webm": "video/webm",
+        "mov": "video/quicktime",
+        "avi": "video/x-msvideo",
+        "pdf": "application/pdf",
+    }
+    mimetype = mime_types.get(ext, "application/octet-stream")
+
+    return send_file(full_path, mimetype=mimetype)
+
+
+@app.route("/assets/delete/<path:filepath>", methods=["POST"])
+def assets_delete(filepath):
+    """Delete a file"""
+    if not current_artist:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+
+    if not is_path_allowed(filepath, current_artist):
+        return jsonify({"success": False, "error": "Access denied"}), 403
+
+    full_path = os.path.join(WORKSPACE_ROOT, filepath)
+
+    if not os.path.exists(full_path):
+        return jsonify({"success": False, "error": "File not found"}), 404
+
+    if not os.path.isfile(full_path):
+        return jsonify({"success": False, "error": "Not a file"}), 400
+
+    try:
+        os.remove(full_path)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/assets/api/list/<path:subpath>")
+@app.route("/assets/api/list/")
+@app.route("/assets/api/list")
+def assets_api_list(subpath=""):
+    """API endpoint to list directory contents as JSON"""
+    if not current_artist:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    # Handle root listing
+    if not subpath:
+        allowed_roots = get_user_allowed_roots(current_artist)
+        folders = []
+        for root in allowed_roots:
+            full_path = os.path.join(WORKSPACE_ROOT, root)
+            if not os.path.exists(full_path):
+                os.makedirs(full_path, exist_ok=True)
+
+            if "output" in root:
+                display_name = "My Outputs"
+            else:
+                display_name = "My Inputs"
+
+            folders.append(
+                {
+                    "name": display_name,
+                    "path": root,
+                    "is_dir": True,
+                }
+            )
+        return jsonify({"folders": folders, "files": []})
+
+    if not is_path_allowed(subpath, current_artist):
+        return jsonify({"error": "Access denied"}), 403
+
+    full_path = os.path.join(WORKSPACE_ROOT, subpath)
+
+    if not os.path.exists(full_path) or not os.path.isdir(full_path):
+        return jsonify({"error": "Path not found"}), 404
+
+    folders = []
+    files = []
+
+    try:
+        for name in os.listdir(full_path):
+            item_path = os.path.join(full_path, name)
+
+            if os.path.isdir(item_path):
+                folders.append(
+                    {
+                        "name": name,
+                        "path": os.path.join(subpath, name),
+                        "is_dir": True,
+                    }
+                )
+            else:
+                stat = os.stat(item_path)
+                files.append(
+                    {
+                        "name": name,
+                        "path": os.path.join(subpath, name),
+                        "size": stat.st_size,
+                        "size_formatted": format_file_size(stat.st_size),
+                        "modified": datetime.fromtimestamp(stat.st_mtime).strftime(
+                            "%Y-%m-%d %H:%M"
+                        ),
+                        "type": get_file_type(name),
+                        "is_dir": False,
+                    }
+                )
+
+        folders.sort(key=lambda x: x["name"].lower())
+        files.sort(key=lambda x: x["name"].lower())
+
+    except PermissionError:
+        return jsonify({"error": "Permission denied"}), 403
+
+    return jsonify({"folders": folders, "files": files})
 
 
 @app.route("/tool/<tool_id>")

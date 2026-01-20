@@ -44,6 +44,25 @@
                         <span>Home</span>
                     </a>
 
+                    <!-- Assets -->
+                    <a
+                        href="{{ url_for('assets') }}"
+                        class="nav-item {% if active_page == 'assets' %}active{% endif %}"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                        >
+                            <rect x="3" y="3" width="7" height="7" rx="1" />
+                            <rect x="14" y="3" width="7" height="7" rx="1" />
+                            <rect x="14" y="14" width="7" height="7" rx="1" />
+                            <rect x="3" y="14" width="7" height="7" rx="1" />
+                        </svg>
+                        <span>Assets</span>
+                    </a>
+
                     <!-- All Templates -->
                     <a
                         href="{{ url_for('home') }}?view=all"
@@ -370,25 +389,6 @@
                             </a>
                         </div>
                     </div>
-
-                    <!-- Assets -->
-                    <a
-                        href="{{ url_for('assets') }}"
-                        class="nav-item {% if active_page == 'assets' %}active{% endif %}"
-                    >
-                        <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                        >
-                            <rect x="3" y="3" width="7" height="7" rx="1" />
-                            <rect x="14" y="3" width="7" height="7" rx="1" />
-                            <rect x="14" y="14" width="7" height="7" rx="1" />
-                            <rect x="3" y="14" width="7" height="7" rx="1" />
-                        </svg>
-                        <span>Assets</span>
-                    </a>
 
                     {% if is_admin %}
                     <!-- Admin Section -->
