@@ -2606,27 +2606,47 @@ def assets_browse(subpath):
     except PermissionError:
         return "Permission denied", 403
 
-    # Build breadcrumb - only show from output/input folder onwards
+    # Build breadcrumb - show "My Outputs/Inputs" then subfolders (skip username folder)
     parts = subpath.split("/")
     breadcrumb = []
     current_crumb_path = ""
 
     # Find the index of "output" or "input" in the path
     root_index = -1
+    root_type = None
     for i, part in enumerate(parts):
-        if part in ("output", "input"):
+        if part == "output":
             root_index = i
+            root_type = "output"
+            break
+        elif part == "input":
+            root_index = i
+            root_type = "input"
             break
 
-    # Only build breadcrumb from username folder onwards (skip output/input folder)
-    # This makes the user's folder appear as the root since they can't browse elsewhere
+    # Build breadcrumb: "My Outputs/Inputs" first, then subfolders after username
+    # Skip the username folder (root_index + 1) from display
+    username_index = root_index + 1 if root_index >= 0 else -1
+
+    # Build path as we iterate
     for i, part in enumerate(parts):
         if part:
             current_crumb_path = (
                 os.path.join(current_crumb_path, part) if current_crumb_path else part
             )
-            # Only add to visible breadcrumb if after root index (username folder onwards)
-            if i > root_index and root_index >= 0:
+
+            # At username folder level, add "My Outputs" or "My Inputs" with THIS path
+            # (the user's actual root folder path, not the output/input folder)
+            if i == username_index and username_index >= 0:
+                display_name = "My Outputs" if root_type == "output" else "My Inputs"
+                breadcrumb.append(
+                    {
+                        "name": display_name,
+                        "path": current_crumb_path,
+                    }
+                )
+            # Add subfolders after username folder
+            elif i > username_index and username_index >= 0:
                 breadcrumb.append(
                     {
                         "name": part,

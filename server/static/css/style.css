@@ -276,12 +276,12 @@ a:hover {
 }
 
 .sidebar-header {
-    padding: var(--space-4) var(--space-5);
+    padding: var(--space-5); /* Equal padding all around - 20px */
+    padding-bottom: var(--space-3);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-1);
-    padding-bottom: var(--space-3);
     border-bottom: 1px solid var(--border-color);
     margin-bottom: var(--space-2);
 }
@@ -293,14 +293,14 @@ a:hover {
 }
 
 .sidebar-logo {
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
     flex-shrink: 0;
 }
 
 .sidebar-logo img {
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
     border-radius: var(--radius-md);
 }
 
@@ -314,7 +314,8 @@ a:hover {
 .sidebar-user {
     font-size: var(--text-sm);
     color: var(--text-muted);
-    padding-left: calc(44px + var(--space-3));
+    /* Align with nav item text: logo width (36px) + gap (12px) = 48px */
+    padding-left: calc(36px + var(--space-3));
 }
 
 .sidebar-nav {
@@ -547,7 +548,7 @@ a:hover {
    ============================================ */
 .page-content {
     flex: 1;
-    padding: var(--space-10) var(--space-6); /* pt-10 pb-6 from RunPod */
+    padding: var(--space-5) var(--space-6); /* Match sidebar header top spacing */
     padding-bottom: var(--space-6);
     max-width: 1400px;
     margin: 0 auto;

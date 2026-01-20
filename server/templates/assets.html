@@ -4,10 +4,10 @@
     <!-- Toolbar -->
     <div class="assets-toolbar">
         <div class="toolbar-left">
-            {% if not is_root and breadcrumb|length > 1 %}
-            <!-- Back Button - only show when deeper than user's root folder -->
+            {% if not is_root %}
+            <!-- Back Button - show when not at assets root -->
             <a
-                href="{{ url_for('assets_browse', subpath=parent_path) }}"
+                href="{% if parent_path %}{{ url_for('assets_browse', subpath=parent_path) }}{% else %}{{ url_for('assets') }}{% endif %}"
                 class="back-btn"
                 title="Go back"
             >
@@ -571,7 +571,7 @@
         display: flex;
         flex-direction: column;
         height: 100%;
-        gap: 8px;
+        gap: 16px;
     }
 
     /* Toolbar */
@@ -579,10 +579,10 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 8px 12px;
-        background: var(--card-bg);
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
+        padding: 0;
+        padding-bottom: 8px;
+        background: transparent;
+        border: none;
     }
 
     .toolbar-left {
