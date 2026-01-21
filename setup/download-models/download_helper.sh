@@ -48,6 +48,7 @@ download() {
 
     echo "$output"
 
+    # Exit code 0 = success, 13 = file already exists (conditional-get), 17 = file already exists
     if [ $exit_code -eq 0 ]; then
         # Check if file was skipped (already complete)
         if echo "$output" | grep -q "already completed\|Download complete\|Nothing to download"; then
@@ -57,9 +58,13 @@ download() {
             DOWNLOAD_SUCCESS+=("$filename")
             echo "✅ $filename"
         fi
+    elif [ $exit_code -eq 13 ] || [ $exit_code -eq 17 ]; then
+        # File already exists - treat as skipped, not failure
+        DOWNLOAD_SKIPPED+=("$filename")
+        echo "⏭️  $filename (already exists)"
     else
         DOWNLOAD_FAILED+=("$filename")
-        echo "❌ $filename - FAILED"
+        echo "❌ $filename - FAILED (exit code: $exit_code)"
         return 1
     fi
 }
