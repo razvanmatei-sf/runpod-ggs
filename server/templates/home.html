@@ -1076,10 +1076,22 @@
             for (const [inputName, inputValue] of Object.entries(inputs)) {
                 // Skip if it's a node reference (array like ["109", 0])
                 if (!Array.isArray(inputValue)) {
+                    // Determine input type - detect special node types
+                    let inputType = typeof inputValue;
+
+                    // LoadImage nodes have an 'image' input that should be treated as IMAGE type
+                    if (classType === 'LoadImage' && inputName === 'image') {
+                        inputType = 'IMAGE';
+                    }
+                    // Can add more special cases here as needed:
+                    // else if (classType === 'LoadVideo' && inputName === 'video') {
+                    //     inputType = 'VIDEO';
+                    // }
+
                     configurableInputs.push({
                         name: inputName,
                         value: inputValue,
-                        type: typeof inputValue
+                        type: inputType
                     });
                 }
             }

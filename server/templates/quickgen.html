@@ -1,13 +1,18 @@
-{% extends "base.html" %}
-{% block title %}{{ template.title }} - QuickGen - SF AI Workbench{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}{{ template.title }} - QuickGen - SF
+AI Workbench{% endblock %} {% block content %}
 <div class="quickgen-page">
     <!-- Header with back button and template info -->
     <div class="quickgen-header">
         <a href="{{ url_for('home') }}" class="back-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="15 18 9 12 15 6"/>
+            <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <polyline points="15 18 9 12 15 6" />
             </svg>
             Back to Templates
         </a>
@@ -24,120 +29,208 @@
                 <h2 class="quickgen-form-title">Generation Settings</h2>
 
                 <form id="quickgen-form" class="quickgen-form">
-                    {% if exposed_nodes %}
-                        {% for node in exposed_nodes %}
-                        <div class="form-group" data-node-id="{{ node.node_id }}" data-input-name="{{ node.input_name }}">
-                            <label class="form-label">
-                                {{ node.label if node.label else node.input_name }}
-                                <span class="form-label-hint">{{ node.class_type }}</span>
-                            </label>
+                    {% if exposed_nodes %} {% for node in exposed_nodes %}
+                    <div
+                        class="form-group"
+                        data-node-id="{{ node.node_id }}"
+                        data-input-name="{{ node.input_name }}"
+                    >
+                        <label class="form-label">
+                            {{ node.label if node.label else node.input_name }}
+                            <span class="form-label-hint"
+                                >{{ node.class_type }}</span
+                            >
+                        </label>
 
-                            {% if node.input_type == 'STRING' and 'prompt' in node.input_name.lower() %}
-                            <!-- Multi-line text for prompts -->
-                            <textarea
-                                name="{{ node.node_id }}:{{ node.input_name }}"
-                                class="form-textarea"
-                                rows="4"
-                                placeholder="Enter {{ node.label if node.label else node.input_name | lower }}..."
-                            >{{ node.default_value if node.default_value else '' }}</textarea>
+                        {% if node.input_type == 'STRING' and 'prompt' in
+                        node.input_name.lower() %}
+                        <!-- Multi-line text for prompts -->
+                        <textarea
+                            name="{{ node.node_id }}:{{ node.input_name }}"
+                            class="form-textarea"
+                            rows="4"
+                            placeholder="Enter {{ node.label if node.label else node.input_name | lower }}..."
+                        >
+{{ node.default_value if node.default_value else '' }}</textarea
+                        >
 
-                            {% elif node.input_type == 'STRING' %}
-                            <!-- Single-line text input -->
-                            <input
-                                type="text"
-                                name="{{ node.node_id }}:{{ node.input_name }}"
-                                class="form-input"
-                                value="{{ node.default_value if node.default_value else '' }}"
-                                placeholder="Enter {{ node.label if node.label else node.input_name | lower }}..."
-                            />
+                        {% elif node.input_type == 'STRING' %}
+                        <!-- Single-line text input -->
+                        <input
+                            type="text"
+                            name="{{ node.node_id }}:{{ node.input_name }}"
+                            class="form-input"
+                            value="{{ node.default_value if node.default_value else '' }}"
+                            placeholder="Enter {{ node.label if node.label else node.input_name | lower }}..."
+                        />
 
-                            {% elif node.input_type == 'INT' %}
-                            <!-- Integer input -->
-                            <div class="form-input-row">
-                                <input
-                                    type="number"
-                                    name="{{ node.node_id }}:{{ node.input_name }}"
-                                    class="form-input"
-                                    value="{{ node.default_value if node.default_value else 0 }}"
-                                    step="1"
-                                />
-                                {% if 'seed' in node.input_name.lower() %}
-                                <button type="button" class="btn-secondary btn-sm" onclick="randomizeSeed(this)">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/>
-                                    </svg>
-                                    Random
-                                </button>
-                                {% endif %}
-                            </div>
-
-                            {% elif node.input_type == 'FLOAT' %}
-                            <!-- Float input -->
+                        {% elif node.input_type == 'INT' %}
+                        <!-- Integer input -->
+                        <div class="form-input-row">
                             <input
                                 type="number"
                                 name="{{ node.node_id }}:{{ node.input_name }}"
                                 class="form-input"
-                                value="{{ node.default_value if node.default_value else 0.0 }}"
-                                step="0.01"
+                                value="{{ node.default_value if node.default_value else 0 }}"
+                                step="1"
                             />
-
-                            {% elif node.input_type == 'BOOLEAN' %}
-                            <!-- Boolean checkbox -->
-                            <label class="form-checkbox-label">
-                                <input
-                                    type="checkbox"
-                                    name="{{ node.node_id }}:{{ node.input_name }}"
-                                    {% if node.default_value %}checked{% endif %}
-                                />
-                                <span>Enable</span>
-                            </label>
-
-                            {% elif node.input_type == 'IMAGE' %}
-                            <!-- Image upload -->
-                            <div class="image-upload-area" onclick="document.getElementById('image-{{ node.node_id }}-{{ node.input_name }}').click()">
-                                <input
-                                    type="file"
-                                    id="image-{{ node.node_id }}-{{ node.input_name }}"
-                                    name="{{ node.node_id }}:{{ node.input_name }}"
-                                    accept="image/*"
-                                    style="display: none;"
-                                    onchange="previewImage(this)"
-                                />
-                                <div class="image-upload-placeholder">
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                                        <circle cx="8.5" cy="8.5" r="1.5"/>
-                                        <polyline points="21 15 16 10 5 21"/>
-                                    </svg>
-                                    <span>Click to upload image</span>
-                                </div>
-                                <img class="image-preview" style="display: none;" />
-                            </div>
-
-                            {% else %}
-                            <!-- Default text input for unknown types -->
-                            <input
-                                type="text"
-                                name="{{ node.node_id }}:{{ node.input_name }}"
-                                class="form-input"
-                                value="{{ node.default_value if node.default_value else '' }}"
-                                placeholder="Enter value..."
-                            />
+                            {% if 'seed' in node.input_name.lower() %}
+                            <button
+                                type="button"
+                                class="btn-secondary btn-sm"
+                                onclick="randomizeSeed(this)"
+                            >
+                                <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path
+                                        d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"
+                                    />
+                                </svg>
+                                Random
+                            </button>
                             {% endif %}
                         </div>
-                        {% endfor %}
-                    {% else %}
-                    <div class="empty-state">
-                        <p class="text-muted">No configurable inputs exposed for this template.</p>
-                        <p class="text-muted">An admin can configure QuickGen settings in the template editor.</p>
-                    </div>
-                    {% endif %}
 
-                    {% if exposed_nodes %}
+                        {% elif node.input_type == 'FLOAT' %}
+                        <!-- Float input -->
+                        <input
+                            type="number"
+                            name="{{ node.node_id }}:{{ node.input_name }}"
+                            class="form-input"
+                            value="{{ node.default_value if node.default_value else 0.0 }}"
+                            step="0.01"
+                        />
+
+                        {% elif node.input_type == 'BOOLEAN' %}
+                        <!-- Boolean checkbox -->
+                        <label class="form-checkbox-label">
+                            <input
+                                type="checkbox"
+                                name="{{ node.node_id }}:{{ node.input_name }}"
+                                {%
+                                if
+                                node.default_value
+                                %}checked{%
+                                endif
+                                %}
+                            />
+                            <span>Enable</span>
+                        </label>
+
+                        {% elif node.input_type == 'IMAGE' %}
+                        <!-- Image upload -->
+                        <div
+                            class="image-upload-area"
+                            id="upload-area-{{ node.node_id }}-{{ node.input_name }}"
+                            onclick="document.getElementById('image-{{ node.node_id }}-{{ node.input_name }}').click()"
+                            data-node-id="{{ node.node_id }}"
+                            data-input-name="{{ node.input_name }}"
+                        >
+                            <input
+                                type="file"
+                                id="image-{{ node.node_id }}-{{ node.input_name }}"
+                                accept="image/*"
+                                style="display: none"
+                                onchange="handleImageSelect(this, '{{ node.node_id }}', '{{ node.input_name }}')"
+                            />
+                            <!-- Hidden input to store the actual filename for submission -->
+                            <input
+                                type="hidden"
+                                id="filename-{{ node.node_id }}-{{ node.input_name }}"
+                                name="{{ node.node_id }}:{{ node.input_name }}"
+                                value="{{ node.default_value if node.default_value else '' }}"
+                            />
+                            <div
+                                class="image-upload-placeholder"
+                                id="placeholder-{{ node.node_id }}-{{ node.input_name }}"
+                            >
+                                <svg
+                                    width="32"
+                                    height="32"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                >
+                                    <rect
+                                        x="3"
+                                        y="3"
+                                        width="18"
+                                        height="18"
+                                        rx="2"
+                                        ry="2"
+                                    />
+                                    <circle cx="8.5" cy="8.5" r="1.5" />
+                                    <polyline points="21 15 16 10 5 21" />
+                                </svg>
+                                {% if node.default_value %}
+                                <span class="current-filename"
+                                    >Current: {{ node.default_value }}</span
+                                >
+                                <span class="upload-hint">Click to change</span>
+                                {% else %}
+                                <span>Click to upload image</span>
+                                {% endif %}
+                            </div>
+                            <img
+                                class="image-preview"
+                                id="preview-{{ node.node_id }}-{{ node.input_name }}"
+                                style="display: none"
+                            />
+                            <div
+                                class="upload-status"
+                                id="status-{{ node.node_id }}-{{ node.input_name }}"
+                                style="display: none"
+                            >
+                                <span class="status-text">Uploading...</span>
+                            </div>
+                        </div>
+
+                        {% else %}
+                        <!-- Default text input for unknown types -->
+                        <input
+                            type="text"
+                            name="{{ node.node_id }}:{{ node.input_name }}"
+                            class="form-input"
+                            value="{{ node.default_value if node.default_value else '' }}"
+                            placeholder="Enter value..."
+                        />
+                        {% endif %}
+                    </div>
+                    {% endfor %} {% else %}
+                    <div class="empty-state">
+                        <p class="text-muted">
+                            No configurable inputs exposed for this template.
+                        </p>
+                        <p class="text-muted">
+                            An admin can configure QuickGen settings in the
+                            template editor.
+                        </p>
+                    </div>
+                    {% endif %} {% if exposed_nodes %}
                     <div class="quickgen-actions">
-                        <button type="submit" class="btn-primary btn-generate" id="generate-btn">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        <button
+                            type="submit"
+                            class="btn-primary btn-generate"
+                            id="generate-btn"
+                        >
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <polygon
+                                    points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"
+                                />
                             </svg>
                             Generate
                         </button>
@@ -153,13 +246,31 @@
             <div class="quickgen-preview-card">
                 <h3 class="quickgen-preview-title">Template Preview</h3>
                 {% if template.preview_image_a %}
-                <img src="/workflow/preview/{{ template.preview_image_a }}" alt="{{ template.title }}" class="quickgen-preview-image"/>
+                <img
+                    src="/workflow/preview/{{ template.preview_image_a }}"
+                    alt="{{ template.title }}"
+                    class="quickgen-preview-image"
+                />
                 {% else %}
                 <div class="quickgen-preview-placeholder">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                        <circle cx="8.5" cy="8.5" r="1.5"/>
-                        <polyline points="21 15 16 10 5 21"/>
+                    <svg
+                        width="48"
+                        height="48"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1"
+                    >
+                        <rect
+                            x="3"
+                            y="3"
+                            width="18"
+                            height="18"
+                            rx="2"
+                            ry="2"
+                        />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
                     </svg>
                     <span class="text-muted">No preview available</span>
                 </div>
@@ -167,28 +278,54 @@
             </div>
 
             <!-- Generation Status -->
-            <div class="quickgen-status-card" id="status-card" style="display: none;">
+            <div
+                class="quickgen-status-card"
+                id="status-card"
+                style="display: none"
+            >
                 <h3 class="quickgen-status-title">Generation Status</h3>
                 <div class="quickgen-status-content">
                     <div class="quickgen-progress" id="progress-container">
-                        <div class="quickgen-progress-bar" id="progress-bar"></div>
+                        <div
+                            class="quickgen-progress-bar"
+                            id="progress-bar"
+                        ></div>
                     </div>
-                    <p class="quickgen-status-text" id="status-text">Queued...</p>
+                    <p class="quickgen-status-text" id="status-text">
+                        Queued...
+                    </p>
                 </div>
             </div>
 
             <!-- Results -->
-            <div class="quickgen-results-card" id="results-card" style="display: none;">
+            <div
+                class="quickgen-results-card"
+                id="results-card"
+                style="display: none"
+            >
                 <h3 class="quickgen-results-title">Generated Images</h3>
                 <div class="quickgen-results-grid" id="results-grid">
                     <!-- Results will be populated here -->
                 </div>
                 <div class="quickgen-results-actions">
-                    <button type="button" class="btn-secondary" onclick="downloadAllResults()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="7 10 12 15 17 10"/>
-                            <line x1="12" y1="15" x2="12" y2="3"/>
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        onclick="downloadAllResults()"
+                    >
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                            />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
                         </svg>
                         Download All
                     </button>
@@ -197,27 +334,27 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
-    const templateId = '{{ template.id }}';
+    const templateId = "{{ template.id }}";
     const comfyUIPort = 8188;
     let currentPromptId = null;
     let statusPollInterval = null;
     let generatedImages = [];
 
     // Form submission
-    document.getElementById('quickgen-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        await generateImage();
-    });
+    document
+        .getElementById("quickgen-form")
+        .addEventListener("submit", async function (e) {
+            e.preventDefault();
+            await generateImage();
+        });
 
     async function generateImage() {
-        const form = document.getElementById('quickgen-form');
-        const generateBtn = document.getElementById('generate-btn');
-        const statusCard = document.getElementById('status-card');
-        const resultsCard = document.getElementById('results-card');
+        const form = document.getElementById("quickgen-form");
+        const generateBtn = document.getElementById("generate-btn");
+        const statusCard = document.getElementById("status-card");
+        const resultsCard = document.getElementById("results-card");
 
         // Disable button and show loading state
         generateBtn.disabled = true;
@@ -229,32 +366,28 @@
         `;
 
         // Show status card
-        statusCard.style.display = 'block';
-        document.getElementById('status-text').textContent = 'Preparing workflow...';
-        document.getElementById('progress-bar').style.width = '10%';
+        statusCard.style.display = "block";
+        document.getElementById("status-text").textContent =
+            "Preparing workflow...";
+        document.getElementById("progress-bar").style.width = "10%";
 
         // Hide previous results
-        resultsCard.style.display = 'none';
+        resultsCard.style.display = "none";
 
-        // Collect form data
+        // Collect form data - images are already uploaded via handleImageSelect
+        // The hidden inputs contain the uploaded filenames
         const formData = new FormData(form);
         const inputs = {};
 
         for (const [key, value] of formData.entries()) {
-            // Handle file inputs separately
-            if (value instanceof File && value.size > 0) {
-                // Upload image first
-                const uploadResult = await uploadImage(value);
-                if (uploadResult) {
-                    inputs[key] = uploadResult;
-                }
-            } else if (!(value instanceof File)) {
+            // Skip file inputs - we use hidden inputs for filenames instead
+            if (!(value instanceof File)) {
                 inputs[key] = value;
             }
         }
 
         // Handle checkboxes (unchecked ones don't appear in FormData)
-        document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        document.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
             const name = cb.name;
             if (!formData.has(name)) {
                 inputs[name] = false;
@@ -264,53 +397,114 @@
         });
 
         try {
-            document.getElementById('status-text').textContent = 'Submitting to ComfyUI...';
-            document.getElementById('progress-bar').style.width = '20%';
+            document.getElementById("status-text").textContent =
+                "Submitting to ComfyUI...";
+            document.getElementById("progress-bar").style.width = "20%";
 
-            const response = await fetch('/api/quickgen/submit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const response = await fetch("/api/quickgen/submit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     template_id: templateId,
-                    inputs: inputs
-                })
+                    inputs: inputs,
+                }),
             });
 
             const result = await response.json();
 
             if (result.success) {
                 currentPromptId = result.prompt_id;
-                document.getElementById('status-text').textContent = 'Queued for generation...';
-                document.getElementById('progress-bar').style.width = '30%';
+                document.getElementById("status-text").textContent =
+                    "Queued for generation...";
+                document.getElementById("progress-bar").style.width = "30%";
                 startStatusPolling();
             } else {
-                throw new Error(result.error || 'Failed to submit prompt');
+                throw new Error(result.error || "Failed to submit prompt");
             }
         } catch (error) {
-            console.error('Generation error:', error);
-            document.getElementById('status-text').textContent = `Error: ${error.message}`;
-            document.getElementById('progress-bar').style.width = '0%';
+            console.error("Generation error:", error);
+            document.getElementById("status-text").textContent =
+                `Error: ${error.message}`;
+            document.getElementById("progress-bar").style.width = "0%";
             resetGenerateButton();
         }
     }
 
     async function uploadImage(file) {
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append("image", file);
 
         try {
-            const response = await fetch('/api/quickgen/upload-image', {
-                method: 'POST',
-                body: formData
+            const response = await fetch("/api/quickgen/upload-image", {
+                method: "POST",
+                body: formData,
             });
             const result = await response.json();
             if (result.success) {
+                // Return filename with subfolder if present
+                if (result.subfolder) {
+                    return `${result.subfolder}/${result.filename}`;
+                }
                 return result.filename;
             }
         } catch (error) {
-            console.error('Image upload error:', error);
+            console.error("Image upload error:", error);
         }
         return null;
+    }
+
+    // Handle image selection and upload immediately
+    async function handleImageSelect(input, nodeId, inputName) {
+        if (!input.files || !input.files[0]) return;
+
+        const file = input.files[0];
+        const placeholder = document.getElementById(
+            `placeholder-${nodeId}-${inputName}`,
+        );
+        const preview = document.getElementById(
+            `preview-${nodeId}-${inputName}`,
+        );
+        const status = document.getElementById(`status-${nodeId}-${inputName}`);
+        const filenameInput = document.getElementById(
+            `filename-${nodeId}-${inputName}`,
+        );
+
+        // Show preview immediately
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            preview.src = e.target.result;
+            preview.style.display = "block";
+            placeholder.style.display = "none";
+        };
+        reader.readAsDataURL(file);
+
+        // Show upload status
+        status.style.display = "flex";
+        status.querySelector(".status-text").textContent = "Uploading...";
+
+        // Upload to ComfyUI
+        const uploadedFilename = await uploadImage(file);
+
+        if (uploadedFilename) {
+            filenameInput.value = uploadedFilename;
+            status.querySelector(".status-text").textContent =
+                `Uploaded: ${uploadedFilename}`;
+            status.classList.add("success");
+            setTimeout(() => {
+                status.style.display = "none";
+                status.classList.remove("success");
+            }, 2000);
+        } else {
+            status.querySelector(".status-text").textContent = "Upload failed!";
+            status.classList.add("error");
+            // Reset preview on failure
+            setTimeout(() => {
+                preview.style.display = "none";
+                placeholder.style.display = "flex";
+                status.style.display = "none";
+                status.classList.remove("error");
+            }, 3000);
+        }
     }
 
     function startStatusPolling() {
@@ -331,52 +525,61 @@
         if (!currentPromptId) return;
 
         try {
-            const response = await fetch(`/api/quickgen/status/${currentPromptId}`);
+            const response = await fetch(
+                `/api/quickgen/status/${currentPromptId}`,
+            );
             const result = await response.json();
 
-            if (result.status === 'completed') {
+            if (result.status === "completed") {
                 stopStatusPolling();
-                document.getElementById('status-text').textContent = 'Generation complete!';
-                document.getElementById('progress-bar').style.width = '100%';
+                document.getElementById("status-text").textContent =
+                    "Generation complete!";
+                document.getElementById("progress-bar").style.width = "100%";
 
                 // Display results
                 displayResults(result.images);
                 resetGenerateButton();
-
-            } else if (result.status === 'processing') {
-                document.getElementById('status-text').textContent = `Processing... ${result.progress || ''}`;
-                const progress = Math.min(30 + (result.progress_pct || 0) * 0.7, 95);
-                document.getElementById('progress-bar').style.width = `${progress}%`;
-
-            } else if (result.status === 'queued') {
-                const queuePos = result.queue_position ? `(Position: ${result.queue_position})` : '';
-                document.getElementById('status-text').textContent = `Queued ${queuePos}`;
-
-            } else if (result.status === 'error') {
+            } else if (result.status === "processing") {
+                document.getElementById("status-text").textContent =
+                    `Processing... ${result.progress || ""}`;
+                const progress = Math.min(
+                    30 + (result.progress_pct || 0) * 0.7,
+                    95,
+                );
+                document.getElementById("progress-bar").style.width =
+                    `${progress}%`;
+            } else if (result.status === "queued") {
+                const queuePos = result.queue_position
+                    ? `(Position: ${result.queue_position})`
+                    : "";
+                document.getElementById("status-text").textContent =
+                    `Queued ${queuePos}`;
+            } else if (result.status === "error") {
                 stopStatusPolling();
-                document.getElementById('status-text').textContent = `Error: ${result.error}`;
-                document.getElementById('progress-bar').style.width = '0%';
+                document.getElementById("status-text").textContent =
+                    `Error: ${result.error}`;
+                document.getElementById("progress-bar").style.width = "0%";
                 resetGenerateButton();
             }
         } catch (error) {
-            console.error('Status poll error:', error);
+            console.error("Status poll error:", error);
         }
     }
 
     function displayResults(images) {
         generatedImages = images || [];
-        const resultsCard = document.getElementById('results-card');
-        const resultsGrid = document.getElementById('results-grid');
+        const resultsCard = document.getElementById("results-card");
+        const resultsGrid = document.getElementById("results-grid");
 
         if (generatedImages.length === 0) {
-            resultsCard.style.display = 'none';
+            resultsCard.style.display = "none";
             return;
         }
 
-        resultsGrid.innerHTML = '';
+        resultsGrid.innerHTML = "";
         generatedImages.forEach((img, index) => {
-            const imgDiv = document.createElement('div');
-            imgDiv.className = 'quickgen-result-item';
+            const imgDiv = document.createElement("div");
+            imgDiv.className = "quickgen-result-item";
             imgDiv.innerHTML = `
                 <img src="${img.url}" alt="Generated image ${index + 1}" onclick="openImageModal('${img.url}')" />
                 <div class="quickgen-result-actions">
@@ -392,11 +595,11 @@
             resultsGrid.appendChild(imgDiv);
         });
 
-        resultsCard.style.display = 'block';
+        resultsCard.style.display = "block";
     }
 
     function resetGenerateButton() {
-        const generateBtn = document.getElementById('generate-btn');
+        const generateBtn = document.getElementById("generate-btn");
         generateBtn.disabled = false;
         generateBtn.innerHTML = `
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -411,30 +614,14 @@
         input.value = Math.floor(Math.random() * 2147483647);
     }
 
-    function previewImage(input) {
-        const container = input.closest('.image-upload-area');
-        const placeholder = container.querySelector('.image-upload-placeholder');
-        const preview = container.querySelector('.image-preview');
-
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                preview.src = e.target.result;
-                preview.style.display = 'block';
-                placeholder.style.display = 'none';
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-
     function openImageModal(url) {
         // Simple lightbox - could be enhanced later
-        window.open(url, '_blank');
+        window.open(url, "_blank");
     }
 
     function downloadAllResults() {
         generatedImages.forEach((img, index) => {
-            const a = document.createElement('a');
+            const a = document.createElement("a");
             a.href = img.url;
             a.download = `generated_${index + 1}.png`;
             a.click();
@@ -443,354 +630,406 @@
 </script>
 
 <style>
-/* QuickGen Page Styles */
-.quickgen-page {
-    padding: var(--space-6);
-    max-width: 1400px;
-    margin: 0 auto;
-}
-
-.quickgen-header {
-    margin-bottom: var(--space-6);
-}
-
-.back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-size: var(--text-sm);
-    margin-bottom: var(--space-4);
-    transition: color var(--transition-fast);
-}
-
-.back-btn:hover {
-    color: var(--text-primary);
-}
-
-.quickgen-title {
-    font-size: var(--text-2xl);
-    font-weight: var(--font-semibold);
-    color: var(--text-primary);
-    margin-bottom: var(--space-2);
-}
-
-.quickgen-description {
-    color: var(--text-secondary);
-    font-size: var(--text-base);
-}
-
-.quickgen-layout {
-    display: grid;
-    grid-template-columns: 1fr 400px;
-    gap: var(--space-6);
-}
-
-@media (max-width: 1024px) {
-    .quickgen-layout {
-        grid-template-columns: 1fr;
+    /* QuickGen Page Styles */
+    .quickgen-page {
+        padding: var(--space-6);
+        max-width: 1400px;
+        margin: 0 auto;
     }
-}
 
-/* Form Panel */
-.quickgen-form-panel {
-    min-width: 0;
-}
+    .quickgen-header {
+        margin-bottom: var(--space-6);
+    }
 
-.quickgen-form-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-lg);
-    padding: var(--space-6);
-}
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2);
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: var(--text-sm);
+        margin-bottom: var(--space-4);
+        transition: color var(--transition-fast);
+    }
 
-.quickgen-form-title {
-    font-size: var(--text-lg);
-    font-weight: var(--font-semibold);
-    color: var(--text-primary);
-    margin-bottom: var(--space-6);
-}
+    .back-btn:hover {
+        color: var(--text-primary);
+    }
 
-.quickgen-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-5);
-}
+    .quickgen-title {
+        font-size: var(--text-2xl);
+        font-weight: var(--font-semibold);
+        color: var(--text-primary);
+        margin-bottom: var(--space-2);
+    }
 
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-}
+    .quickgen-description {
+        color: var(--text-secondary);
+        font-size: var(--text-base);
+    }
 
-.form-label {
-    font-size: var(--text-sm);
-    font-weight: var(--font-medium);
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-}
+    .quickgen-layout {
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: var(--space-6);
+    }
 
-.form-label-hint {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-    font-weight: var(--font-normal);
-}
+    @media (max-width: 1024px) {
+        .quickgen-layout {
+            grid-template-columns: 1fr;
+        }
+    }
 
-.form-input,
-.form-textarea {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-sm);
-    padding: var(--space-3);
-    font-size: var(--text-sm);
-    color: var(--text-primary);
-    width: 100%;
-    transition: border-color var(--transition-fast);
-}
+    /* Form Panel */
+    .quickgen-form-panel {
+        min-width: 0;
+    }
 
-.form-input:focus,
-.form-textarea:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-}
+    .quickgen-form-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-lg);
+        padding: var(--space-6);
+    }
 
-.form-textarea {
-    resize: vertical;
-    min-height: 100px;
-    font-family: var(--font-family);
-}
+    .quickgen-form-title {
+        font-size: var(--text-lg);
+        font-weight: var(--font-semibold);
+        color: var(--text-primary);
+        margin-bottom: var(--space-6);
+    }
 
-.form-input-row {
-    display: flex;
-    gap: var(--space-2);
-    align-items: center;
-}
+    .quickgen-form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-5);
+    }
 
-.form-input-row .form-input {
-    flex: 1;
-}
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+    }
 
-.form-checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    cursor: pointer;
-    font-size: var(--text-sm);
-    color: var(--text-primary);
-}
+    .form-label {
+        font-size: var(--text-sm);
+        font-weight: var(--font-medium);
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+    }
 
-.form-checkbox-label input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--accent-primary);
-}
+    .form-label-hint {
+        font-size: var(--text-xs);
+        color: var(--text-muted);
+        font-weight: var(--font-normal);
+    }
 
-/* Image Upload */
-.image-upload-area {
-    border: 2px dashed var(--border-default);
-    border-radius: var(--radius-md);
-    padding: var(--space-6);
-    text-align: center;
-    cursor: pointer;
-    transition: border-color var(--transition-fast), background var(--transition-fast);
-}
+    .form-input,
+    .form-textarea {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-sm);
+        padding: var(--space-3);
+        font-size: var(--text-sm);
+        color: var(--text-primary);
+        width: 100%;
+        transition: border-color var(--transition-fast);
+    }
 
-.image-upload-area:hover {
-    border-color: var(--accent-primary);
-    background: var(--bg-hover);
-}
+    .form-input:focus,
+    .form-textarea:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+    }
 
-.image-upload-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-2);
-    color: var(--text-muted);
-}
+    .form-textarea {
+        resize: vertical;
+        min-height: 100px;
+        font-family: var(--font-family);
+    }
 
-.image-preview {
-    max-width: 100%;
-    max-height: 200px;
-    border-radius: var(--radius-sm);
-}
+    .form-input-row {
+        display: flex;
+        gap: var(--space-2);
+        align-items: center;
+    }
 
-/* Actions */
-.quickgen-actions {
-    margin-top: var(--space-4);
-    padding-top: var(--space-4);
-    border-top: 1px solid var(--border-default);
-}
+    .form-input-row .form-input {
+        flex: 1;
+    }
 
-.btn-generate {
-    width: 100%;
-    padding: var(--space-4);
-    font-size: var(--text-base);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-}
+    .form-checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        cursor: pointer;
+        font-size: var(--text-sm);
+        color: var(--text-primary);
+    }
 
-.btn-generate:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-}
+    .form-checkbox-label input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--accent-primary);
+    }
 
-.btn-sm {
-    padding: var(--space-2) var(--space-3);
-    font-size: var(--text-xs);
-}
+    /* Image Upload */
+    .image-upload-area {
+        position: relative;
+        border: 2px dashed var(--border-default);
+        border-radius: var(--radius-md);
+        padding: var(--space-6);
+        text-align: center;
+        cursor: pointer;
+        transition:
+            border-color var(--transition-fast),
+            background var(--transition-fast);
+        min-height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-.btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-sm);
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-default);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-}
+    .image-upload-area:hover {
+        border-color: var(--accent-primary);
+        background: var(--bg-hover);
+    }
 
-.btn-icon:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-}
+    .image-upload-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-2);
+        color: var(--text-muted);
+    }
 
-/* Preview Panel */
-.quickgen-preview-panel {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-}
+    .image-upload-placeholder .current-filename {
+        font-size: var(--text-xs);
+        color: var(--text-secondary);
+        word-break: break-all;
+        max-width: 200px;
+        text-align: center;
+    }
 
-.quickgen-preview-card,
-.quickgen-status-card,
-.quickgen-results-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-lg);
-    padding: var(--space-4);
-}
+    .image-upload-placeholder .upload-hint {
+        font-size: var(--text-xs);
+        color: var(--accent-primary);
+    }
 
-.quickgen-preview-title,
-.quickgen-status-title,
-.quickgen-results-title {
-    font-size: var(--text-sm);
-    font-weight: var(--font-medium);
-    color: var(--text-secondary);
-    margin-bottom: var(--space-3);
-}
+    .image-preview {
+        max-width: 100%;
+        max-height: 200px;
+        border-radius: var(--radius-sm);
+    }
 
-.quickgen-preview-image {
-    width: 100%;
-    border-radius: var(--radius-sm);
-}
+    .upload-status {
+        position: absolute;
+        bottom: var(--space-2);
+        left: var(--space-2);
+        right: var(--space-2);
+        background: rgba(0, 0, 0, 0.8);
+        padding: var(--space-2);
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-.quickgen-preview-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    padding: var(--space-8);
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-sm);
-    color: var(--text-muted);
-}
+    .upload-status .status-text {
+        font-size: var(--text-xs);
+        color: var(--text-secondary);
+    }
 
-/* Status */
-.quickgen-status-content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-}
+    .upload-status.success .status-text {
+        color: var(--accent-green);
+    }
 
-.quickgen-progress {
-    height: 8px;
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-full);
-    overflow: hidden;
-}
+    .upload-status.error .status-text {
+        color: var(--accent-red);
+    }
 
-.quickgen-progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent-primary), var(--accent-blue));
-    border-radius: var(--radius-full);
-    width: 0%;
-    transition: width 0.3s ease;
-}
+    /* Actions */
+    .quickgen-actions {
+        margin-top: var(--space-4);
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--border-default);
+    }
 
-.quickgen-status-text {
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    text-align: center;
-}
+    .btn-generate {
+        width: 100%;
+        padding: var(--space-4);
+        font-size: var(--text-base);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+    }
 
-/* Results */
-.quickgen-results-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-2);
-    margin-bottom: var(--space-4);
-}
+    .btn-generate:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
 
-.quickgen-result-item {
-    position: relative;
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-}
+    .btn-sm {
+        padding: var(--space-2) var(--space-3);
+        font-size: var(--text-xs);
+    }
 
-.quickgen-result-item img {
-    width: 100%;
-    aspect-ratio: 1;
-    object-fit: cover;
-    cursor: pointer;
-    transition: transform var(--transition-fast);
-}
+    .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-default);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
 
-.quickgen-result-item:hover img {
-    transform: scale(1.02);
-}
+    .btn-icon:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+    }
 
-.quickgen-result-actions {
-    position: absolute;
-    bottom: var(--space-2);
-    right: var(--space-2);
-    display: flex;
-    gap: var(--space-1);
-    opacity: 0;
-    transition: opacity var(--transition-fast);
-}
+    /* Preview Panel */
+    .quickgen-preview-panel {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+    }
 
-.quickgen-result-item:hover .quickgen-result-actions {
-    opacity: 1;
-}
+    .quickgen-preview-card,
+    .quickgen-status-card,
+    .quickgen-results-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+    }
 
-.quickgen-results-actions {
-    display: flex;
-    justify-content: center;
-}
+    .quickgen-preview-title,
+    .quickgen-status-title,
+    .quickgen-results-title {
+        font-size: var(--text-sm);
+        font-weight: var(--font-medium);
+        color: var(--text-secondary);
+        margin-bottom: var(--space-3);
+    }
 
-/* Spinner */
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
+    .quickgen-preview-image {
+        width: 100%;
+        border-radius: var(--radius-sm);
+    }
 
-.spinner {
-    animation: spin 1s linear infinite;
-}
+    .quickgen-preview-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+        padding: var(--space-8);
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-sm);
+        color: var(--text-muted);
+    }
 
-/* Empty State */
-.quickgen-form .empty-state {
-    padding: var(--space-8);
-    text-align: center;
-}
+    /* Status */
+    .quickgen-status-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+    }
+
+    .quickgen-progress {
+        height: 8px;
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-full);
+        overflow: hidden;
+    }
+
+    .quickgen-progress-bar {
+        height: 100%;
+        background: linear-gradient(
+            90deg,
+            var(--accent-primary),
+            var(--accent-blue)
+        );
+        border-radius: var(--radius-full);
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .quickgen-status-text {
+        font-size: var(--text-sm);
+        color: var(--text-secondary);
+        text-align: center;
+    }
+
+    /* Results */
+    .quickgen-results-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-2);
+        margin-bottom: var(--space-4);
+    }
+
+    .quickgen-result-item {
+        position: relative;
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+    }
+
+    .quickgen-result-item img {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: cover;
+        cursor: pointer;
+        transition: transform var(--transition-fast);
+    }
+
+    .quickgen-result-item:hover img {
+        transform: scale(1.02);
+    }
+
+    .quickgen-result-actions {
+        position: absolute;
+        bottom: var(--space-2);
+        right: var(--space-2);
+        display: flex;
+        gap: var(--space-1);
+        opacity: 0;
+        transition: opacity var(--transition-fast);
+    }
+
+    .quickgen-result-item:hover .quickgen-result-actions {
+        opacity: 1;
+    }
+
+    .quickgen-results-actions {
+        display: flex;
+        justify-content: center;
+    }
+
+    /* Spinner */
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .spinner {
+        animation: spin 1s linear infinite;
+    }
+
+    /* Empty State */
+    .quickgen-form .empty-state {
+        padding: var(--space-8);
+        text-align: center;
+    }
 </style>
 {% endblock %}
