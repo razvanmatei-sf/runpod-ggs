@@ -8,6 +8,26 @@ DOWNLOAD_SUCCESS=()
 DOWNLOAD_SKIPPED=()
 DOWNLOAD_FAILED=()
 
+# Check available disk space and warn if low
+check_disk_space() {
+    local path="${1:-/workspace}"
+    local min_gb="${2:-5}"
+
+    if [ -d "$path" ]; then
+        local available_kb=$(df "$path" | tail -1 | awk '{print $4}')
+        local available_gb=$((available_kb / 1024 / 1024))
+
+        if [ "$available_gb" -lt "$min_gb" ]; then
+            echo ""
+            echo "⚠️  WARNING: Low disk space on $path"
+            echo "   Available: ${available_gb}GB (minimum recommended: ${min_gb}GB)"
+            echo ""
+            return 1
+        fi
+    fi
+    return 0
+}
+
 # Simple download function using aria2c
 # Usage: download <url> <destination>
 download() {
@@ -48,6 +68,20 @@ download() {
 
     echo "$output"
 
+    # Check for disk space errors in output
+    if echo "$output" | grep -qi "no space left\|disk full\|not enough space\|ENOSPC"; then
+        DOWNLOAD_FAILED+=("$filename")
+        echo ""
+        echo "❌ $filename - FAILED: DISK FULL"
+        echo "┌─────────────────────────────────────────────────────────────┐"
+        echo "│  ERROR: No disk space remaining!                            │"
+        echo "│  Please free up space on your network volume and try again. │"
+        echo "└─────────────────────────────────────────────────────────────┘"
+        df -h "$dir" 2>/dev/null || true
+        echo ""
+        return 1
+    fi
+
     # Exit code 0 = success, 13 = file already exists (conditional-get), 17 = file already exists
     if [ $exit_code -eq 0 ]; then
         # Check if file was skipped (already complete)
@@ -62,6 +96,14 @@ download() {
         # File already exists - treat as skipped, not failure
         DOWNLOAD_SKIPPED+=("$filename")
         echo "⏭️  $filename (already exists)"
+    elif [ $exit_code -eq 1 ]; then
+        # Exit code 1 can be various errors - check for common issues
+        DOWNLOAD_FAILED+=("$filename")
+        echo "❌ $filename - FAILED (exit code: $exit_code)"
+        # Show disk space info to help diagnose
+        echo "   Disk space on $dir:"
+        df -h "$dir" 2>/dev/null | tail -1 || true
+        return 1
     else
         DOWNLOAD_FAILED+=("$filename")
         echo "❌ $filename - FAILED (exit code: $exit_code)"

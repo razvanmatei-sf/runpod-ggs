@@ -8,6 +8,10 @@ source "$(dirname "$0")/download_helper.sh"
 
 echo "Downloading Qwen models..."
 
+# Check disk space before starting (warn if less than 50GB available)
+check_disk_space /workspace 50 || echo "Continuing anyway, but downloads may fail..."
+echo ""
+
 # Diffusion models
 download "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_fp8_e4m3fn.safetensors" \
     "/workspace/ComfyUI/models/diffusion_models/qwen_image_fp8_e4m3fn.safetensors"
