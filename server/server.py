@@ -2649,15 +2649,41 @@ def api_quickgen_submit():
         try:
             error_body = e.read().decode("utf-8")
             error_json = json.loads(error_body)
-            # ComfyUI returns detailed error info in the response
-            error_msg = error_json.get("error", {}).get("message", str(e))
+
+            # Build a user-friendly error message
+            error_parts = []
+
+            # Main error message
+            main_error = error_json.get("error", {})
+            if isinstance(main_error, dict):
+                main_msg = main_error.get("message", "")
+                if main_msg:
+                    error_parts.append(main_msg)
+            elif isinstance(main_error, str):
+                error_parts.append(main_error)
+
+            # Node-specific errors (validation failures)
             node_errors = error_json.get("node_errors", {})
-            if node_errors:
-                error_msg += f" Node errors: {json.dumps(node_errors)}"
-        except:
+            for node_id, node_error in node_errors.items():
+                node_type = node_error.get("class_type", "Unknown")
+                errors = node_error.get("errors", [])
+                for err in errors:
+                    err_msg = err.get("message", "Unknown error")
+                    details = err.get("details", "")
+                    if details:
+                        error_parts.append(
+                            f"Node {node_id} ({node_type}): {err_msg} - {details}"
+                        )
+                    else:
+                        error_parts.append(f"Node {node_id} ({node_type}): {err_msg}")
+
+            error_msg = "\n".join(error_parts) if error_parts else str(e)
+
+        except Exception:
             error_msg = f"{e}: {error_body}" if error_body else str(e)
+
         print(f"ComfyUI HTTP Error: {error_msg}")
-        return jsonify({"success": False, "error": f"ComfyUI error: {error_msg}"}), 400
+        return jsonify({"success": False, "error": error_msg}), 400
     except urllib.error.URLError as e:
         return jsonify({"success": False, "error": f"ComfyUI not reachable: {e}"}), 503
     except Exception as e:
@@ -2681,6 +2707,31 @@ def api_quickgen_status(prompt_id):
 
             if prompt_id in history:
                 prompt_data = history[prompt_id]
+
+                # Check for execution errors first
+                status_data = prompt_data.get("status", {})
+                if status_data.get("status_str") == "error":
+                    # Extract error messages
+                    error_messages = []
+                    messages = status_data.get("messages", [])
+                    for msg in messages:
+                        if isinstance(msg, list) and len(msg) >= 2:
+                            msg_type, msg_data = msg[0], msg[1]
+                            if msg_type == "execution_error":
+                                error_messages.append(
+                                    f"Node {msg_data.get('node_id', '?')} ({msg_data.get('node_type', '?')}): {msg_data.get('exception_message', 'Unknown error')}"
+                                )
+                            elif msg_type == "execution_interrupted":
+                                error_messages.append("Execution was interrupted")
+
+                    # Also check for node_errors in prompt validation
+                    if not error_messages:
+                        error_messages.append("Workflow execution failed")
+
+                    return jsonify(
+                        {"status": "error", "error": "\n".join(error_messages)}
+                    )
+
                 outputs = prompt_data.get("outputs", {})
 
                 # Find all output images
@@ -2702,6 +2753,15 @@ def api_quickgen_status(prompt_id):
 
                 if images:
                     return jsonify({"status": "completed", "images": images})
+
+                # Prompt is in history but no images - check if it completed without output
+                if status_data.get("completed", False):
+                    return jsonify(
+                        {
+                            "status": "error",
+                            "error": "Workflow completed but produced no images. Check if SaveImage node is connected.",
+                        }
+                    )
 
         # Check queue for pending prompts
         req = urllib.request.Request(f"{COMFYUI_API_URL}/queue", method="GET")
