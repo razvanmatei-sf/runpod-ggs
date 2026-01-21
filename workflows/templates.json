@@ -81,7 +81,48 @@
       "preview_image_a": "ggs-empire-sketch-to-illustration_a.png",
       "preview_image_b": "ggs-empire-sketch-to-illustration_b.png",
       "logo_text": null,
-      "exposed_nodes": [],
+      "exposed_nodes": [
+        {
+          "node_id": "22",
+          "node_title": "Qwen Resolution",
+          "input_name": "resolution",
+          "input_type": "string",
+          "class_type": "QwenResolutionNode",
+          "label": ""
+        },
+        {
+          "node_id": "25",
+          "node_title": "Repeat Latent Batch",
+          "input_name": "amount",
+          "input_type": "number",
+          "class_type": "RepeatLatentBatch",
+          "label": ""
+        },
+        {
+          "node_id": "28",
+          "node_title": "Claude API",
+          "input_name": "String",
+          "input_type": "string",
+          "class_type": "KepStringLiteral",
+          "label": ""
+        },
+        {
+          "node_id": "39",
+          "node_title": "Seed (rgthree)",
+          "input_name": "seed",
+          "input_type": "number",
+          "class_type": "Seed (rgthree)",
+          "label": ""
+        },
+        {
+          "node_id": "42",
+          "node_title": "Prompt Guide",
+          "input_name": "String",
+          "input_type": "string",
+          "class_type": "String",
+          "label": ""
+        }
+      ],
       "enabled": true,
       "order": 3
     }
