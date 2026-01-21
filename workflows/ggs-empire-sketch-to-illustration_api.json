@@ -1,0 +1,374 @@
+{
+  "1": {
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "2": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "3": {
+    "inputs": {
+      "anything": [
+        "1",
+        0
+      ],
+      "anything11": [
+        "2",
+        0
+      ],
+      "anything12": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "Anything Everywhere",
+    "_meta": {
+      "title": "Anything Everywhere"
+    }
+  },
+  "4": {
+    "inputs": {
+      "shift": 3.1,
+      "model": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "ModelSamplingAuraFlow"
+    }
+  },
+  "5": {
+    "inputs": {
+      "unet_name": "qwen_image_fp8_e4m3fn.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "6": {
+    "inputs": {
+      "control_net_name": "Qwen-Image-InstantX-ControlNet-Union.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "Load ControlNet Model"
+    }
+  },
+  "7": {
+    "inputs": {
+      "lora_name": "Qwen-Image-Lightning-8steps-V2.0.safetensors",
+      "strength_model": 1,
+      "model": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "8": {
+    "inputs": {
+      "lora_name": "ggs-buildings/ggs-buildings-style_000000750.safetensors",
+      "strength_model": 2,
+      "model": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "9": {
+    "inputs": {
+      "samples": [
+        "10",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "10": {
+    "inputs": {
+      "seed": [
+        "39",
+        0
+      ],
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "lcm",
+      "scheduler": "beta",
+      "denoise": 1,
+      "positive": [
+        "11",
+        0
+      ],
+      "negative": [
+        "11",
+        1
+      ],
+      "latent_image": [
+        "25",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "11": {
+    "inputs": {
+      "strength": 0.9,
+      "start_percent": 0,
+      "end_percent": 0.3,
+      "control_net": [
+        "6",
+        0
+      ],
+      "image": [
+        "40",
+        0
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "12": {
+    "inputs": {
+      "image": "Untitled_Artwork.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "18": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "9",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "19": {
+    "inputs": {
+      "text": [
+        "37",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "20": {
+    "inputs": {
+      "text": ""
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Negative Prompt)"
+    }
+  },
+  "21": {
+    "inputs": {
+      "positive": [
+        "19",
+        0
+      ],
+      "negative": [
+        "20",
+        0
+      ]
+    },
+    "class_type": "Prompts Everywhere",
+    "_meta": {
+      "title": "Anything Everywhere Prompts"
+    }
+  },
+  "22": {
+    "inputs": {
+      "resolution": "16:9 (Widescreen Landscape)"
+    },
+    "class_type": "QwenResolutionNode",
+    "_meta": {
+      "title": "Qwen Resolution"
+    }
+  },
+  "23": {
+    "inputs": {
+      "width": [
+        "22",
+        0
+      ],
+      "height": [
+        "22",
+        1
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "Empty Latent Image"
+    }
+  },
+  "25": {
+    "inputs": {
+      "amount": 4,
+      "samples": [
+        "23",
+        0
+      ]
+    },
+    "class_type": "RepeatLatentBatch",
+    "_meta": {
+      "title": "Repeat Latent Batch"
+    }
+  },
+  "26": {
+    "inputs": {
+      "width": [
+        "22",
+        0
+      ],
+      "height": [
+        "22",
+        1
+      ],
+      "interpolation": "nearest",
+      "method": "fill / crop",
+      "condition": "always",
+      "multiple_of": 0,
+      "image": [
+        "12",
+        0
+      ]
+    },
+    "class_type": "ImageResize+",
+    "_meta": {
+      "title": "🔧 Image Resize"
+    }
+  },
+  "28": {
+    "inputs": {
+      "String": "[ANTHROPIC_API_KEY_REMOVED]"
+    },
+    "class_type": "KepStringLiteral",
+    "_meta": {
+      "title": "Claude API"
+    }
+  },
+  "33": {
+    "inputs": {
+      "String": "You are an illustration descriptor that converts images into detailed text prompts for AI image generation.\n\nTASK: Analyze the input image and generate a comprehensive, detailed description focusing purely on content, not style.\n\nUSER INPUT PRIORITY:\n- If the user provides specific details, descriptions, or requirements alongside the image, those OVERRIDE what is visible in the image\n- User-specified colors, attributes, names, or modifications take absolute precedence\n- Merge user input with image analysis: use user specifications where provided, fill remaining details from image observation\n- Example: User says \"pink dress princess and green dragon\" → describe princess with pink dress and dragon as green, regardless of what colors appear in the image\n\nOUTPUT FORMAT:\n[main subject] + [detailed appearance] + [action/pose] + [secondary elements] + [environment/setting] + [composition] + [mood/atmosphere]\n\nRULES:\n1. Identify all subjects with granular detail (characters, creatures, objects)\n2. Describe physical attributes: body type, clothing, armor, accessories, facial expressions, hair, distinguishing features\n3. Capture poses precisely: limb positions, weight distribution, direction of gaze, gesture intent\n4. Detail interactions between subjects: spatial relationships, action dynamics, implied motion\n5. Describe props and weapons with specificity: size relative to character, how they're held, condition\n6. Note environmental elements: terrain, weather, background objects, atmospheric conditions\n7. Include composition details: camera angle, framing, foreground/midground/background layering, depth\n8. Convey narrative context: what's happening, tension, stakes, emotional tone\n9. Use rich, descriptive language with multiple adjectives per element\n10. Aim for 150-250 words for comprehensive scene coverage\n\nDO NOT:\n- Reference art style, line quality, rendering technique, or medium\n- Add elements not visible in the image AND not specified by user\n- Comment on artistic execution or quality\n- Use style keywords (sketch, cartoon, painterly, etc.)\n- Contradict user-provided specifications"
+    },
+    "class_type": "String",
+    "_meta": {
+      "title": "System Prompt"
+    }
+  },
+  "35": {
+    "inputs": {
+      "api_key": [
+        "28",
+        0
+      ],
+      "model": "claude-sonnet-4-5-20250929",
+      "prompt": [
+        "42",
+        0
+      ],
+      "max_tokens": 10000,
+      "temperature": 0.5,
+      "seed": 1,
+      "timeout": 500,
+      "system_prompt": [
+        "33",
+        0
+      ],
+      "image": [
+        "26",
+        0
+      ]
+    },
+    "class_type": "RazvLLMChat",
+    "_meta": {
+      "title": "Razv LLM Chat"
+    }
+  },
+  "37": {
+    "inputs": {
+      "text": "A beautiful young chubby princess wearing a flowing pink dress stands in a defensive stance, gripping an enormous longsword with both hands raised above her head. She has a determined, fierce expression on her round face, with her hair styled in two buns adorned with decorative netting or caps. Her body is positioned in a wide, grounded stance with legs apart for stability, weight shifted forward as she prepares to strike or defend. The princess wears a dress with puffy, rounded sleeves and a full skirt that billows around her substantial, curvy frame.\n\nTo her left looms a massive blue dragon's head, emerging from the upper portion of the frame at a downward angle. The dragon's elongated snout is open, revealing rows of sharp, pointed teeth as it exhales a stream of fire directly toward the princess. The creature has a single visible dark eye and is suspended from above by what appears to be a cord or rope. The dragon's neck curves dramatically as it angles its attack downward.\n\nBehind the princess, billowing smoke clouds rise and spread across the background, creating an atmospheric haze that suggests recent fire or explosive action. The ground beneath shows simple terrain lines indicating an outdoor battlefield setting. The composition captures a moment of high tension and confrontation, with the brave princess standing her ground against the fearsome dragon's fiery assault, sword ready to counter the monstrous threat.",
+      "anything": [
+        "35",
+        0
+      ]
+    },
+    "class_type": "easy showAnything",
+    "_meta": {
+      "title": "Show Any"
+    }
+  },
+  "39": {
+    "inputs": {
+      "seed": -1
+    },
+    "class_type": "Seed (rgthree)",
+    "_meta": {
+      "title": "Seed (rgthree)"
+    }
+  },
+  "40": {
+    "inputs": {
+      "image": [
+        "12",
+        0
+      ]
+    },
+    "class_type": "ImageInvert",
+    "_meta": {
+      "title": "Invert Image"
+    }
+  },
+  "42": {
+    "inputs": {
+      "String": "blue dragon blowing fire towards a beautiful young chubby princess wearing pink dress, smoke cloud behind the princess"
+    },
+    "class_type": "String",
+    "_meta": {
+      "title": "Prompt Guide"
+    }
+  }
+}

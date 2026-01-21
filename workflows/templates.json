@@ -69,6 +69,21 @@
       ],
       "enabled": true,
       "order": 2
+    },
+    {
+      "id": "ggs-empire-sketch-to-illustration",
+      "title": "GGS Empire Sketch To Illustration",
+      "description": "",
+      "category": "image",
+      "tags": [],
+      "workflow_file": "ggs-empire-sketch-to-illustration.json",
+      "workflow_api_file": "ggs-empire-sketch-to-illustration_api.json",
+      "preview_image_a": "ggs-empire-sketch-to-illustration_a.png",
+      "preview_image_b": "ggs-empire-sketch-to-illustration_b.png",
+      "logo_text": null,
+      "exposed_nodes": [],
+      "enabled": true,
+      "order": 3
     }
   ]
 }
