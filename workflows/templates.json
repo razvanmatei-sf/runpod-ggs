@@ -91,6 +91,14 @@
           "label": ""
         },
         {
+          "node_id": "18",
+          "node_title": "Save Image",
+          "input_name": "filename_prefix",
+          "input_type": "string",
+          "class_type": "SaveImage",
+          "label": ""
+        },
+        {
           "node_id": "22",
           "node_title": "Qwen Resolution",
           "input_name": "resolution",
