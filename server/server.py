@@ -2490,6 +2490,189 @@ def serve_workflow_preview(filename):
 
 COMFYUI_API_URL = "http://127.0.0.1:8188"
 
+# Cache for ComfyUI object_info (node definitions)
+_object_info_cache = {"data": None, "timestamp": 0}
+OBJECT_INFO_CACHE_TTL = 300  # 5 minutes
+
+
+def get_comfyui_object_info():
+    """Fetch and cache ComfyUI's object_info (node definitions)"""
+    import time
+
+    current_time = time.time()
+
+    # Return cached data if still valid
+    if (
+        _object_info_cache["data"]
+        and current_time - _object_info_cache["timestamp"] < OBJECT_INFO_CACHE_TTL
+    ):
+        return _object_info_cache["data"]
+
+    try:
+        req = urllib.request.Request(f"{COMFYUI_API_URL}/object_info", method="GET")
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            _object_info_cache["data"] = data
+            _object_info_cache["timestamp"] = current_time
+            print(f"QuickGen: Cached object_info with {len(data)} node types")
+            return data
+    except Exception as e:
+        print(f"QuickGen: Failed to fetch object_info: {e}")
+        return _object_info_cache["data"]  # Return stale cache if available
+
+
+def resolve_anywhere_connections(workflow, object_info):
+    """
+    Resolve 'Anything Everywhere' and 'Prompts Everywhere' node connections.
+
+    These nodes broadcast outputs to matching inputs throughout the workflow.
+    This function makes those implicit connections explicit in the workflow JSON.
+    """
+    if not object_info:
+        print("QuickGen: No object_info available, skipping Anywhere resolution")
+        return workflow
+
+    # Make a deep copy to avoid modifying the original
+    import copy
+
+    workflow = copy.deepcopy(workflow)
+
+    # Step 1: Find all broadcasts from Anywhere nodes
+    # broadcasts_by_type: {output_type: (source_node_id, output_index)}
+    # broadcasts_by_name: {input_name: (source_node_id, output_index, output_type)}
+    broadcasts_by_type = {}
+    broadcasts_by_name = {}
+
+    anywhere_node_ids = set()
+
+    for node_id, node_data in workflow.items():
+        class_type = node_data.get("class_type", "")
+
+        # Detect Anywhere/Everywhere nodes (various naming conventions)
+        is_anywhere_node = any(
+            keyword in class_type.lower() for keyword in ["anywhere", "everywhere"]
+        )
+
+        if not is_anywhere_node:
+            continue
+
+        anywhere_node_ids.add(node_id)
+        is_prompts_node = "prompt" in class_type.lower()
+
+        # Look at what's connected to this Anywhere node
+        for input_name, input_value in node_data.get("inputs", {}).items():
+            # Check if it's a connection [node_id, output_index]
+            if not isinstance(input_value, list) or len(input_value) != 2:
+                continue
+
+            source_node_id = str(input_value[0])
+            output_idx = int(input_value[1])
+
+            source_node = workflow.get(source_node_id, {})
+            source_class = source_node.get("class_type", "")
+
+            if source_class not in object_info:
+                continue
+
+            # Get the output type from object_info
+            outputs = object_info[source_class].get("output", [])
+            if output_idx >= len(outputs):
+                continue
+
+            output_type = outputs[output_idx]
+
+            # For Prompts Everywhere, match by name (positive/negative)
+            if is_prompts_node and input_name in ["positive", "negative"]:
+                broadcasts_by_name[input_name] = (
+                    source_node_id,
+                    output_idx,
+                    output_type,
+                )
+            else:
+                # For regular Anything Everywhere, match by type
+                broadcasts_by_type[output_type] = (source_node_id, output_idx)
+
+    if not broadcasts_by_type and not broadcasts_by_name:
+        return workflow  # Nothing to resolve
+
+    print(
+        f"QuickGen: Found broadcasts - by_type: {list(broadcasts_by_type.keys())}, by_name: {list(broadcasts_by_name.keys())}"
+    )
+
+    # Step 2: Find missing connections and fill them
+    connections_made = 0
+
+    for node_id, node_data in workflow.items():
+        if node_id in anywhere_node_ids:
+            continue  # Skip the Anywhere nodes themselves
+
+        class_type = node_data.get("class_type", "")
+        if class_type not in object_info:
+            continue
+
+        node_info = object_info[class_type]
+        required_inputs = node_info.get("input", {}).get("required", {})
+        optional_inputs = node_info.get("input", {}).get("optional", {})
+
+        all_inputs = {**required_inputs, **optional_inputs}
+
+        for input_name, input_spec in all_inputs.items():
+            # Get current value in workflow
+            current_value = node_data.get("inputs", {}).get(input_name)
+
+            # Skip if already connected (is a [node_id, index] array)
+            if isinstance(current_value, list) and len(current_value) == 2:
+                # Check if first element looks like a node reference
+                if isinstance(current_value[0], (str, int)):
+                    continue
+
+            # Determine expected type for this input
+            expected_type = None
+            if isinstance(input_spec, list) and len(input_spec) > 0:
+                first_elem = input_spec[0]
+                # If it's a string, it's a type name (e.g., "VAE", "MODEL")
+                # If it's a list, it's dropdown options - skip those
+                if isinstance(first_elem, str):
+                    expected_type = first_elem
+
+            if not expected_type:
+                continue
+
+            # Try to find a matching broadcast
+            connected = False
+
+            # First, try name-based matching (for positive/negative conditioning)
+            if input_name in broadcasts_by_name:
+                source_node_id, output_idx, broadcast_type = broadcasts_by_name[
+                    input_name
+                ]
+                if broadcast_type == expected_type:
+                    if "inputs" not in workflow[node_id]:
+                        workflow[node_id]["inputs"] = {}
+                    workflow[node_id]["inputs"][input_name] = [
+                        source_node_id,
+                        output_idx,
+                    ]
+                    connections_made += 1
+                    connected = True
+                    print(
+                        f"QuickGen: Connected {node_id}.{input_name} <- {source_node_id} (by name, type={expected_type})"
+                    )
+
+            # Then, try type-based matching
+            if not connected and expected_type in broadcasts_by_type:
+                source_node_id, output_idx = broadcasts_by_type[expected_type]
+                if "inputs" not in workflow[node_id]:
+                    workflow[node_id]["inputs"] = {}
+                workflow[node_id]["inputs"][input_name] = [source_node_id, output_idx]
+                connections_made += 1
+                print(
+                    f"QuickGen: Connected {node_id}.{input_name} <- {source_node_id} (by type={expected_type})"
+                )
+
+    print(f"QuickGen: Resolved {connections_made} Anywhere connections")
+    return workflow
+
 
 @app.route("/quickgen/<template_id>")
 def quickgen_page(template_id):
@@ -2618,6 +2801,11 @@ def api_quickgen_submit():
     print(f"QuickGen: Submitting workflow for template {template_id}")
     print(f"QuickGen: Applied inputs: {inputs}")
     print(f"QuickGen: Workflow node IDs: {list(workflow.keys())}")
+
+    # Resolve Anything Everywhere connections
+    object_info = get_comfyui_object_info()
+    if object_info:
+        workflow = resolve_anywhere_connections(workflow, object_info)
 
     # Submit to ComfyUI
     try:
