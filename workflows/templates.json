@@ -83,6 +83,14 @@
       "logo_text": null,
       "exposed_nodes": [
         {
+          "node_id": "12",
+          "node_title": "Load Image",
+          "input_name": "image",
+          "input_type": "IMAGE",
+          "class_type": "LoadImage",
+          "label": ""
+        },
+        {
           "node_id": "22",
           "node_title": "Qwen Resolution",
           "input_name": "resolution",
