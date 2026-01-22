@@ -2693,7 +2693,13 @@ def quickgen_page(template_id):
     # Get exposed nodes with their default values from the API workflow
     exposed_nodes = template.get("exposed_nodes", [])
 
+    # Make a copy to avoid modifying the original template data
+    import copy
+
+    exposed_nodes = copy.deepcopy(exposed_nodes)
+
     # Load API workflow to get default values
+    workflow_data = {}
     if template.get("workflow_api_file"):
         workflow_path = os.path.join(WORKFLOWS_DIR, template["workflow_api_file"])
         if os.path.exists(workflow_path):
@@ -2715,6 +2721,35 @@ def quickgen_page(template_id):
                                 node["default_value"] = value
             except Exception as e:
                 print(f"Error loading workflow for QuickGen: {e}")
+
+    # Fetch object_info to get dropdown options for combo inputs
+    object_info = get_comfyui_object_info()
+    if object_info:
+        for node in exposed_nodes:
+            class_type = node.get("class_type")
+            input_name = node.get("input_name")
+
+            if class_type and class_type in object_info:
+                node_info = object_info[class_type]
+                # Check required inputs
+                required_inputs = node_info.get("input", {}).get("required", {})
+                # Check optional inputs
+                optional_inputs = node_info.get("input", {}).get("optional", {})
+                all_inputs = {**required_inputs, **optional_inputs}
+
+                if input_name in all_inputs:
+                    input_spec = all_inputs[input_name]
+                    # input_spec is like: [["option1", "option2", ...], {"default": "option1"}]
+                    # or for types: ["STRING", {"default": ""}]
+                    if isinstance(input_spec, list) and len(input_spec) > 0:
+                        first_elem = input_spec[0]
+                        # If first element is a list, it's dropdown options
+                        if isinstance(first_elem, list):
+                            node["options"] = first_elem
+                            node["input_type"] = "COMBO"
+                            print(
+                                f"QuickGen: Found dropdown options for {class_type}.{input_name}: {len(first_elem)} options"
+                            )
 
     return render_template(
         "quickgen.html",

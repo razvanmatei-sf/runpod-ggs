@@ -240,6 +240,7 @@
                             <a
                                 href="{{ url_for('tool_page', tool_id='comfy-ui') }}"
                                 class="nav-item {% if active_page == 'comfy-ui' %}active{% endif %}"
+                                id="nav-comfy-ui"
                             >
                                 <img
                                     src="{{ url_for('static', filename='images/comfyui.png') }}"
@@ -265,6 +266,29 @@
                                     <line x1="12" y1="17" x2="12" y2="21" />
                                 </svg>
                                 <span>ComfyUI</span>
+                                <span
+                                    class="nav-item-spinner"
+                                    id="comfy-ui-spinner"
+                                    style="display: none"
+                                >
+                                    <svg
+                                        class="spinner-icon"
+                                        viewBox="0 0 24 24"
+                                        width="14"
+                                        height="14"
+                                    >
+                                        <circle
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            fill="none"
+                                            stroke-dasharray="32"
+                                            stroke-linecap="round"
+                                        />
+                                    </svg>
+                                </span>
                             </a>
 
                             <a
@@ -437,6 +461,39 @@
         </div>
 
         <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+        <script>
+            // Poll tool status for sidebar loading indicators
+            (function () {
+                const toolsToWatch = ["comfy-ui"];
+                let pollInterval = null;
+
+                function updateToolStatus() {
+                    toolsToWatch.forEach(function (toolId) {
+                        fetch("/tool_status/" + toolId)
+                            .then(function (response) {
+                                return response.json();
+                            })
+                            .then(function (data) {
+                                const spinner = document.getElementById(
+                                    toolId + "-spinner",
+                                );
+                                if (spinner) {
+                                    if (data.status === "starting") {
+                                        spinner.style.display = "inline-flex";
+                                    } else {
+                                        spinner.style.display = "none";
+                                    }
+                                }
+                            })
+                            .catch(function () {});
+                    });
+                }
+
+                // Poll every 3 seconds
+                updateToolStatus();
+                pollInterval = setInterval(updateToolStatus, 3000);
+            })();
+        </script>
         {% block scripts %}{% endblock %}
     </body>
 </html>

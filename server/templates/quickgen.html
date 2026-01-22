@@ -42,7 +42,20 @@ AI Workbench{% endblock %} {% block content %}
                             >
                         </label>
 
-                        {% if node.input_type == 'STRING' and 'prompt' in
+                        {% if node.input_type == 'COMBO' and node.options %}
+                        <!-- Dropdown for combo inputs with predefined options -->
+                        <select
+                            name="{{ node.node_id }}:{{ node.input_name }}"
+                            class="form-select"
+                        >
+                            {% for option in node.options %}
+                            <option value="{{ option }}" {% if option == node.default_value %}selected{% endif %}>
+                                {{ option }}
+                            </option>
+                            {% endfor %}
+                        </select>
+
+                        {% elif node.input_type == 'STRING' and 'prompt' in
                         node.input_name.lower() %}
                         <!-- Multi-line text for prompts -->
                         <textarea
@@ -727,7 +740,8 @@ AI Workbench{% endblock %} {% block content %}
     }
 
     .form-input,
-    .form-textarea {
+    .form-textarea,
+    .form-select {
         background: var(--bg-tertiary);
         border: 1px solid var(--border-default);
         border-radius: var(--radius-sm);
@@ -738,8 +752,23 @@ AI Workbench{% endblock %} {% block content %}
         transition: border-color var(--transition-fast);
     }
 
+    .form-select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right var(--space-3) center;
+        padding-right: var(--space-8);
+    }
+
+    .form-select option {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
     .form-input:focus,
-    .form-textarea:focus {
+    .form-textarea:focus,
+    .form-select:focus {
         outline: none;
         border-color: var(--accent-primary);
     }

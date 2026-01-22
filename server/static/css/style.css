@@ -400,6 +400,25 @@ a:hover {
     white-space: nowrap;
 }
 
+/* Nav item spinner for loading state */
+.nav-item-spinner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    color: var(--accent-primary);
+}
+
+.nav-item-spinner .spinner-icon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .sidebar-bottom {
     padding: var(--space-2) 0;
     border-top: 1px solid var(--border-default);

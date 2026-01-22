@@ -774,13 +774,24 @@
             kill: "Remove",
         };
 
-        if (
-            action === "kill" &&
-            !confirm(
-                `Are you sure you want to remove ${selected.length} tool(s)?`,
-            )
-        ) {
-            return;
+        if (action === "kill") {
+            if (
+                !confirm(
+                    `Are you sure you want to REMOVE ${selected.length} tool(s)?\n\nThis will delete all files for the selected tools.`,
+                )
+            ) {
+                return;
+            }
+        }
+
+        if (action === "reinstall") {
+            if (
+                !confirm(
+                    `Are you sure you want to REINSTALL ${selected.length} tool(s)?\n\nThis will remove and re-download the selected tools.`,
+                )
+            ) {
+                return;
+            }
         }
 
         // Queue up all selected tools
