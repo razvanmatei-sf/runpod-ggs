@@ -267,27 +267,38 @@
                                 </svg>
                                 <span>ComfyUI</span>
                                 <span
-                                    class="nav-item-spinner"
-                                    id="comfy-ui-spinner"
+                                    class="nav-item-status"
+                                    id="comfy-ui-status"
                                     style="display: none"
                                 >
-                                    <svg
-                                        class="spinner-icon"
-                                        viewBox="0 0 24 24"
-                                        width="14"
-                                        height="14"
+                                    <span
+                                        class="status-indicator"
+                                        id="comfy-ui-spinner"
+                                        style="display: none"
                                     >
-                                        <circle
-                                            cx="12"
-                                            cy="12"
-                                            r="10"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                            fill="none"
-                                            stroke-dasharray="32"
-                                            stroke-linecap="round"
-                                        />
-                                    </svg>
+                                        <svg
+                                            class="spinner-icon"
+                                            viewBox="0 0 24 24"
+                                            width="14"
+                                            height="14"
+                                        >
+                                            <circle
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                                fill="none"
+                                                stroke-dasharray="32"
+                                                stroke-linecap="round"
+                                            />
+                                        </svg>
+                                    </span>
+                                    <span
+                                        class="status-indicator running-light"
+                                        id="comfy-ui-running"
+                                        style="display: none"
+                                    ></span>
                                 </span>
                             </a>
 
@@ -319,6 +330,7 @@
                             <a
                                 href="{{ url_for('tool_page', tool_id='ai-toolkit') }}"
                                 class="nav-item {% if active_page == 'ai-toolkit' %}active{% endif %}"
+                                id="nav-ai-toolkit"
                             >
                                 <img
                                     src="{{ url_for('static', filename='images/ai-toolkit.png') }}"
@@ -338,6 +350,40 @@
                                     />
                                 </svg>
                                 <span>AI-Toolkit</span>
+                                <span
+                                    class="nav-item-status"
+                                    id="ai-toolkit-status"
+                                    style="display: none"
+                                >
+                                    <span
+                                        class="status-indicator"
+                                        id="ai-toolkit-spinner"
+                                        style="display: none"
+                                    >
+                                        <svg
+                                            class="spinner-icon"
+                                            viewBox="0 0 24 24"
+                                            width="14"
+                                            height="14"
+                                        >
+                                            <circle
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                                fill="none"
+                                                stroke-dasharray="32"
+                                                stroke-linecap="round"
+                                            />
+                                        </svg>
+                                    </span>
+                                    <span
+                                        class="status-indicator running-light"
+                                        id="ai-toolkit-running"
+                                        style="display: none"
+                                    ></span>
+                                </span>
                             </a>
 
                             <a
@@ -464,7 +510,7 @@
         <script>
             // Poll tool status for sidebar loading indicators
             (function () {
-                const toolsToWatch = ["comfy-ui"];
+                const toolsToWatch = ["comfy-ui", "ai-toolkit"];
                 let pollInterval = null;
 
                 function updateToolStatus() {
@@ -474,14 +520,36 @@
                                 return response.json();
                             })
                             .then(function (data) {
+                                const statusContainer = document.getElementById(
+                                    toolId + "-status",
+                                );
                                 const spinner = document.getElementById(
                                     toolId + "-spinner",
                                 );
-                                if (spinner) {
+                                const runningLight = document.getElementById(
+                                    toolId + "-running",
+                                );
+
+                                if (
+                                    statusContainer &&
+                                    spinner &&
+                                    runningLight
+                                ) {
                                     if (data.status === "starting") {
+                                        statusContainer.style.display =
+                                            "inline-flex";
                                         spinner.style.display = "inline-flex";
-                                    } else {
+                                        runningLight.style.display = "none";
+                                    } else if (data.status === "running") {
+                                        statusContainer.style.display =
+                                            "inline-flex";
                                         spinner.style.display = "none";
+                                        runningLight.style.display =
+                                            "inline-block";
+                                    } else {
+                                        statusContainer.style.display = "none";
+                                        spinner.style.display = "none";
+                                        runningLight.style.display = "none";
                                     }
                                 }
                             })

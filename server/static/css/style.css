@@ -400,16 +400,22 @@ a:hover {
     white-space: nowrap;
 }
 
-/* Nav item spinner for loading state */
-.nav-item-spinner {
+/* Nav item status indicators */
+.nav-item-status {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     margin-left: auto;
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: var(--accent-primary);
 }
 
-.nav-item-spinner .spinner-icon {
+.status-indicator .spinner-icon {
     animation: spin 1s linear infinite;
 }
 
@@ -417,6 +423,15 @@ a:hover {
     to {
         transform: rotate(360deg);
     }
+}
+
+/* Running light indicator */
+.running-light {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--accent-green);
+    box-shadow: 0 0 6px var(--accent-green);
 }
 
 .sidebar-bottom {
