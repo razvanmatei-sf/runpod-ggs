@@ -2729,6 +2729,12 @@ def quickgen_page(template_id):
             class_type = node.get("class_type")
             input_name = node.get("input_name")
 
+            # Skip COMBO detection for nodes that should use special input types
+            # LoadImage should use IMAGE type (file upload), not COMBO (dropdown of existing files)
+            if class_type == "LoadImage" and input_name == "image":
+                node["input_type"] = "IMAGE"
+                continue
+
             if class_type and class_type in object_info:
                 node_info = object_info[class_type]
                 # Check required inputs
