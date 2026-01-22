@@ -3113,9 +3113,15 @@ WORKSPACE_ROOT = "/workspace"
 
 
 def get_user_allowed_roots(user):
-    """Get the allowed root paths for a user's assets"""
+    """Get the allowed root paths for a user's assets.
+    Admins get full workspace access, regular users get their personal folders."""
     # user can be a string (artist name) or None
     username = user if isinstance(user, str) else ""
+
+    # Admins get access to entire workspace
+    if is_admin(username):
+        return [""]  # Empty string = workspace root
+
     return [
         f"ComfyUI/output/{username}",
         f"ComfyUI/input/{username}",
@@ -3123,7 +3129,17 @@ def get_user_allowed_roots(user):
 
 
 def is_path_allowed(path, user):
-    """Check if the given path is within the user's allowed directories"""
+    """Check if the given path is within the user's allowed directories.
+    Admins can access any path under /workspace."""
+    # Admins have full access
+    if is_admin(user):
+        # Still prevent path traversal attacks
+        normalized = os.path.normpath(path).lstrip("/")
+        # Block any path that tries to escape workspace
+        if ".." in normalized:
+            return False
+        return True
+
     allowed_roots = get_user_allowed_roots(user)
     # Normalize path to prevent traversal attacks
     normalized = os.path.normpath(path).lstrip("/")
@@ -3166,39 +3182,59 @@ def format_file_size(size_bytes):
 @app.route("/assets")
 @app.route("/assets/")
 def assets():
-    """Assets landing page - show user's root folders"""
+    """Assets landing page - show user's root folders.
+    Admins see all workspace folders, regular users see their personal folders."""
     if not current_artist:
         return redirect(url_for("login"))
 
-    allowed_roots = get_user_allowed_roots(current_artist)
     folders = []
+    user_is_admin = is_admin(current_artist)
 
-    for root in allowed_roots:
-        full_path = os.path.join(WORKSPACE_ROOT, root)
-        # Create directory if it doesn't exist
-        if not os.path.exists(full_path):
-            os.makedirs(full_path, exist_ok=True)
+    if user_is_admin:
+        # Admins see all top-level folders in /workspace
+        try:
+            for name in os.listdir(WORKSPACE_ROOT):
+                item_path = os.path.join(WORKSPACE_ROOT, name)
+                if os.path.isdir(item_path):
+                    folders.append(
+                        {
+                            "name": name,
+                            "path": name,
+                            "type": "folder",
+                        }
+                    )
+            folders.sort(key=lambda x: x["name"].lower())
+        except PermissionError:
+            pass
+    else:
+        # Regular users see their personal folders
+        allowed_roots = get_user_allowed_roots(current_artist)
+        for root in allowed_roots:
+            full_path = os.path.join(WORKSPACE_ROOT, root)
+            # Create directory if it doesn't exist
+            if not os.path.exists(full_path):
+                os.makedirs(full_path, exist_ok=True)
 
-        # Determine folder display name
-        if "output" in root:
-            display_name = "My Outputs"
-            folder_type = "output"
-        else:
-            display_name = "My Inputs"
-            folder_type = "input"
+            # Determine folder display name
+            if "output" in root:
+                display_name = "My Outputs"
+                folder_type = "output"
+            else:
+                display_name = "My Inputs"
+                folder_type = "input"
 
-        folders.append(
-            {
-                "name": display_name,
-                "path": root,
-                "type": folder_type,
-            }
-        )
+            folders.append(
+                {
+                    "name": display_name,
+                    "path": root,
+                    "type": folder_type,
+                }
+            )
 
     return render_template(
         "assets.html",
         current_user=current_artist,
-        is_admin=is_admin(current_artist),
+        is_admin=user_is_admin,
         active_page="assets",
         page_title="Assets",
         runpod_id=get_runpod_id(),
@@ -3208,14 +3244,18 @@ def assets():
         breadcrumb=[],
         parent_path="",
         is_root=True,
+        is_admin_view=user_is_admin,
     )
 
 
 @app.route("/assets/browse/<path:subpath>")
 def assets_browse(subpath):
-    """Browse a specific directory"""
+    """Browse a specific directory.
+    Admins can browse any folder, regular users only their personal folders."""
     if not current_artist:
         return redirect(url_for("login"))
+
+    user_is_admin = is_admin(current_artist)
 
     # Security check
     if not is_path_allowed(subpath, current_artist):
@@ -3266,47 +3306,20 @@ def assets_browse(subpath):
     except PermissionError:
         return "Permission denied", 403
 
-    # Build breadcrumb - show "My Outputs/Inputs" then subfolders (skip username folder)
+    # Build breadcrumb based on user type
     parts = subpath.split("/")
     breadcrumb = []
     current_crumb_path = ""
 
-    # Find the index of "output" or "input" in the path
-    root_index = -1
-    root_type = None
-    for i, part in enumerate(parts):
-        if part == "output":
-            root_index = i
-            root_type = "output"
-            break
-        elif part == "input":
-            root_index = i
-            root_type = "input"
-            break
-
-    # Build breadcrumb: "My Outputs/Inputs" first, then subfolders after username
-    # Skip the username folder (root_index + 1) from display
-    username_index = root_index + 1 if root_index >= 0 else -1
-
-    # Build path as we iterate
-    for i, part in enumerate(parts):
-        if part:
-            current_crumb_path = (
-                os.path.join(current_crumb_path, part) if current_crumb_path else part
-            )
-
-            # At username folder level, add "My Outputs" or "My Inputs" with THIS path
-            # (the user's actual root folder path, not the output/input folder)
-            if i == username_index and username_index >= 0:
-                display_name = "My Outputs" if root_type == "output" else "My Inputs"
-                breadcrumb.append(
-                    {
-                        "name": display_name,
-                        "path": current_crumb_path,
-                    }
+    if user_is_admin:
+        # Admins see full path breadcrumbs
+        for part in parts:
+            if part:
+                current_crumb_path = (
+                    os.path.join(current_crumb_path, part)
+                    if current_crumb_path
+                    else part
                 )
-            # Add subfolders after username folder
-            elif i > username_index and username_index >= 0:
                 breadcrumb.append(
                     {
                         "name": part,
@@ -3314,28 +3327,87 @@ def assets_browse(subpath):
                     }
                 )
 
-    # Determine parent path for back button
-    if len(breadcrumb) > 1:
-        # Go to previous breadcrumb
-        parent_path = breadcrumb[-2]["path"]
-    elif len(breadcrumb) == 1:
-        # At root of output/input, go back to assets root
-        parent_path = ""
-    else:
-        parent_path = ""
+        # Determine parent path for back button
+        if len(breadcrumb) > 1:
+            parent_path = breadcrumb[-2]["path"]
+        elif len(breadcrumb) == 1:
+            parent_path = ""
+        else:
+            parent_path = ""
 
-    # Determine page title from path
-    if "output" in subpath:
-        page_title = "My Outputs"
-    elif "input" in subpath:
-        page_title = "My Inputs"
+        # Page title is the current folder name or "Assets"
+        page_title = parts[-1] if parts else "Assets"
+
     else:
-        page_title = "Assets"
+        # Regular users: show "My Outputs/Inputs" then subfolders (skip username folder)
+
+        # Find the index of "output" or "input" in the path
+        root_index = -1
+        root_type = None
+        for i, part in enumerate(parts):
+            if part == "output":
+                root_index = i
+                root_type = "output"
+                break
+            elif part == "input":
+                root_index = i
+                root_type = "input"
+                break
+
+        # Build breadcrumb: "My Outputs/Inputs" first, then subfolders after username
+        # Skip the username folder (root_index + 1) from display
+        username_index = root_index + 1 if root_index >= 0 else -1
+
+        # Build path as we iterate
+        for i, part in enumerate(parts):
+            if part:
+                current_crumb_path = (
+                    os.path.join(current_crumb_path, part)
+                    if current_crumb_path
+                    else part
+                )
+
+                # At username folder level, add "My Outputs" or "My Inputs" with THIS path
+                # (the user's actual root folder path, not the output/input folder)
+                if i == username_index and username_index >= 0:
+                    display_name = (
+                        "My Outputs" if root_type == "output" else "My Inputs"
+                    )
+                    breadcrumb.append(
+                        {
+                            "name": display_name,
+                            "path": current_crumb_path,
+                        }
+                    )
+                # Add subfolders after username folder
+                elif i > username_index and username_index >= 0:
+                    breadcrumb.append(
+                        {
+                            "name": part,
+                            "path": current_crumb_path,
+                        }
+                    )
+
+        # Determine parent path for back button
+        if len(breadcrumb) > 1:
+            parent_path = breadcrumb[-2]["path"]
+        elif len(breadcrumb) == 1:
+            parent_path = ""
+        else:
+            parent_path = ""
+
+        # Determine page title from path
+        if "output" in subpath:
+            page_title = "My Outputs"
+        elif "input" in subpath:
+            page_title = "My Inputs"
+        else:
+            page_title = "Assets"
 
     return render_template(
         "assets.html",
         current_user=current_artist,
-        is_admin=is_admin(current_artist),
+        is_admin=user_is_admin,
         active_page="assets",
         page_title=page_title,
         runpod_id=get_runpod_id(),
@@ -3345,6 +3417,7 @@ def assets_browse(subpath):
         breadcrumb=breadcrumb,
         parent_path=parent_path,
         is_root=False,
+        is_admin_view=user_is_admin,
     )
 
 
@@ -3507,31 +3580,54 @@ def assets_delete_folder(folderpath):
 @app.route("/assets/api/list/")
 @app.route("/assets/api/list")
 def assets_api_list(subpath=""):
-    """API endpoint to list directory contents as JSON"""
+    """API endpoint to list directory contents as JSON.
+    Admins see all workspace folders, regular users see their personal folders."""
     if not current_artist:
         return jsonify({"error": "Not authenticated"}), 401
 
+    user_is_admin = is_admin(current_artist)
+
     # Handle root listing
     if not subpath:
-        allowed_roots = get_user_allowed_roots(current_artist)
         folders = []
-        for root in allowed_roots:
-            full_path = os.path.join(WORKSPACE_ROOT, root)
-            if not os.path.exists(full_path):
-                os.makedirs(full_path, exist_ok=True)
 
-            if "output" in root:
-                display_name = "My Outputs"
-            else:
-                display_name = "My Inputs"
+        if user_is_admin:
+            # Admins see all top-level folders in /workspace
+            try:
+                for name in os.listdir(WORKSPACE_ROOT):
+                    item_path = os.path.join(WORKSPACE_ROOT, name)
+                    if os.path.isdir(item_path):
+                        folders.append(
+                            {
+                                "name": name,
+                                "path": name,
+                                "is_dir": True,
+                            }
+                        )
+                folders.sort(key=lambda x: x["name"].lower())
+            except PermissionError:
+                pass
+        else:
+            # Regular users see their personal folders
+            allowed_roots = get_user_allowed_roots(current_artist)
+            for root in allowed_roots:
+                full_path = os.path.join(WORKSPACE_ROOT, root)
+                if not os.path.exists(full_path):
+                    os.makedirs(full_path, exist_ok=True)
 
-            folders.append(
-                {
-                    "name": display_name,
-                    "path": root,
-                    "is_dir": True,
-                }
-            )
+                if "output" in root:
+                    display_name = "My Outputs"
+                else:
+                    display_name = "My Inputs"
+
+                folders.append(
+                    {
+                        "name": display_name,
+                        "path": root,
+                        "is_dir": True,
+                    }
+                )
+
         return jsonify({"folders": folders, "files": []})
 
     if not is_path_allowed(subpath, current_artist):
@@ -3580,6 +3676,281 @@ def assets_api_list(subpath=""):
         return jsonify({"error": "Permission denied"}), 403
 
     return jsonify({"folders": folders, "files": files})
+
+
+# Store last move operation for undo functionality
+last_move_operation = {"sources": [], "destinations": [], "timestamp": None}
+
+
+@app.route("/assets/copy", methods=["POST"])
+def assets_copy():
+    """Copy files/folders to a destination"""
+    import shutil
+
+    if not current_artist:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "No data provided"}), 400
+
+    sources = data.get("sources", [])
+    destination = data.get("destination", "")
+
+    if not sources:
+        return jsonify({"success": False, "error": "No source files specified"}), 400
+
+    if not destination:
+        return jsonify({"success": False, "error": "No destination specified"}), 400
+
+    # Check permissions for destination
+    if not is_path_allowed(destination, current_artist):
+        return jsonify({"success": False, "error": "Access denied to destination"}), 403
+
+    dest_full = os.path.join(WORKSPACE_ROOT, destination)
+    if not os.path.exists(dest_full) or not os.path.isdir(dest_full):
+        return jsonify({"success": False, "error": "Destination folder not found"}), 404
+
+    results = []
+    for source in sources:
+        source_path = source.get("path", "")
+        if not source_path:
+            continue
+
+        # Check permissions for source
+        if not is_path_allowed(source_path, current_artist):
+            results.append(
+                {"path": source_path, "success": False, "error": "Access denied"}
+            )
+            continue
+
+        source_full = os.path.join(WORKSPACE_ROOT, source_path)
+        if not os.path.exists(source_full):
+            results.append(
+                {"path": source_path, "success": False, "error": "Not found"}
+            )
+            continue
+
+        source_name = os.path.basename(source_path)
+        dest_item = os.path.join(dest_full, source_name)
+
+        try:
+            if os.path.isdir(source_full):
+                shutil.copytree(source_full, dest_item)
+            else:
+                shutil.copy2(source_full, dest_item)
+            results.append({"path": source_path, "success": True})
+        except Exception as e:
+            results.append({"path": source_path, "success": False, "error": str(e)})
+
+    success_count = sum(1 for r in results if r["success"])
+    return jsonify(
+        {
+            "success": success_count > 0,
+            "results": results,
+            "copied": success_count,
+            "total": len(results),
+        }
+    )
+
+
+@app.route("/assets/move", methods=["POST"])
+def assets_move():
+    """Move files/folders to a destination"""
+    global last_move_operation
+    import shutil
+
+    if not current_artist:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "No data provided"}), 400
+
+    sources = data.get("sources", [])
+    destination = data.get("destination", "")
+
+    if not sources:
+        return jsonify({"success": False, "error": "No source files specified"}), 400
+
+    if not destination:
+        return jsonify({"success": False, "error": "No destination specified"}), 400
+
+    # Check permissions for destination
+    if not is_path_allowed(destination, current_artist):
+        return jsonify({"success": False, "error": "Access denied to destination"}), 403
+
+    dest_full = os.path.join(WORKSPACE_ROOT, destination)
+    if not os.path.exists(dest_full) or not os.path.isdir(dest_full):
+        return jsonify({"success": False, "error": "Destination folder not found"}), 404
+
+    results = []
+    moved_sources = []
+    moved_destinations = []
+
+    for source in sources:
+        source_path = source.get("path", "")
+        if not source_path:
+            continue
+
+        # Check permissions for source
+        if not is_path_allowed(source_path, current_artist):
+            results.append(
+                {"path": source_path, "success": False, "error": "Access denied"}
+            )
+            continue
+
+        source_full = os.path.join(WORKSPACE_ROOT, source_path)
+        if not os.path.exists(source_full):
+            results.append(
+                {"path": source_path, "success": False, "error": "Not found"}
+            )
+            continue
+
+        source_name = os.path.basename(source_path)
+        dest_item = os.path.join(dest_full, source_name)
+        dest_relative = os.path.join(destination, source_name)
+
+        try:
+            shutil.move(source_full, dest_item)
+            results.append(
+                {"path": source_path, "success": True, "new_path": dest_relative}
+            )
+            moved_sources.append(source_path)
+            moved_destinations.append(dest_relative)
+        except Exception as e:
+            results.append({"path": source_path, "success": False, "error": str(e)})
+
+    # Store for undo
+    if moved_sources:
+        last_move_operation = {
+            "sources": moved_sources,
+            "destinations": moved_destinations,
+            "timestamp": datetime.now().isoformat(),
+        }
+
+    success_count = sum(1 for r in results if r["success"])
+    return jsonify(
+        {
+            "success": success_count > 0,
+            "results": results,
+            "moved": success_count,
+            "total": len(results),
+            "can_undo": len(moved_sources) > 0,
+        }
+    )
+
+
+@app.route("/assets/undo-move", methods=["POST"])
+def assets_undo_move():
+    """Undo the last move operation"""
+    global last_move_operation
+    import shutil
+
+    if not current_artist:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+
+    if not last_move_operation["sources"]:
+        return jsonify({"success": False, "error": "Nothing to undo"}), 400
+
+    # Check timestamp - only allow undo within 30 seconds
+    if last_move_operation["timestamp"]:
+        move_time = datetime.fromisoformat(last_move_operation["timestamp"])
+        if (datetime.now() - move_time).total_seconds() > 30:
+            last_move_operation = {"sources": [], "destinations": [], "timestamp": None}
+            return jsonify({"success": False, "error": "Undo window expired"}), 400
+
+    results = []
+    for i, dest_path in enumerate(last_move_operation["destinations"]):
+        source_path = last_move_operation["sources"][i]
+
+        # Check permissions
+        if not is_path_allowed(dest_path, current_artist):
+            results.append(
+                {"path": dest_path, "success": False, "error": "Access denied"}
+            )
+            continue
+
+        dest_full = os.path.join(WORKSPACE_ROOT, dest_path)
+        source_full = os.path.join(WORKSPACE_ROOT, source_path)
+
+        if not os.path.exists(dest_full):
+            results.append(
+                {"path": dest_path, "success": False, "error": "File no longer exists"}
+            )
+            continue
+
+        # Ensure parent directory exists
+        source_parent = os.path.dirname(source_full)
+        if not os.path.exists(source_parent):
+            os.makedirs(source_parent, exist_ok=True)
+
+        try:
+            shutil.move(dest_full, source_full)
+            results.append(
+                {"path": dest_path, "success": True, "restored_to": source_path}
+            )
+        except Exception as e:
+            results.append({"path": dest_path, "success": False, "error": str(e)})
+
+    # Clear undo state
+    last_move_operation = {"sources": [], "destinations": [], "timestamp": None}
+
+    success_count = sum(1 for r in results if r["success"])
+    return jsonify(
+        {
+            "success": success_count > 0,
+            "results": results,
+            "restored": success_count,
+            "total": len(results),
+        }
+    )
+
+
+@app.route("/assets/check-exists", methods=["POST"])
+def assets_check_exists():
+    """Check if files/folders already exist at destination"""
+    if not current_artist:
+        return jsonify({"success": False, "error": "Not authenticated"}), 401
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "No data provided"}), 400
+
+    sources = data.get("sources", [])
+    destination = data.get("destination", "")
+
+    if not destination:
+        return jsonify({"success": False, "error": "No destination specified"}), 400
+
+    if not is_path_allowed(destination, current_artist):
+        return jsonify({"success": False, "error": "Access denied"}), 403
+
+    dest_full = os.path.join(WORKSPACE_ROOT, destination)
+    if not os.path.exists(dest_full):
+        return jsonify({"success": False, "error": "Destination not found"}), 404
+
+    conflicts = []
+    for source in sources:
+        source_path = source.get("path", "")
+        if not source_path:
+            continue
+
+        source_name = os.path.basename(source_path)
+        dest_item = os.path.join(dest_full, source_name)
+
+        if os.path.exists(dest_item):
+            conflicts.append(
+                {
+                    "name": source_name,
+                    "source_path": source_path,
+                    "is_dir": os.path.isdir(dest_item),
+                }
+            )
+
+    return jsonify(
+        {"success": True, "has_conflicts": len(conflicts) > 0, "conflicts": conflicts}
+    )
 
 
 @app.route("/tool/<tool_id>")

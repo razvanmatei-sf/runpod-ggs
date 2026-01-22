@@ -23,12 +23,19 @@
                 </svg>
             </a>
             {% endif %}
-            <!-- Breadcrumb - starts from user's folder as apparent root -->
+            <!-- Breadcrumb -->
             <nav class="assets-breadcrumb">
-                {% for crumb in breadcrumb %} {% if not loop.first %}<span
-                    class="breadcrumb-sep"
-                    >/</span
-                >{% endif %}
+                {% if is_admin_view %}
+                <a
+                    href="{{ url_for('assets') }}"
+                    class="breadcrumb-item {% if is_root %}current{% endif %}"
+                >
+                    Workspace
+                </a>
+                {% if breadcrumb %}
+                <span class="breadcrumb-sep">/</span>
+                {% endif %} {% endif %} {% for crumb in breadcrumb %} {% if not
+                loop.first %}<span class="breadcrumb-sep">/</span>{% endif %}
                 <a
                     href="{{ url_for('assets_browse', subpath=crumb.path) }}"
                     class="breadcrumb-item {% if loop.last %}current{% endif %}"
@@ -39,6 +46,126 @@
             </nav>
         </div>
         <div class="toolbar-right">
+            <!-- Selection actions (hidden by default) -->
+            <div
+                class="selection-actions"
+                id="selectionActions"
+                style="display: none"
+            >
+                <span class="selection-count" id="selectionCount"
+                    >0 selected</span
+                >
+                <button
+                    type="button"
+                    class="action-btn"
+                    onclick="copySelected()"
+                    title="Copy"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        width="16"
+                        height="16"
+                    >
+                        <rect
+                            x="9"
+                            y="9"
+                            width="13"
+                            height="13"
+                            rx="2"
+                            ry="2"
+                        />
+                        <path
+                            d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                        />
+                    </svg>
+                </button>
+                <button
+                    type="button"
+                    class="action-btn"
+                    onclick="cutSelected()"
+                    title="Cut"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        width="16"
+                        height="16"
+                    >
+                        <circle cx="6" cy="6" r="3" />
+                        <circle cx="6" cy="18" r="3" />
+                        <line x1="20" y1="4" x2="8.12" y2="15.88" />
+                        <line x1="14.47" y1="14.48" x2="20" y2="20" />
+                        <line x1="8.12" y1="8.12" x2="12" y2="12" />
+                    </svg>
+                </button>
+                <button
+                    type="button"
+                    class="action-btn danger"
+                    onclick="deleteSelected()"
+                    title="Delete"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        width="16"
+                        height="16"
+                    >
+                        <polyline points="3 6 5 6 21 6" />
+                        <path
+                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        />
+                    </svg>
+                </button>
+                <button
+                    type="button"
+                    class="action-btn"
+                    onclick="clearSelection()"
+                    title="Clear selection"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        width="16"
+                        height="16"
+                    >
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <!-- Paste button (shown when clipboard has items) -->
+            <button
+                type="button"
+                class="action-btn paste-btn"
+                id="pasteBtn"
+                onclick="pasteItems()"
+                title="Paste here"
+                style="display: none"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    width="16"
+                    height="16"
+                >
+                    <path
+                        d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+                    />
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                </svg>
+                <span id="pasteLabel">Paste</span>
+            </button>
             <span class="file-count" id="fileCount">
                 {{ folders|length }} folders, {{ files|length }} files
             </span>
@@ -98,6 +225,9 @@
             <a
                 href="{{ url_for('assets_browse', subpath=folder.path) }}"
                 class="asset-item folder-item"
+                data-path="{{ folder.path }}"
+                data-name="{{ folder.name }}"
+                data-is-dir="true"
             >
                 <div class="asset-thumb">
                     <div class="folder-icon folder-icon-{{ folder.type }}">
@@ -144,7 +274,25 @@
                 class="asset-item folder-item"
                 data-path="{{ folder.path }}"
                 data-name="{{ folder.name }}"
+                data-is-dir="true"
+                oncontextmenu="showContextMenu(event, this)"
             >
+                <div
+                    class="select-checkbox"
+                    onclick="event.stopPropagation(); toggleSelect(this.parentElement);"
+                >
+                    <input type="checkbox" tabindex="-1" />
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="3"
+                        width="14"
+                        height="14"
+                    >
+                        <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                </div>
                 <a
                     href="{{ url_for('assets_browse', subpath=folder.path) }}"
                     class="asset-thumb folder-link"
@@ -222,7 +370,25 @@
                 data-type="{{ file.type }}"
                 data-size="{{ file.size_formatted }}"
                 data-modified="{{ file.modified }}"
+                data-is-dir="false"
+                oncontextmenu="showContextMenu(event, this)"
             >
+                <div
+                    class="select-checkbox"
+                    onclick="event.stopPropagation(); toggleSelect(this.parentElement);"
+                >
+                    <input type="checkbox" tabindex="-1" />
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="3"
+                        width="14"
+                        height="14"
+                    >
+                        <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                </div>
                 <div
                     class="asset-thumb"
                     onclick="openPreview('{{ file.path }}', '{{ file.name }}', '{{ file.type }}')"
@@ -460,6 +626,147 @@
     </div>
 </div>
 
+<!-- Context Menu -->
+<div class="context-menu" id="contextMenu">
+    <div class="context-menu-item" onclick="contextCopy()">
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="16"
+            height="16"
+        >
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+        <span>Copy</span>
+        <span class="shortcut">Ctrl+C</span>
+    </div>
+    <div class="context-menu-item" onclick="contextCut()">
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="16"
+            height="16"
+        >
+            <circle cx="6" cy="6" r="3" />
+            <circle cx="6" cy="18" r="3" />
+            <line x1="20" y1="4" x2="8.12" y2="15.88" />
+            <line x1="14.47" y1="14.48" x2="20" y2="20" />
+            <line x1="8.12" y1="8.12" x2="12" y2="12" />
+        </svg>
+        <span>Cut</span>
+        <span class="shortcut">Ctrl+X</span>
+    </div>
+    <div class="context-menu-item" id="contextPasteItem" onclick="pasteItems()">
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="16"
+            height="16"
+        >
+            <path
+                d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+            />
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+        </svg>
+        <span>Paste</span>
+        <span class="shortcut">Ctrl+V</span>
+    </div>
+    <div class="context-menu-separator"></div>
+    <div class="context-menu-item" onclick="contextDownload()">
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="16"
+            height="16"
+        >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        <span>Download</span>
+    </div>
+    <div class="context-menu-separator"></div>
+    <div class="context-menu-item danger" onclick="contextDelete()">
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="16"
+            height="16"
+        >
+            <polyline points="3 6 5 6 21 6" />
+            <path
+                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+            />
+        </svg>
+        <span>Delete</span>
+        <span class="shortcut">Del</span>
+    </div>
+</div>
+
+<!-- Undo Toast -->
+<div class="undo-toast" id="undoToast">
+    <span id="undoMessage">Items moved</span>
+    <button type="button" onclick="undoMove()">Undo</button>
+    <button type="button" class="close" onclick="hideUndoToast()">
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="16"
+            height="16"
+        >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+    </button>
+</div>
+
+<!-- Overwrite Confirmation Modal -->
+<div class="modal-overlay" id="overwriteModal">
+    <div class="modal-content">
+        <h3>File already exists</h3>
+        <p id="overwriteMessage">
+            The destination contains items with the same name.
+        </p>
+        <div class="conflict-list" id="conflictList"></div>
+        <div class="modal-actions">
+            <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="cancelOverwrite()"
+            >
+                Cancel
+            </button>
+            <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="skipConflicts()"
+            >
+                Skip
+            </button>
+            <button
+                type="button"
+                class="btn btn-danger"
+                onclick="confirmOverwrite()"
+            >
+                Overwrite
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Preview Modal -->
 <div class="preview-modal" id="previewModal">
     <div class="preview-header">
@@ -553,62 +860,101 @@
         justify-content: center;
         width: 32px;
         height: 32px;
-        background: rgba(255, 255, 255, 0.05);
         border-radius: 6px;
-        color: var(--text-muted);
-        text-decoration: none;
+        color: var(--text-secondary);
+        background: transparent;
         transition: all 0.15s ease;
-        flex-shrink: 0;
     }
 
     .back-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.08);
         color: var(--text-primary);
     }
 
-    /* Assets page styles */
+    /* Assets page layout */
     .assets-page {
         display: flex;
         flex-direction: column;
         height: 100%;
-        gap: 16px;
+        overflow: hidden;
     }
 
     /* Toolbar */
     .assets-toolbar {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        padding: 0;
-        padding-bottom: 8px;
-        background: transparent;
-        border: none;
+        justify-content: space-between;
+        padding: 0 0 16px 0;
+        flex-shrink: 0;
     }
 
     .toolbar-left {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 12px;
     }
 
     .toolbar-right {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 12px;
+    }
+
+    /* Selection actions */
+    .selection-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: var(--primary-color);
+        border-radius: 6px;
+    }
+
+    .selection-count {
+        font-size: 13px;
+        font-weight: 500;
+        color: white;
+        margin-right: 4px;
+    }
+
+    .selection-actions .action-btn {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+    }
+
+    .selection-actions .action-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .selection-actions .action-btn.danger:hover {
+        background: rgba(239, 68, 68, 0.8);
+    }
+
+    /* Paste button */
+    .paste-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        width: auto;
+        background: var(--primary-color);
+        color: white;
+        font-size: 13px;
+    }
+
+    .paste-btn:hover {
+        background: var(--primary-hover);
     }
 
     /* Breadcrumb */
     .assets-breadcrumb {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         font-size: 14px;
     }
 
     .breadcrumb-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
         color: var(--text-muted);
         text-decoration: none;
         padding: 4px 8px;
@@ -686,6 +1032,7 @@
 
     /* Asset item */
     .asset-item {
+        position: relative;
         display: flex;
         flex-direction: column;
         background: var(--card-bg);
@@ -698,7 +1045,54 @@
     }
 
     .asset-item:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .asset-item.selected {
         border-color: var(--primary-color);
+        background: rgba(124, 58, 237, 0.1);
+    }
+
+    /* Selection checkbox */
+    .select-checkbox {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        width: 20px;
+        height: 20px;
+        background: rgba(0, 0, 0, 0.6);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        opacity: 0;
+        transition: all 0.15s ease;
+    }
+
+    .asset-item:hover .select-checkbox,
+    .asset-item.selected .select-checkbox {
+        opacity: 1;
+    }
+
+    .select-checkbox input {
+        display: none;
+    }
+
+    .select-checkbox svg {
+        display: none;
+        color: white;
+    }
+
+    .asset-item.selected .select-checkbox {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .asset-item.selected .select-checkbox svg {
+        display: block;
     }
 
     /* Asset thumbnail */
@@ -715,7 +1109,6 @@
         color: inherit;
     }
 
-    /* Folder link styling */
     .folder-link {
         text-decoration: none;
         color: inherit;
@@ -748,7 +1141,6 @@
         justify-content: center;
     }
 
-    /* Folder icons */
     .folder-icon {
         color: #f59e0b;
     }
@@ -833,10 +1225,6 @@
         opacity: 1;
     }
 
-    .folder-item .asset-actions {
-        justify-content: center;
-    }
-
     .action-btn {
         display: flex;
         align-items: center;
@@ -892,10 +1280,13 @@
         flex-direction: row;
         align-items: center;
         padding: 8px 12px;
+        padding-left: 40px;
     }
 
-    .list-view .asset-item:hover {
-        transform: none;
+    .list-view .select-checkbox {
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
     }
 
     .list-view .asset-thumb {
@@ -948,6 +1339,207 @@
         padding: 0;
         border: none;
         opacity: 1;
+    }
+
+    /* Context menu */
+    .context-menu {
+        position: fixed;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 6px;
+        min-width: 180px;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .context-menu.active {
+        display: block;
+    }
+
+    .context-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        color: var(--text-primary);
+        transition: background 0.1s ease;
+    }
+
+    .context-menu-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .context-menu-item.danger:hover {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+    }
+
+    .context-menu-item.disabled {
+        opacity: 0.4;
+        pointer-events: none;
+    }
+
+    .context-menu-item .shortcut {
+        margin-left: auto;
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+
+    .context-menu-separator {
+        height: 1px;
+        background: var(--border-color);
+        margin: 6px 0;
+    }
+
+    /* Undo toast */
+    .undo-toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: #1f1f1f;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        z-index: 1001;
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+
+    .undo-toast.visible {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+
+    .undo-toast span {
+        font-size: 14px;
+        color: var(--text-primary);
+    }
+
+    .undo-toast button {
+        padding: 6px 12px;
+        background: var(--primary-color);
+        border: none;
+        border-radius: 4px;
+        color: white;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+
+    .undo-toast button:hover {
+        background: var(--primary-hover);
+    }
+
+    .undo-toast button.close {
+        padding: 4px;
+        background: transparent;
+        color: var(--text-muted);
+    }
+
+    .undo-toast button.close:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Modal overlay */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1002;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 400px;
+        width: 90%;
+    }
+
+    .modal-content h3 {
+        margin: 0 0 12px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .modal-content p {
+        margin: 0 0 16px 0;
+        font-size: 14px;
+        color: var(--text-muted);
+    }
+
+    .conflict-list {
+        max-height: 200px;
+        overflow-y: auto;
+        margin-bottom: 16px;
+        padding: 8px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 6px;
+    }
+
+    .conflict-item {
+        padding: 6px 8px;
+        font-size: 13px;
+        color: var(--text-primary);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .conflict-item:last-child {
+        border-bottom: none;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+
+    .modal-actions .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .modal-actions .btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+    }
+
+    .modal-actions .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .modal-actions .btn-danger {
+        background: #ef4444;
+        color: white;
+    }
+
+    .modal-actions .btn-danger:hover {
+        background: #dc2626;
     }
 
     /* Preview modal */
@@ -1089,16 +1681,33 @@
 </style>
 
 <script>
+    // Current path for paste operations
+    const currentPath = "{{ current_path }}";
+    const isRoot = {{ 'true' if is_root else 'false' }};
+
     // View state
     let currentView = localStorage.getItem("assetsView") || "grid";
     let currentPreviewFile = null;
     let previewableFiles = [];
     let currentPreviewIndex = -1;
 
+    // Selection state
+    let selectedItems = [];
+
+    // Clipboard state (persisted in sessionStorage)
+    let clipboard = JSON.parse(sessionStorage.getItem('assetsClipboard')) || { action: null, items: [] };
+
+    // Context menu state
+    let contextTarget = null;
+
+    // Overwrite handling
+    let pendingOperation = null;
+
     // Initialize
     document.addEventListener("DOMContentLoaded", function () {
         setView(currentView);
         buildPreviewableList();
+        updatePasteButton();
 
         // View toggle buttons
         document.querySelectorAll(".view-btn").forEach((btn) => {
@@ -1109,8 +1718,19 @@
 
         // Keyboard navigation
         document.addEventListener("keydown", handleKeyboard);
+
+        // Close context menu on click outside
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest('.context-menu')) {
+                hideContextMenu();
+            }
+        });
+
+        // Close context menu on scroll
+        document.querySelector('.assets-container')?.addEventListener('scroll', hideContextMenu);
     });
 
+    // ===== VIEW FUNCTIONS =====
     function setView(view) {
         currentView = view;
         localStorage.setItem("assetsView", view);
@@ -1118,10 +1738,12 @@
         const grid = document.getElementById("assetsGrid");
         const buttons = document.querySelectorAll(".view-btn");
 
-        if (view === "list") {
-            grid.classList.add("list-view");
-        } else {
-            grid.classList.remove("list-view");
+        if (grid) {
+            if (view === "list") {
+                grid.classList.add("list-view");
+            } else {
+                grid.classList.remove("list-view");
+            }
         }
 
         buttons.forEach((btn) => {
@@ -1129,6 +1751,346 @@
         });
     }
 
+    // ===== SELECTION FUNCTIONS =====
+    function toggleSelect(item) {
+        const path = item.dataset.path;
+        const isDir = item.dataset.isDir === 'true';
+        const name = item.dataset.name;
+
+        if (item.classList.contains('selected')) {
+            item.classList.remove('selected');
+            selectedItems = selectedItems.filter(i => i.path !== path);
+        } else {
+            item.classList.add('selected');
+            selectedItems.push({ path, name, is_dir: isDir });
+        }
+
+        updateSelectionUI();
+    }
+
+    function clearSelection() {
+        document.querySelectorAll('.asset-item.selected').forEach(item => {
+            item.classList.remove('selected');
+        });
+        selectedItems = [];
+        updateSelectionUI();
+    }
+
+    function updateSelectionUI() {
+        const actionsDiv = document.getElementById('selectionActions');
+        const countSpan = document.getElementById('selectionCount');
+
+        if (selectedItems.length > 0) {
+            actionsDiv.style.display = 'flex';
+            countSpan.textContent = selectedItems.length + ' selected';
+        } else {
+            actionsDiv.style.display = 'none';
+        }
+    }
+
+    // ===== CLIPBOARD FUNCTIONS =====
+    function copySelected() {
+        if (selectedItems.length === 0) return;
+
+        clipboard = { action: 'copy', items: [...selectedItems] };
+        sessionStorage.setItem('assetsClipboard', JSON.stringify(clipboard));
+        updatePasteButton();
+        showToast('Copied ' + selectedItems.length + ' item(s)', 'success');
+        clearSelection();
+    }
+
+    function cutSelected() {
+        if (selectedItems.length === 0) return;
+
+        clipboard = { action: 'cut', items: [...selectedItems] };
+        sessionStorage.setItem('assetsClipboard', JSON.stringify(clipboard));
+        updatePasteButton();
+        showToast('Cut ' + selectedItems.length + ' item(s)', 'success');
+        clearSelection();
+    }
+
+    function updatePasteButton() {
+        const pasteBtn = document.getElementById('pasteBtn');
+        const pasteLabel = document.getElementById('pasteLabel');
+        const contextPaste = document.getElementById('contextPasteItem');
+
+        if (clipboard.items.length > 0 && !isRoot) {
+            pasteBtn.style.display = 'flex';
+            pasteLabel.textContent = clipboard.action === 'copy' ? 'Paste' : 'Move here';
+            if (contextPaste) contextPaste.classList.remove('disabled');
+        } else {
+            pasteBtn.style.display = 'none';
+            if (contextPaste) contextPaste.classList.add('disabled');
+        }
+    }
+
+    async function pasteItems() {
+        if (clipboard.items.length === 0 || isRoot) return;
+
+        // Check for conflicts first
+        try {
+            const checkResp = await fetch('/assets/check-exists', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sources: clipboard.items,
+                    destination: currentPath
+                })
+            });
+            const checkData = await checkResp.json();
+
+            if (checkData.has_conflicts) {
+                showOverwriteModal(checkData.conflicts);
+                return;
+            }
+
+            // No conflicts, proceed
+            await executePaste();
+        } catch (err) {
+            showToast('Error checking destination', 'error');
+            console.error(err);
+        }
+    }
+
+    async function executePaste(skipConflicts = false) {
+        const endpoint = clipboard.action === 'copy' ? '/assets/copy' : '/assets/move';
+        let itemsToProcess = clipboard.items;
+
+        if (skipConflicts && pendingOperation?.conflicts) {
+            const conflictPaths = pendingOperation.conflicts.map(c => c.source_path);
+            itemsToProcess = clipboard.items.filter(i => !conflictPaths.includes(i.path));
+        }
+
+        if (itemsToProcess.length === 0) {
+            hideOverwriteModal();
+            return;
+        }
+
+        try {
+            const resp = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sources: itemsToProcess,
+                    destination: currentPath
+                })
+            });
+            const data = await resp.json();
+
+            if (data.success) {
+                const action = clipboard.action === 'copy' ? 'Copied' : 'Moved';
+                showToast(action + ' ' + data[clipboard.action === 'copy' ? 'copied' : 'moved'] + ' item(s)', 'success');
+
+                if (clipboard.action === 'cut' && data.can_undo) {
+                    showUndoToast(data.moved);
+                }
+
+                // Clear clipboard after move
+                if (clipboard.action === 'cut') {
+                    clipboard = { action: null, items: [] };
+                    sessionStorage.removeItem('assetsClipboard');
+                    updatePasteButton();
+                }
+
+                // Reload page to show new files
+                setTimeout(() => location.reload(), 500);
+            } else {
+                showToast('Error: ' + (data.error || 'Operation failed'), 'error');
+            }
+        } catch (err) {
+            showToast('Error performing operation', 'error');
+            console.error(err);
+        }
+
+        hideOverwriteModal();
+    }
+
+    // ===== OVERWRITE MODAL =====
+    function showOverwriteModal(conflicts) {
+        pendingOperation = { conflicts };
+        const modal = document.getElementById('overwriteModal');
+        const list = document.getElementById('conflictList');
+
+        list.innerHTML = conflicts.map(c =>
+            '<div class="conflict-item">' + c.name + (c.is_dir ? ' (folder)' : '') + '</div>'
+        ).join('');
+
+        modal.classList.add('active');
+    }
+
+    function hideOverwriteModal() {
+        document.getElementById('overwriteModal').classList.remove('active');
+        pendingOperation = null;
+    }
+
+    function cancelOverwrite() {
+        hideOverwriteModal();
+    }
+
+    function skipConflicts() {
+        executePaste(true);
+    }
+
+    function confirmOverwrite() {
+        // For overwrite, we just proceed - the backend will replace
+        executePaste(false);
+    }
+
+    // ===== CONTEXT MENU =====
+    function showContextMenu(e, item) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        contextTarget = item;
+
+        // If item not selected, select only this item
+        if (!item.classList.contains('selected')) {
+            clearSelection();
+            toggleSelect(item);
+        }
+
+        const menu = document.getElementById('contextMenu');
+        menu.classList.add('active');
+
+        // Position menu
+        let x = e.clientX;
+        let y = e.clientY;
+
+        // Adjust if menu would go off screen
+        const menuRect = menu.getBoundingClientRect();
+        if (x + menuRect.width > window.innerWidth) {
+            x = window.innerWidth - menuRect.width - 10;
+        }
+        if (y + menuRect.height > window.innerHeight) {
+            y = window.innerHeight - menuRect.height - 10;
+        }
+
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+
+        // Update paste option
+        updatePasteButton();
+    }
+
+    function hideContextMenu() {
+        document.getElementById('contextMenu').classList.remove('active');
+        contextTarget = null;
+    }
+
+    function contextCopy() {
+        copySelected();
+        hideContextMenu();
+    }
+
+    function contextCut() {
+        cutSelected();
+        hideContextMenu();
+    }
+
+    function contextDownload() {
+        if (selectedItems.length === 1) {
+            const item = selectedItems[0];
+            if (item.is_dir) {
+                downloadFolder(item.path, item.name);
+            } else {
+                downloadFile(item.path, item.name);
+            }
+        }
+        hideContextMenu();
+    }
+
+    function contextDelete() {
+        deleteSelected();
+        hideContextMenu();
+    }
+
+    // ===== DELETE FUNCTIONS =====
+    async function deleteSelected() {
+        if (selectedItems.length === 0) return;
+
+        const confirmMsg = selectedItems.length === 1
+            ? 'Are you sure you want to delete "' + selectedItems[0].name + '"?'
+            : 'Are you sure you want to delete ' + selectedItems.length + ' items?';
+
+        if (!confirm(confirmMsg + '\n\nThis action cannot be undone.')) {
+            return;
+        }
+
+        let deleted = 0;
+        for (const item of selectedItems) {
+            try {
+                const endpoint = item.is_dir
+                    ? '/assets/delete-folder/' + item.path
+                    : '/assets/delete/' + item.path;
+
+                const resp = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await resp.json();
+
+                if (data.success) {
+                    deleted++;
+                    // Remove from DOM
+                    const el = document.querySelector('.asset-item[data-path="' + item.path + '"]');
+                    if (el) el.remove();
+                }
+            } catch (err) {
+                console.error('Error deleting', item.path, err);
+            }
+        }
+
+        showToast('Deleted ' + deleted + ' item(s)', 'success');
+        clearSelection();
+        updateFileCount();
+        buildPreviewableList();
+    }
+
+    // ===== UNDO FUNCTIONS =====
+    let undoTimeout = null;
+
+    function showUndoToast(count) {
+        const toast = document.getElementById('undoToast');
+        const msg = document.getElementById('undoMessage');
+        msg.textContent = 'Moved ' + count + ' item(s)';
+        toast.classList.add('visible');
+
+        // Auto-hide after 10 seconds
+        if (undoTimeout) clearTimeout(undoTimeout);
+        undoTimeout = setTimeout(hideUndoToast, 10000);
+    }
+
+    function hideUndoToast() {
+        document.getElementById('undoToast').classList.remove('visible');
+        if (undoTimeout) {
+            clearTimeout(undoTimeout);
+            undoTimeout = null;
+        }
+    }
+
+    async function undoMove() {
+        hideUndoToast();
+
+        try {
+            const resp = await fetch('/assets/undo-move', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await resp.json();
+
+            if (data.success) {
+                showToast('Restored ' + data.restored + ' item(s)', 'success');
+                setTimeout(() => location.reload(), 500);
+            } else {
+                showToast('Error: ' + (data.error || 'Could not undo'), 'error');
+            }
+        } catch (err) {
+            showToast('Error undoing move', 'error');
+            console.error(err);
+        }
+    }
+
+    // ===== PREVIEW FUNCTIONS =====
     function buildPreviewableList() {
         previewableFiles = [];
         document.querySelectorAll(".file-item").forEach((item, index) => {
@@ -1146,15 +2108,12 @@
 
     function openPreview(path, name, type) {
         if (type !== "image" && type !== "video") {
-            // For non-previewable files, download instead
             downloadFile(path, name);
             return;
         }
 
         currentPreviewFile = { path, name, type };
-        currentPreviewIndex = previewableFiles.findIndex(
-            (f) => f.path === path,
-        );
+        currentPreviewIndex = previewableFiles.findIndex(f => f.path === path);
 
         const modal = document.getElementById("previewModal");
         const content = document.getElementById("previewContent");
@@ -1163,9 +2122,9 @@
         title.textContent = name;
 
         if (type === "image") {
-            content.innerHTML = `<img src="/assets/preview/${path}" alt="${name}">`;
+            content.innerHTML = '<img src="/assets/preview/' + path + '" alt="' + name + '">';
         } else if (type === "video") {
-            content.innerHTML = `<video src="/assets/preview/${path}" controls autoplay></video>`;
+            content.innerHTML = '<video src="/assets/preview/' + path + '" controls autoplay></video>';
         }
 
         modal.classList.add("active");
@@ -1176,11 +2135,8 @@
         const modal = document.getElementById("previewModal");
         const content = document.getElementById("previewContent");
 
-        // Stop video if playing
         const video = content.querySelector("video");
-        if (video) {
-            video.pause();
-        }
+        if (video) video.pause();
 
         modal.classList.remove("active");
         currentPreviewFile = null;
@@ -1201,25 +2157,12 @@
     function updateNavButtons() {
         const prevBtn = document.getElementById("prevBtn");
         const nextBtn = document.getElementById("nextBtn");
-
         const hasMultiple = previewableFiles.length > 1;
         prevBtn.style.display = hasMultiple ? "flex" : "none";
         nextBtn.style.display = hasMultiple ? "flex" : "none";
     }
 
-    function handleKeyboard(e) {
-        const modal = document.getElementById("previewModal");
-        if (!modal.classList.contains("active")) return;
-
-        if (e.key === "Escape") {
-            closePreview();
-        } else if (e.key === "ArrowLeft") {
-            navigatePreview(-1);
-        } else if (e.key === "ArrowRight") {
-            navigatePreview(1);
-        }
-    }
-
+    // ===== DOWNLOAD FUNCTIONS =====
     function downloadFile(path, name) {
         const a = document.createElement("a");
         a.href = "/assets/download/" + path;
@@ -1236,52 +2179,8 @@
         }
     }
 
-    function confirmDelete(path, name) {
-        if (
-            !confirm(
-                'Are you sure you want to delete "' +
-                    name +
-                    '"?\n\nThis action cannot be undone.',
-            )
-        ) {
-            return;
-        }
-
-        fetch("/assets/delete/" + path, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                if (data.success) {
-                    // Remove the item from the grid
-                    const item = document.querySelector(
-                        `.file-item[data-path="${path}"]`,
-                    );
-                    if (item) {
-                        item.remove();
-                    }
-                    showToast("Deleted " + name, "success");
-                    updateFileCount();
-                    buildPreviewableList();
-                } else {
-                    showToast(
-                        "Error: " + (data.error || "Failed to delete"),
-                        "error",
-                    );
-                }
-            })
-            .catch((err) => {
-                showToast("Error deleting file", "error");
-                console.error(err);
-            });
-    }
-
     function downloadFolder(path, name) {
         showToast("Preparing folder download...");
-        // Trigger folder download - server will create a zip
         const a = document.createElement("a");
         a.href = "/assets/download-folder/" + path;
         a.download = name + ".zip";
@@ -1290,48 +2189,61 @@
         document.body.removeChild(a);
     }
 
+    // ===== LEGACY DELETE FUNCTIONS (for action buttons) =====
+    function confirmDelete(path, name) {
+        if (!confirm('Are you sure you want to delete "' + name + '"?\n\nThis action cannot be undone.')) {
+            return;
+        }
+
+        fetch("/assets/delete/" + path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const item = document.querySelector('.file-item[data-path="' + path + '"]');
+                    if (item) item.remove();
+                    showToast("Deleted " + name, "success");
+                    updateFileCount();
+                    buildPreviewableList();
+                } else {
+                    showToast("Error: " + (data.error || "Failed to delete"), "error");
+                }
+            })
+            .catch(err => {
+                showToast("Error deleting file", "error");
+                console.error(err);
+            });
+    }
+
     function confirmDeleteFolder(path, name) {
-        if (
-            !confirm(
-                'Are you sure you want to delete the folder "' +
-                    name +
-                    '" and ALL its contents?\n\nThis action cannot be undone.',
-            )
-        ) {
+        if (!confirm('Are you sure you want to delete the folder "' + name + '" and ALL its contents?\n\nThis action cannot be undone.')) {
             return;
         }
 
         fetch("/assets/delete-folder/" + path, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
         })
-            .then((response) => response.json())
-            .then((data) => {
+            .then(response => response.json())
+            .then(data => {
                 if (data.success) {
-                    // Remove the folder from the grid
-                    const item = document.querySelector(
-                        `.folder-item[data-path="${path}"]`,
-                    );
-                    if (item) {
-                        item.remove();
-                    }
+                    const item = document.querySelector('.folder-item[data-path="' + path + '"]');
+                    if (item) item.remove();
                     showToast("Deleted folder " + name, "success");
                     updateFileCount();
                 } else {
-                    showToast(
-                        "Error: " + (data.error || "Failed to delete folder"),
-                        "error",
-                    );
+                    showToast("Error: " + (data.error || "Failed to delete folder"), "error");
                 }
             })
-            .catch((err) => {
+            .catch(err => {
                 showToast("Error deleting folder", "error");
                 console.error(err);
             });
     }
 
+    // ===== UTILITY FUNCTIONS =====
     function updateFileCount() {
         const folders = document.querySelectorAll(".folder-item").length;
         const files = document.querySelectorAll(".file-item").length;
@@ -1349,6 +2261,61 @@
         setTimeout(() => {
             toast.classList.remove("visible");
         }, 3000);
+    }
+
+    // ===== KEYBOARD HANDLING =====
+    function handleKeyboard(e) {
+        // Preview modal navigation
+        const previewModal = document.getElementById("previewModal");
+        if (previewModal.classList.contains("active")) {
+            if (e.key === "Escape") {
+                closePreview();
+                return;
+            } else if (e.key === "ArrowLeft") {
+                navigatePreview(-1);
+                return;
+            } else if (e.key === "ArrowRight") {
+                navigatePreview(1);
+                return;
+            }
+        }
+
+        // Close context menu on Escape
+        if (e.key === "Escape") {
+            hideContextMenu();
+            return;
+        }
+
+        // Copy/Cut/Paste shortcuts
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key === 'c' && selectedItems.length > 0) {
+                e.preventDefault();
+                copySelected();
+            } else if (e.key === 'x' && selectedItems.length > 0) {
+                e.preventDefault();
+                cutSelected();
+            } else if (e.key === 'v' && clipboard.items.length > 0) {
+                e.preventDefault();
+                pasteItems();
+            } else if (e.key === 'z') {
+                e.preventDefault();
+                undoMove();
+            } else if (e.key === 'a') {
+                e.preventDefault();
+                // Select all
+                document.querySelectorAll('.asset-item:not(.selected)').forEach(item => {
+                    if (item.dataset.path) {
+                        toggleSelect(item);
+                    }
+                });
+            }
+        }
+
+        // Delete key
+        if (e.key === 'Delete' && selectedItems.length > 0) {
+            e.preventDefault();
+            deleteSelected();
+        }
     }
 </script>
 {% endblock %}
