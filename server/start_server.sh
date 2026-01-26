@@ -20,20 +20,23 @@ REPO_URL="https://github.com/razvanmatei-sf/runpod-ggs.git"
 REPO_DIR="$WORKSPACE_DIR/runpod-ggs"
 COMFYUI_DIR="$WORKSPACE_DIR/ComfyUI"
 
+# Branch to use for setup scripts
+BRANCH="feature/upgrade-setup-scripts"
+
 # Clone or update the repository
 echo "Syncing repository..."
 if [ -d "$REPO_DIR/.git" ]; then
     echo "Repository exists, pulling latest changes..."
     cd "$REPO_DIR"
     git fetch --all || echo "Warning: git fetch failed"
-    git checkout feature/home-redesign-v3 2>/dev/null || git checkout -b feature/home-redesign-v3 origin/feature/home-redesign-v3 || echo "Warning: checkout failed"
-    git reset --hard origin/feature/home-redesign-v3 || echo "Warning: reset failed"
-    git pull origin feature/home-redesign-v3 || echo "Warning: pull failed"
+    git checkout "$BRANCH" 2>/dev/null || git checkout -b "$BRANCH" "origin/$BRANCH" || echo "Warning: checkout failed"
+    git reset --hard "origin/$BRANCH" || echo "Warning: reset failed"
+    git pull origin "$BRANCH" || echo "Warning: pull failed"
     echo "Repository updated."
 else
     echo "Cloning repository..."
     rm -rf "$REPO_DIR"
-    if ! git clone -b feature/home-redesign-v3 "$REPO_URL" "$REPO_DIR"; then
+    if ! git clone -b "$BRANCH" "$REPO_URL" "$REPO_DIR"; then
         echo "Warning: Clone failed, trying main branch..."
         git clone "$REPO_URL" "$REPO_DIR" || echo "Warning: Clone of main also failed"
     fi

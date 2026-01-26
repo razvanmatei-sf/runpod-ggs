@@ -2119,7 +2119,7 @@ def git_commit_and_push(message):
 
         # Push using token auth
         push_result = subprocess.run(
-            ["git", "push", repo_url, "feature/home-redesign-v3"],
+            ["git", "push", repo_url, "feature/upgrade-setup-scripts"],
             cwd=REPO_DIR,
             capture_output=True,
             text=True,
