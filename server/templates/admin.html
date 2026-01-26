@@ -1180,6 +1180,7 @@
         onPollingComplete = callback;
         if (pollInterval) clearInterval(pollInterval);
         pollInterval = setInterval(pollLogs, 500);
+        startElapsedTimer();
     }
 
     let lastLogContent = "";
