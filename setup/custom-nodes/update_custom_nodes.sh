@@ -1,9 +1,10 @@
 #!/bin/bash
+# ABOUTME: Updates custom nodes from nodes.txt configuration file.
+# ABOUTME: Pulls latest changes and reinstalls requirements using uv pip.
 
-# ComfyUI Custom Nodes Update Script
 set -e
 
-echo "Updating ComfyUI Custom Nodes"
+echo "Updating ComfyUI Custom Nodes..."
 
 REPO_DIR="${REPO_DIR:-/workspace/runpod-ggs}"
 NODES_CONFIG="$REPO_DIR/setup/custom-nodes/nodes.txt"
@@ -32,7 +33,7 @@ while read -r repo_url || [ -n "$repo_url" ]; do
     git stash
     git pull --force
 
-    [ -f "requirements.txt" ] && pip install -r requirements.txt
+    [ -f "requirements.txt" ] && uv pip install -r requirements.txt
     [ -f "install.py" ] && python install.py
     [ -f "install.sh" ] && bash install.sh
 

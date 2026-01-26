@@ -1,9 +1,10 @@
 #!/bin/bash
+# ABOUTME: Installs custom nodes from nodes.txt configuration file.
+# ABOUTME: Clones repos and installs their requirements using uv pip.
 
-# ComfyUI Custom Nodes Install Script
 set -e
 
-echo "Installing ComfyUI Custom Nodes"
+echo "Installing ComfyUI Custom Nodes..."
 
 REPO_DIR="${REPO_DIR:-/workspace/runpod-ggs}"
 NODES_CONFIG="$REPO_DIR/setup/custom-nodes/nodes.txt"
@@ -33,7 +34,7 @@ while read -r repo_url || [ -n "$repo_url" ]; do
     git clone "$repo_url"
 
     cd "$node_path"
-    [ -f "requirements.txt" ] && pip install -r requirements.txt
+    [ -f "requirements.txt" ] && uv pip install -r requirements.txt
     [ -f "install.py" ] && python install.py
     [ -f "install.sh" ] && bash install.sh
     cd "$CUSTOM_NODES_DIR"

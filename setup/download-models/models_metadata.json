@@ -1,0 +1,11 @@
+{
+  "download_z_image_turbo": {
+    "size_gb": 22.2,
+    "files": {
+      "qwen_3_4b.safetensors": 7.5,
+      "z_image_turbo_bf16.safetensors": 11.5,
+      "ae.safetensors": 0.32,
+      "Z-Image-Turbo-Fun-Controlnet-Union.safetensors": 2.9
+    }
+  }
+}

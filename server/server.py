@@ -201,16 +201,31 @@ def check_models_installed(destinations):
     return (installed, len(destinations))
 
 
+def load_models_metadata():
+    """Load models metadata from JSON file for size information."""
+    metadata_path = os.path.join(REPO_DIR, "setup", "download-models", "models_metadata.json")
+    try:
+        if os.path.exists(metadata_path):
+            with open(metadata_path, "r") as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Error loading models metadata: {e}")
+    return {}
+
+
 def get_download_scripts():
     """
     Scan setup/download-models/ directory and return available download scripts.
-    Returns list of dicts with 'id', 'name', 'path', 'installed', 'total' for each script.
+    Returns list of dicts with 'id', 'name', 'path', 'installed', 'total', 'size_gb' for each script.
     """
     scripts = []
     download_dir = os.path.join(REPO_DIR, "setup", "download-models")
 
     if not os.path.exists(download_dir):
         return scripts
+
+    # Load metadata for file sizes
+    metadata = load_models_metadata()
 
     try:
         for filename in os.listdir(download_dir):
@@ -223,18 +238,25 @@ def get_download_scripts():
                 name = name.replace("_", " ")
                 name = name.title()
 
+                script_id = filename.replace(".sh", "")
                 script_path = os.path.join(download_dir, filename)
                 destinations = parse_model_destinations(script_path)
                 installed, total = check_models_installed(destinations)
 
+                # Get size from metadata if available
+                size_gb = None
+                if script_id in metadata:
+                    size_gb = metadata[script_id].get("size_gb")
+
                 scripts.append(
                     {
-                        "id": filename.replace(".sh", ""),
+                        "id": script_id,
                         "name": name,
                         "filename": filename,
                         "path": script_path,
                         "installed": installed,
                         "total": total,
+                        "size_gb": size_gb,
                     }
                 )
     except Exception as e:
@@ -1024,6 +1046,9 @@ HTML_TEMPLATE = r"""
                     <input type="checkbox" class="model-checkbox" id="model_{{ script.id }}" value="{{ script.filename }}">
                     <label class="model-label" for="model_{{ script.id }}">
                         {{ script.name }}
+                        {% if script.size_gb %}
+                            <span style="color: #9ca3af; font-size: 11px; margin-left: 4px;">({{ script.size_gb }}GB)</span>
+                        {% endif %}
                         {% if script.total > 0 %}
                             {% if script.installed == script.total %}
                                 <span style="color: #10b981; font-size: 12px;"> ✓ Installed</span>
