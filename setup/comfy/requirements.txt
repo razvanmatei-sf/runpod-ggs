@@ -1,5 +1,6 @@
 pydantic_settings
 alembic
+torchsde
 spandrel
 kornia
 av
@@ -16,3 +17,6 @@ deepspeed
 ultralytics==8.3.197
 comfyui-embedded-docs
 comfyui-workflow-templates
+imageio_ffmpeg
+triton<3.6; sys_platform == 'linux'
+triton-windows<3.6; sys_platform == 'win32'
