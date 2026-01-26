@@ -1,6 +1,6 @@
 # ComfyStudio Docker Image
-# Base image with PyTorch 2.2.0, Python 3.10, CUDA 12.1.1
-FROM runpod/pytorch:2.2.0-py3.10-cuda12.1.1-devel-ubuntu22.04
+# Base image with PyTorch 2.9.1, Python 3.10, CUDA 13.0, Ubuntu 24.04
+FROM runpod/pytorch:1.0.3-cu1300-torch291-ubuntu2404
 
 # Set working directory
 WORKDIR /workspace
