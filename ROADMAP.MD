@@ -116,13 +116,14 @@ terminate pods interface
 
 27. URGENT - Update Models - Qwen latest image and edit, LTX if anything, Flux 
 
+28. Add request form into the workbench so ideally a user or an artist that is part of a studio will have the option to create a workflow request or a template request. What I want to get out of this is to give them the option to show me a use case from their work where they have trouble getting something done or they want to speed up part of the process. They will have a button on the request page that when they press it, they will have the option to add a few images so that I see exactly what they are trying to achieve. Also, to have some sort of description where they describe their problem so that whenever we start this and we do tutorials, I don't have to ask for files, ask for permission to access resources that are needed in order for me to help them.
+Ideally, this request will also contain the name of the user that's created it so we can take that from the login info. So basically, if they select one name from the list and they log in, this should be a part of the name of the request that I have to look at.
+
+29. 
 
 
 
 
-
-++++++++++++++
-++++++++++++++
 ++++++++++++++
 
 Deepseek priority plan:
@@ -221,3 +222,4 @@ Deepseek priority plan:
 Serhii call
 
 S3 browser -
+
