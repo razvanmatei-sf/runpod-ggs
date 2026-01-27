@@ -1,0 +1,479 @@
+{% extends "base.html" %} {% block title %}Studio Settings - SF AI Workbench{% endblock %}
+{% block content %}
+
+<!-- User Profiles Section -->
+<section class="admin-section">
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h2 class="admin-card-title">User Profiles</h2>
+            <button
+                type="button"
+                class="admin-toggle-btn"
+                onclick="toggleSection('users-section')"
+            >
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </button>
+        </div>
+
+        <div id="users-section" class="admin-card-content">
+        <!-- Add New Users -->
+        <div class="admin-input-group" style="margin-bottom: 12px">
+            <label for="new-users-text">Add Users (one name per line)</label>
+            <textarea
+                id="new-users-text"
+                class="admin-input admin-textarea"
+                rows="4"
+                placeholder="John Doe&#10;Jane Smith&#10;..."
+            ></textarea>
+        </div>
+        <div style="margin-bottom: 14px">
+            <button
+                type="button"
+                class="tool-btn tool-btn-start"
+                onclick="addUsers()"
+            >
+                Add Users
+            </button>
+        </div>
+
+        <!-- Current Users List -->
+        <div class="admin-input-group">
+            <label>Current Users</label>
+        </div>
+        <div class="admin-list" id="users-list">
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    id="select-all-users"
+                    onchange="toggleAllUsers(this)"
+                />
+                <span class="admin-checkbox-label"
+                    ><strong>Select All</strong></span
+                >
+            </label>
+
+            {% for user in users_data %}
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    name="user"
+                    value="{{ user.name }}"
+                    class="user-checkbox"
+                    {% if user.name == superadmin_name %}disabled{% endif %}
+                />
+                <span class="admin-checkbox-label">
+                    {{ user.name }} {% if user.name == superadmin_name %}
+                    <span class="admin-badge installed">Superadmin</span>
+                    {% elif user.is_admin %}
+                    <span class="admin-badge installed">Admin</span>
+                    {% endif %}
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+
+        <div class="admin-actions">
+            <button
+                type="button"
+                class="tool-btn tool-btn-start"
+                onclick="bulkUserAction('make_admin')"
+            >
+                Make Admin
+            </button>
+            <button
+                type="button"
+                class="tool-btn tool-btn-open"
+                onclick="bulkUserAction('remove_admin')"
+            >
+                Remove Admin
+            </button>
+            <button
+                type="button"
+                class="tool-btn tool-btn-stop"
+                onclick="bulkUserAction('delete')"
+            >
+                Delete Selected
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Studio Banner Section -->
+<section class="admin-section">
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h2 class="admin-card-title">Studio Banner</h2>
+            <button
+                type="button"
+                class="admin-toggle-btn"
+                onclick="toggleSection('hero-section')"
+            >
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </button>
+        </div>
+
+        <div id="hero-section" class="admin-card-content">
+            <p style="color: var(--text-secondary); margin-bottom: 12px;">
+                Upload a custom banner image for the Home page. Recommended size: 1920x400 pixels.
+            </p>
+            <div class="hero-banner-preview" style="margin-bottom: 12px;">
+                <img
+                    id="hero-preview-img"
+                    src="/hero_banner"
+                    alt="Studio Banner Preview"
+                    style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; display: none;"
+                    onerror="this.style.display='none'; document.getElementById('hero-preview-placeholder').style.display='flex';"
+                    onload="this.style.display='block'; document.getElementById('hero-preview-placeholder').style.display='none';"
+                />
+                <div id="hero-preview-placeholder" style="width: 100%; height: 80px; background: var(--bg-tertiary); border: 1px dashed var(--border-default); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 14px;">
+                    No banner uploaded
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <input
+                    type="file"
+                    id="hero-banner-input"
+                    accept="image/*"
+                    style="display: none;"
+                    onchange="uploadHeroBanner(this)"
+                />
+                <button
+                    type="button"
+                    class="tool-btn tool-btn-start"
+                    onclick="document.getElementById('hero-banner-input').click()"
+                >
+                    Upload Banner
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .admin-section {
+        margin-bottom: 16px;
+    }
+
+    .admin-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-card);
+        border-radius: 4px;
+        padding: 16px;
+    }
+
+    .admin-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+
+    .admin-card-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .admin-card-content {
+        /* content styles */
+    }
+
+    .admin-toggle-btn {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-card);
+        border-radius: 4px;
+        padding: 4px 8px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .admin-toggle-btn:hover {
+        background: var(--bg-card);
+    }
+
+    .admin-input-group {
+        flex: 1;
+    }
+
+    .admin-input-group label {
+        display: block;
+        font-size: 11px;
+        color: var(--text-secondary);
+        margin-bottom: 4px;
+    }
+
+    .admin-input {
+        width: 100%;
+        padding: 8px 10px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-card);
+        border-radius: 6px;
+        color: var(--text-primary);
+        font-size: 13px;
+    }
+
+    .admin-input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+    }
+
+    .admin-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .admin-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        max-height: 240px;
+        overflow-y: auto;
+        margin-bottom: 12px;
+    }
+
+    .admin-checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .admin-checkbox-item:hover {
+        background: var(--bg-tertiary);
+    }
+
+    .admin-checkbox-item input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--accent-blue);
+        cursor: pointer;
+    }
+
+    .admin-checkbox-label {
+        flex: 1;
+        font-size: 13px;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .admin-badge {
+        font-size: 9px;
+        padding: 2px 6px;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+
+    .admin-badge.new {
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+    }
+
+    .admin-badge.installed {
+        background: rgba(34, 197, 94, 0.2);
+        color: var(--accent-green);
+    }
+
+    .admin-actions {
+        display: flex;
+        gap: 6px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border-card);
+    }
+
+    .admin-textarea {
+        resize: vertical;
+        min-height: 60px;
+        font-family: inherit;
+    }
+</style>
+{% endblock %} {% block scripts %}
+<script>
+    function toggleSection(sectionId) {
+        const section = document.getElementById(sectionId);
+        section.style.display =
+            section.style.display === "none" ? "block" : "none";
+    }
+
+    // Hero Banner Upload
+    function uploadHeroBanner(input) {
+        if (!input.files || !input.files[0]) return;
+
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append("file", file);
+
+        fetch("/upload_hero_banner", {
+            method: "POST",
+            body: formData,
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    // Update preview
+                    const img = document.getElementById("hero-preview-img");
+                    const placeholder = document.getElementById("hero-preview-placeholder");
+                    img.src = "/hero_banner?" + new Date().getTime(); // Cache bust
+                    img.style.display = "block";
+                    placeholder.style.display = "none";
+                    alert("Studio banner uploaded successfully!");
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch((err) => alert("Error uploading banner: " + err));
+    }
+
+    // User Profile Management Functions
+    function toggleAllUsers(checkbox) {
+        document.querySelectorAll(".user-checkbox:not(:disabled)").forEach((cb) => (cb.checked = checkbox.checked));
+    }
+
+    function addUsers() {
+        const textarea = document.getElementById("new-users-text");
+        const namesText = textarea.value.trim();
+
+        if (!namesText) {
+            alert("Please enter at least one user name.");
+            return;
+        }
+
+        fetch("/api/users", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ names: namesText }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    textarea.value = "";
+                    refreshUsersList(data.users);
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch((err) => alert("Error adding users: " + err));
+    }
+
+    function bulkUserAction(action) {
+        const selected = Array.from(
+            document.querySelectorAll(".user-checkbox:checked"),
+        ).map((cb) => cb.value);
+
+        if (selected.length === 0) {
+            alert("Please select at least one user.");
+            return;
+        }
+
+        if (action === "delete") {
+            if (!confirm(`Are you sure you want to delete ${selected.length} user(s)?`)) {
+                return;
+            }
+            const deleteFolder = confirm(
+                "Also delete the users' output folders?\n\nClick OK to delete folders, Cancel to keep them.",
+            );
+
+            // Delete users one by one
+            Promise.all(
+                selected.map((userName) =>
+                    fetch("/api/users/" + encodeURIComponent(userName), {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ delete_folder: deleteFolder }),
+                    }).then((r) => r.json())
+                )
+            ).then((results) => {
+                const lastResult = results[results.length - 1];
+                if (lastResult && lastResult.users) {
+                    refreshUsersList(lastResult.users);
+                } else {
+                    location.reload();
+                }
+            }).catch((err) => {
+                alert("Error deleting users: " + err);
+                location.reload();
+            });
+        } else {
+            // make_admin or remove_admin
+            const isAdmin = action === "make_admin";
+            Promise.all(
+                selected.map((userName) =>
+                    fetch("/api/users/" + encodeURIComponent(userName) + "/admin", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ is_admin: isAdmin }),
+                    }).then((r) => r.json())
+                )
+            ).then((results) => {
+                const lastResult = results[results.length - 1];
+                if (lastResult && lastResult.users) {
+                    refreshUsersList(lastResult.users);
+                } else {
+                    location.reload();
+                }
+            }).catch((err) => {
+                alert("Error updating users: " + err);
+                location.reload();
+            });
+        }
+    }
+
+    function refreshUsersList(users) {
+        const listEl = document.getElementById("users-list");
+        const superadminName = "{{ superadmin_name }}";
+
+        listEl.innerHTML = `
+            <label class="admin-checkbox-item">
+                <input
+                    type="checkbox"
+                    id="select-all-users"
+                    onchange="toggleAllUsers(this)"
+                />
+                <span class="admin-checkbox-label"><strong>Select All</strong></span>
+            </label>
+        ` + users
+            .map((user) => {
+                const isSuperadmin = user.name === superadminName;
+                return `
+                <label class="admin-checkbox-item">
+                    <input
+                        type="checkbox"
+                        name="user"
+                        value="${user.name}"
+                        class="user-checkbox"
+                        ${isSuperadmin ? "disabled" : ""}
+                    />
+                    <span class="admin-checkbox-label">
+                        ${user.name}
+                        ${isSuperadmin ? '<span class="admin-badge installed">Superadmin</span>' : (user.is_admin ? '<span class="admin-badge installed">Admin</span>' : '')}
+                    </span>
+                </label>
+            `;
+            })
+            .join("");
+    }
+</script>
+{% endblock %}

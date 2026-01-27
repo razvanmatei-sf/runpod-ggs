@@ -4036,6 +4036,31 @@ def tool_page(tool_id):
 
 @app.route("/admin")
 def admin():
+    """Redirect /admin to /admin/studio"""
+    return redirect(url_for("admin_studio"))
+
+
+@app.route("/admin/studio")
+def admin_studio():
+    if not current_artist:
+        return redirect(url_for("login"))
+    if not is_admin(current_artist):
+        return redirect(url_for("home"))
+
+    return render_template(
+        "admin_studio.html",
+        current_user=current_artist,
+        is_admin=True,
+        active_page="admin-studio",
+        page_title="Studio",
+        runpod_id=get_runpod_id(),
+        users_data=USERS_DATA,
+        superadmin_name=SUPERADMIN_NAME,
+    )
+
+
+@app.route("/admin/setup")
+def admin_setup():
     if not current_artist:
         return redirect(url_for("login"))
     if not is_admin(current_artist):
@@ -4070,17 +4095,15 @@ def admin():
         admin_process_running = running_process.poll() is None
 
     return render_template(
-        "admin.html",
+        "admin_setup.html",
         current_user=current_artist,
         is_admin=True,
-        active_page="admin",
-        page_title="Settings",
+        active_page="admin-setup",
+        page_title="Setup",
         runpod_id=get_runpod_id(),
         admin_tools=admin_tools,
         download_scripts=get_download_scripts(),
         custom_nodes=get_custom_nodes(),
-        users_data=USERS_DATA,
-        superadmin_name=SUPERADMIN_NAME,
         admin_logs=admin_logs,
         admin_process_running=admin_process_running,
     )
